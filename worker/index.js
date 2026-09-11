@@ -16,6 +16,15 @@ export default {
       return handleTelegramWebhook(request, env);
     }
 
+    // La raíz del dominio ("/") no se resuelve sola a index.html porque
+    // html_handling está en "none" (para que los links internos con .html
+    // explícito no sufran redirecciones). La resolvemos a mano acá.
+    if (url.pathname === '/') {
+      const indexUrl = new URL(request.url);
+      indexUrl.pathname = '/index.html';
+      return env.ASSETS.fetch(new Request(indexUrl, request));
+    }
+
     // Todo lo demás: archivos estáticos del sitio (HTML, CSS, JS, imágenes).
     return env.ASSETS.fetch(request);
   }
