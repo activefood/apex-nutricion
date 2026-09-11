@@ -1207,7 +1207,7 @@ button.pill:hover{ border-color: var(--ink); }
   transform: scale(1.45);
 }
 .feature-copy .eyebrow{ color: var(--accent); }
-.feature-copy h2{ margin-top: var(--sp-3); }
+.feature-copy h2{ margin-top: var(--sp-3); margin-bottom: var(--sp-4); }
 .feature-list{
   display: flex;
   flex-direction: column;
@@ -1923,14 +1923,37 @@ button.pill:hover{ border-color: var(--ink); }
    Página de marca
    ========================================================================== */
 .brand-banner{
-  background: var(--ink);
+  background: #5C584F;
   color: #fff;
   padding: var(--sp-8) 0;
 }
 .brand-banner--photo{
+  min-height: 400px;
+  display: flex;
+  padding: 0;
   background-image: linear-gradient(rgba(0,0,0,.5), rgba(0,0,0,.5)), var(--banner-photo);
   background-size: cover;
   background-position: center;
+}
+.brand-banner--photo .container{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: var(--sp-6);
+  padding-bottom: var(--sp-6);
+  width: 100%;
+}
+.brand-banner-logo{ margin: var(--sp-5) 0; }
+.brand-banner--photo .brand-banner-logo{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+.brand-banner-logo img{
+  display: block;
+  max-height: 110px;
+  width: auto;
 }
 .breadcrumbs--light{ color: rgba(255,255,255,.5); }
 .breadcrumbs--light a{ color: rgba(255,255,255,.7); }
@@ -1993,6 +2016,8 @@ button.pill:hover{ border-color: var(--ink); }
 @media (max-width: 640px){
   .brand-banner{ padding: var(--sp-7) 0; }
   .brand-stats{ gap: var(--sp-5); }
+  .brand-banner--photo{ min-height: 300px; }
+  .brand-banner-logo img{ max-height: 96px; max-width: 100%; }
 }
 
 /* ==========================================================================

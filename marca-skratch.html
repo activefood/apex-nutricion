@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=65">
+<link rel="stylesheet" href="styles.css?v=73">
 </head>
 <body>
 
@@ -137,7 +137,7 @@
 <main>
 
   <!-- ============ Banner de marca ============ -->
-  <section class="brand-banner brand-banner--photo" style="--banner-photo:url('assets/skratch/banner-marca.jpg')">
+  <section class="brand-banner">
     <div class="container">
       <nav class="breadcrumbs breadcrumbs--light" aria-label="Ruta de navegación" style="padding-top:0;">
         <a href="index.html">Inicio</a>
@@ -146,43 +146,38 @@
         <span class="sep">/</span>
         <span class="current">Skratch Labs</span>
       </nav>
-      <h1 class="h-46">Skratch Labs</h1>
+      <div class="brand-banner-logo"><img src="assets/logos/skratch-logo.png" alt="Skratch Labs"></div>
+      <h1 class="h-46 visually-hidden">Skratch Labs</h1>
         <div class="brand-social">
           <span class="brand-social-label">Síguenos</span>
           <a href="https://instagram.com/skratchlabs.ve" target="_blank" rel="noopener" aria-label="Instagram de Skratch Labs">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
           </a>
         </div>
-      <p class="lede">Electrolitos en polvo y en barra, la opción de quienes cargan bidones antes de cada salida larga en bicicleta.</p>
     </div>
   </section>
 
   <!-- ============ Historia de la marca ============ -->
   <section class="section">
     <div class="container">
-      <div class="feature-grid">
-        <div class="feature-media">
-          <div class="product-placeholder" style="background:var(--brand-skratch); width:100%; height:100%; border-radius:6px; font-size:16px;">SKRATCH<br>LABS<br>Estados Unidos</div>
-        </div>
-        <div class="feature-copy">
-          <p class="eyebrow">Nuestra historia</p>
-          <h2 class="h-28">Hidratación que sabe a fruta de verdad, no a jarabe</h2>
-          <p>Skratch Labs construyó su reputación entre ciclistas de fondo por una razón simple: sus mezclas de hidratación no saben empalagosas ni dejan residuo pegajoso en el bidón. La fórmula prioriza el sodio y el sabor real de fruta por encima del azúcar añadida.</p>
-          <p style="margin-top:16px;">En Apex Nutrición es la referencia que recomendamos para salidas de más de dos horas bajo el sol venezolano, cuando la pérdida de sodio por sudor es alta y una hidratación floja se nota en el último tramo.</p>
+      <div class="feature-copy" style="max-width:640px;">
+        <h2 class="h-28">Hecho desde cero. Hecho para moverte.</h2>
+        <p>Skratch Labs nació de una idea sencilla: la nutrición deportiva puede ser efectiva, deliciosa y fácil de llevar.</p>
+        <p style="margin-top:16px;">Ingredientes reales y ciencia para acompañarte cuando más lo necesitas.</p>
+        <p style="margin-top:16px; font-style:italic; color:var(--ink-2);">Real food. Real fuel. Real performance.</p>
 
-          <div class="brand-stats">
-            <div class="brand-stat">
-              <p class="num">4</p>
-              <p class="label">Productos en catálogo</p>
-            </div>
-            <div class="brand-stat">
-              <p class="num">4.9</p>
-              <p class="label">Calificación del más vendido</p>
-            </div>
-            <div class="brand-stat">
-              <p class="num">400 mg</p>
-              <p class="label">Sodio por porción</p>
-            </div>
+        <div class="brand-stats">
+          <div class="brand-stat">
+            <p class="num">4</p>
+            <p class="label">Productos en catálogo</p>
+          </div>
+          <div class="brand-stat">
+            <p class="num">4.9</p>
+            <p class="label">Calificación del más vendido</p>
+          </div>
+          <div class="brand-stat">
+            <p class="num">400 mg</p>
+            <p class="label">Sodio por porción</p>
           </div>
         </div>
       </div>
