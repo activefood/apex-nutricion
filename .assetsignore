@@ -1,0 +1,10 @@
+worker
+netlify
+functions
+netlify.toml
+wrangler.jsonc
+.assetsignore
+_redirects
+.git
+.gitignore
+README.md
