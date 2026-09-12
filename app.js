@@ -1097,7 +1097,7 @@ function initHeroCarousel(){
     if(nextBtn) nextBtn.hidden = true;
   }
 
-  const AUTOPLAY_MS = 6000;
+  const AUTOPLAY_MS = 3500;
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let index = slides.findIndex(function(s){ return s.classList.contains('active'); });
   if(index < 0) index = 0;
