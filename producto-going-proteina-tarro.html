@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
-<link rel="stylesheet" href="styles.css?v=73">
+<link rel="stylesheet" href="styles.css?v=80">
 </head>
 <body>
 
@@ -146,7 +146,7 @@
 
       <div class="pdp-gallery">
         <div class="pdp-main-image">
-          <img class="product-photo" id="pdp-main-photo" data-alt-prefix="Proteína Going sabor " src="assets/going/proteina-chocolate.png" alt="Proteína Going sabor Chocolate">
+          <img class="product-photo" id="pdp-main-photo" data-alt-prefix="Proteína Going sabor " src="assets/going/proteina-tarro-chocolate.png" alt="Proteína Going sabor Chocolate">
         </div>
       </div>
 
@@ -171,8 +171,8 @@
         <div class="pdp-field" hidden>
           <p class="pdp-field-label">Sabor: <span data-pill-label>Chocolate</span></p>
           <div class="pill-group" data-flavor-group>
-            <button type="button" class="pill pill--active" aria-pressed="true" data-flavor-name="Chocolate" data-flavor-img="assets/going/proteina-chocolate.png">Chocolate</button>
-            <button type="button" class="pill" aria-pressed="false" data-flavor-name="Vainilla" data-flavor-img="assets/going/proteina-vainilla.png">Vainilla</button>
+            <button type="button" class="pill pill--active" aria-pressed="true" data-flavor-name="Chocolate" data-flavor-img="assets/going/proteina-tarro-chocolate.png">Chocolate</button>
+            <button type="button" class="pill" aria-pressed="false" data-flavor-name="Vainilla" data-flavor-img="assets/going/proteina-tarro-vainilla.png">Vainilla</button>
           </div>
         </div>
 
@@ -226,15 +226,30 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
         </summary>
         <div class="accordion-body">
-          <table class="nutrition-table">
+          <table class="nutrition-table nutrition-table--full">
             <tbody>
-              <tr><td>Tamaño de porción</td><td>1 scoop (30 g)</td></tr>
-              <tr><td>Porciones por tarro</td><td>20</td></tr>
-              <tr><td>Calorías</td><td>113 kcal</td></tr>
-              <tr><td>Proteína</td><td>20 g</td></tr>
-              <tr><td>Carbohidratos totales</td><td>3 g</td></tr>
-              <tr><td>Grasas totales</td><td>1,5 g</td></tr>
-              <tr><td>Sodio</td><td>50 mg</td></tr>
+              <tr><td>Tamaño de porción</td><td colspan="2">1.5 vasos (300 mL)</td></tr>
+              <tr><td>Porciones por envase</td><td colspan="2">20</td></tr>
+              <tr class="nutrition-table-head"><td></td><td>Por 100 mL reconstituida</td><td>Por porción reconstituida</td></tr>
+              <tr><td>Calorías (kcal)</td><td>38</td><td>114</td></tr>
+              <tr><td>Grasa total</td><td>0.8 g</td><td>2.4 g</td></tr>
+              <tr><td>Grasa saturada</td><td>0.2 g</td><td>0.5 g</td></tr>
+              <tr><td>Grasa trans</td><td>39 mg</td><td>118 mg</td></tr>
+              <tr><td>Carbohidratos totales</td><td>0.9 g</td><td>2.8 g</td></tr>
+              <tr><td>Fibra dietaria</td><td>0.5 g</td><td>1.5 g</td></tr>
+              <tr><td>Fibra soluble</td><td>0.5 g</td><td>1.5 g</td></tr>
+              <tr><td>Fibra insoluble</td><td>0 g</td><td>0 g</td></tr>
+              <tr><td>Azúcares totales</td><td>0.3 g</td><td>0.9 g</td></tr>
+              <tr><td>Azúcares añadidos</td><td>0 g</td><td>0 g</td></tr>
+              <tr><td>Proteína</td><td>7 g</td><td>21 g</td></tr>
+              <tr><td>Sodio</td><td>72 mg</td><td>216 mg</td></tr>
+              <tr><td>Calcio</td><td>20 mg</td><td>60 mg</td></tr>
+              <tr><td>Hierro</td><td>2.0 mg</td><td>6.0 mg</td></tr>
+              <tr><td>Vitamina B12</td><td>0.8 mcg</td><td>2.4 mcg</td></tr>
+              <tr><td>Fósforo</td><td>64 mg</td><td>192 mg</td></tr>
+              <tr><td>Magnesio</td><td>7.2 mg</td><td>22 mg</td></tr>
+              <tr><td>Zinc</td><td>0.8 mg</td><td>2.4 mg</td></tr>
+              <tr><td colspan="3" class="nutrition-table-note">No es fuente significativa de Vitaminas A y Vitamina D.</td></tr>
             </tbody>
           </table>
         </div>
@@ -439,6 +454,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=48"></script>
+<script src="app.js?v=51"></script>
 </body>
 </html>

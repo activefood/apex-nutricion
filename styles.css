@@ -21,8 +21,8 @@
   --accent-sf:#FFEEE5;
   --spark:    #D8F24C;
 
-  /* Fondo de foto en tarjetas de producto — azul muy claro (The Feed) */
-  --card-media-bg: #F8FBFE;
+  /* Fondo de foto en tarjetas de producto */
+  --card-media-bg: #ffffff;
   --card-media-line: #DCDFE5;
 
   /* Semánticos */
@@ -652,7 +652,7 @@ button.pill:hover{ border-color: var(--ink); }
 
 /* Diapositiva SaltStick Cápsulas: mismo patrón, gráfico propio a todo el fondo */
 .hero-slide--capsulas-banner{
-  background-image: url('assets/saltstick/hero-capsulas-ancho.png');
+  background-image: url('assets/saltstick/hero-capsulas-ancho.png?v=2');
   background-size: cover;
   background-position: center;
 }
@@ -671,13 +671,46 @@ button.pill:hover{ border-color: var(--ink); }
 }
 @media (max-width: 1024px){
   .hero-slide--capsulas-banner{
-    background-image: url('assets/saltstick/hero-capsulas-movil.png');
+    background-image: url('assets/saltstick/hero-capsulas-movil.png?v=2');
   }
   .hero-slide--capsulas-banner .container{
     aspect-ratio: 3 / 4;
     min-height: unset;
   }
   .hero-slide--capsulas-banner .hero-actions{
+    bottom: var(--sp-5);
+  }
+}
+
+.hero-slide--fastchews-banner{
+  background-color: #2b76b9;
+  background-image: url('assets/saltstick/hero-fastchews-banner.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.hero-slide--fastchews-banner .container{
+  grid-template-columns: 1fr;
+  min-height: 640px;
+  position: relative;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.hero-slide--fastchews-banner .hero-actions{
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-8);
+  transform: translateX(-50%);
+}
+@media (max-width: 1024px){
+  .hero-slide--fastchews-banner{
+    background-size: cover;
+  }
+  .hero-slide--fastchews-banner .container{
+    aspect-ratio: 3 / 4;
+    min-height: unset;
+  }
+  .hero-slide--fastchews-banner .hero-actions{
     bottom: var(--sp-5);
   }
 }
@@ -721,7 +754,7 @@ button.pill:hover{ border-color: var(--ink); }
   margin: 0;
 }
 /* Banner "Arma tu pack" — mismo alto que los demás banners */
-.promo-tile--flat{ background: #F7F2EA; }
+.promo-tile--flat{ background: #fff; }
 .promo-tile--tall{ grid-row: span 2; justify-content: center; }
 .promo-tile--tall .promo-tile-tag{ position: absolute; top: var(--sp-5); left: var(--sp-5); margin: 0; }
 .promo-tile--flat .promo-tile-graphic-img{ inset: 0; width: 100%; height: 100%; display: block; }
@@ -1293,7 +1326,8 @@ button.pill:hover{ border-color: var(--ink); }
 .article-card{ display: block; }
 .article-media{
   aspect-ratio: 16/9;
-  background: var(--paper-2);
+  background: #fff;
+  border: 1px solid var(--ink);
   border-radius: var(--r-card);
   display: flex;
   align-items: center;
@@ -1829,6 +1863,24 @@ button.pill:hover{ border-color: var(--ink); }
   text-align: right;
   font-weight: 700;
   color: var(--ink);
+}
+
+/* ---------- Tabla nutricional completa (con columnas por 100 mL / por porción) ---------- */
+.nutrition-table--full{ max-width: 480px; }
+.nutrition-table--full td:not(:first-child){ text-align: right; }
+.nutrition-table--full td:last-child{ font-weight: 700; }
+.nutrition-table--full .nutrition-table-head td{
+  font-size: 12px;
+  color: var(--ink-3);
+  font-weight: 600;
+  vertical-align: bottom;
+}
+.nutrition-table--full .nutrition-table-head{ border-bottom: 2px solid var(--ink); }
+.nutrition-table--full .nutrition-table-note{
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-style: italic;
 }
 
 /* ---------- Comparar alternativas ---------- */
