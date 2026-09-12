@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
-<link rel="stylesheet" href="styles.css?v=80">
+<link rel="stylesheet" href="styles.css?v=83">
 </head>
 <body>
 
@@ -170,6 +170,14 @@
             <img class="product-photo" src="assets/probar/barra-cookie-dough-3.png" alt="">
           </button>
         </div>
+        <div class="pdp-thumbs pdp-thumbs--bleed" data-photo-gallery data-photo-gallery-for="Sea Salt Caramel" hidden>
+          <button type="button" class="pdp-thumb active" aria-pressed="true" aria-label="Foto 1" data-photo-img="assets/probar/barra-sea-salt-caramel.png">
+            <img class="product-photo" src="assets/probar/barra-sea-salt-caramel.png" alt="">
+          </button>
+          <button type="button" class="pdp-thumb" aria-pressed="false" aria-label="Información nutricional" data-photo-img="assets/probar/barra-sea-salt-caramel-info.png">
+            <img class="product-photo" src="assets/probar/barra-sea-salt-caramel-info.png" alt="">
+          </button>
+        </div>
       </div>
 
       <div class="pdp-info">
@@ -195,6 +203,7 @@
           <div class="pill-group" data-flavor-group>
             <button type="button" class="pill pill--active" aria-pressed="true" data-flavor-name="Peanut Butter Chocolate" data-flavor-img="assets/probar/barra-peanut-butter-chocolate.png">Peanut Butter Chocolate</button>
             <button type="button" class="pill" aria-pressed="false" data-flavor-name="Cookie Dough" data-flavor-img="assets/probar/barra-cookie-dough.png" data-nutrition='[["Tamaño de porción","1 barra (70 g)"],["Calorías","280 kcal"],["Grasas totales","8 g"],["Carbohidratos totales","33 g"],["Fibra dietética","3 g"],["Azúcares totales","15 g"],["Proteína","20 g"],["Sodio","400 mg"]]'>Cookie Dough</button>
+            <button type="button" class="pill" aria-pressed="false" data-flavor-name="Sea Salt Caramel" data-flavor-img="assets/probar/barra-sea-salt-caramel.png" data-nutrition='[["Tamaño de porción","1 barra (70 g)"],["Calorías","280 kcal"],["Grasas totales","9 g"],["Carbohidratos totales","32 g"],["Fibra dietética","2 g"],["Azúcares totales","13 g"],["Proteína","20 g"],["Sodio","380 mg"]]'>Sea Salt Caramel</button>
           </div>
         </div>
         <div class="pdp-field">
@@ -248,7 +257,7 @@
         <div class="accordion-body">
           <p>La Barra de Proteína de Probar aporta 20 g de proteína vegetal por barra (proteína de soya) con cobertura de chocolate, pensada para la ventana de recuperación después de entrenar o como snack alto en proteína entre comidas.</p>
           <p>Es libre de gluten y de lácteos, sin OGM, con base de aislado de proteína de soya y mantequillas naturales — nada de proteína de suero ni ingredientes de origen animal.</p>
-          <p>Disponible en dos sabores — Peanut Butter Chocolate y Cookie Dough — en barra individual o en cajas de 6, 12 y 24 unidades.</p>
+          <p>Disponible en tres sabores — Peanut Butter Chocolate, Cookie Dough y Sea Salt Caramel — en barra individual o en cajas de 6, 12 y 24 unidades.</p>
         </div>
       </details>
 
@@ -425,18 +434,6 @@
           <li><a href="marca-honey.html">Honey Stinger</a></li>
         </ul>
       </div>
-      <div class="footer-col footer-newsletter">
-        <h4>Boletín</h4>
-        <p style="font-size:13px; color:var(--ink-2)">Protocolos y ofertas, una vez a la semana.</p>
-        <form data-newsletter-form>
-          <label for="footer-email" class="visually-hidden">Correo electrónico</label>
-          <input id="footer-email" type="email" placeholder="tu@correo.com" required>
-          <button type="submit" class="icon-btn" aria-label="Suscribirme al boletín" style="border:1px solid var(--line)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </button>
-        </form>
-        <p class="newsletter-success" data-newsletter-success style="margin-top:10px">Listo, ya estás suscrito.</p>
-      </div>
     </div>
 
     <div class="footer-bottom">
@@ -456,6 +453,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=51"></script>
+<script src="app.js?v=54"></script>
 </body>
 </html>

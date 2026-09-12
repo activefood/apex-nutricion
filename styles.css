@@ -682,6 +682,30 @@ button.pill:hover{ border-color: var(--ink); }
   }
 }
 
+/* Diapositiva "Prepara tu kit para Caracas Rock": gráfico propio, fondo blanco */
+.hero-slide--kit-banner{
+  background-color: #fff;
+  background-image: url('assets/apex/hero-kit-caracasrock-ancho.png');
+  background-size: cover;
+  background-position: center;
+}
+.hero-slide--kit-banner .container{
+  grid-template-columns: 1fr;
+  min-height: 480px;
+  position: relative;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+@media (max-width: 1024px){
+  .hero-slide--kit-banner{
+    background-image: url('assets/apex/hero-kit-caracasrock-movil.png');
+  }
+  .hero-slide--kit-banner .container{
+    aspect-ratio: 3 / 4;
+    min-height: unset;
+  }
+}
+
 .hero-slide--fastchews-banner{
   background-color: #2b76b9;
   background-image: url('assets/saltstick/hero-fastchews-banner.png');
@@ -1235,9 +1259,6 @@ button.pill:hover{ border-color: var(--ink); }
   align-items: center;
   justify-content: center;
   overflow: hidden;
-}
-.feature-media img.product-photo{
-  transform: scale(1.45);
 }
 .feature-copy .eyebrow{ color: var(--accent); }
 .feature-copy h2{ margin-top: var(--sp-3); margin-bottom: var(--sp-4); }
