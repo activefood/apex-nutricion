@@ -292,6 +292,30 @@ function initNewsletterForms(){
   });
 }
 
+/* ---------- Botón "Agregar al carrito" del producto destacado del home ---------- */
+function initFeatureAddToCart(){
+  document.querySelectorAll('[data-add-to-cart-feature]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const grid = btn.closest('.feature-grid');
+      if(!grid) return;
+      const nameEl = grid.querySelector('.feature-copy h2');
+      const photoEl = grid.querySelector('.feature-media img');
+      addItemToCart({
+        name: nameEl ? nameEl.textContent.trim() : '',
+        brand: btn.getAttribute('data-brand') || '',
+        photo: photoEl ? photoEl.src : '',
+        variant: '',
+        unitPrice: parseFloat(btn.getAttribute('data-price')) || 0,
+        quantity: 1
+      });
+      btn.classList.add('added');
+      const label = btn.textContent;
+      btn.textContent = 'Agregado ✓';
+      setTimeout(function(){ btn.textContent = label; btn.classList.remove('added'); }, 1400);
+    });
+  });
+}
+
 /* ---------- Botón "Agregar al carrito" ---------- */
 function initAddToCartButtons(){
   document.querySelectorAll('[data-add-to-cart]').forEach(function(btn){
@@ -1250,6 +1274,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initMobileMenu();
   initNewsletterForms();
   initAddToCartButtons();
+  initFeatureAddToCart();
   initCardAddToCartButtons();
   initFiltersToggle();
   initCategoryFilters();
