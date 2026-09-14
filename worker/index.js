@@ -184,7 +184,7 @@ async function handleCallbackQuery(callbackQuery, appsScriptUrl, botToken) {
 
 async function handleReplyMessage(message, appsScriptUrl, botToken) {
   const originalText = message.reply_to_message.text || '';
-  const match = originalText.match(/para (O-\d+)/);
+  const match = originalText.match(/para (\S+)/);
   if (!match) return;
 
   const orderId = match[1];
