@@ -69,6 +69,7 @@ body{
   font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* nada debe poder abrir scroll horizontal de la página; los carruseles internos (ej. flavor-slider) manejan su propio scroll y no se ven afectados */
 }
 img, svg{ display: block; max-width: 100%; }
 ul{ list-style: none; margin: 0; padding: 0; }
@@ -1789,8 +1790,95 @@ button.pill:hover{ border-color: var(--ink); }
   color: var(--ink);
   margin-bottom: var(--sp-3);
 }
-.pill-group{ display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.pill-group{ display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--sp-2); }
 .pill-group .pill{ height: 36px; padding: 0 16px; }
+
+/* Envuelve cada píldora de Presentación para poder ponerle el % de descuento debajo */
+.pill-slot{ display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pill-discount{
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--sale);
+  padding: 2px 9px;
+  border-radius: 999px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+/* Aviso de que las cajas admiten sabores surtidos, junto al label "Presentación" */
+/* Aviso "dibujado a mano" de que las cajas admiten sabores surtidos:
+   flecha curva en SVG + texto en fuente de marcador, apuntando a los
+   botones de Presentación. */
+.assorted-doodle{
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-top: var(--sp-2);
+  pointer-events: none;
+}
+.assorted-doodle-arrow{ width: 64px; height: 46px; flex-shrink: 0; transform: translateY(6px); }
+.assorted-doodle-text{
+  font-family: 'Permanent Marker', cursive;
+  color: #e0261c;
+  font-size: 19px;
+  line-height: 1.15;
+  transform: rotate(-3deg);
+  white-space: nowrap;
+}
+@media (max-width: 480px){
+  .assorted-doodle-arrow{ width: 48px; height: 36px; }
+  .assorted-doodle-text{ font-size: 15px; }
+}
+
+/* ---------- Selector de sabor tipo carrusel (foto + nombre + precio) ---------- */
+.flavor-slider{ display: flex; align-items: center; gap: var(--sp-2); }
+.flavor-slider-track{
+  display: flex;
+  gap: var(--sp-3);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding: 2px;
+}
+.flavor-slider-track::-webkit-scrollbar{ display: none; }
+.flavor-slider-arrow{
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color var(--ease), color var(--ease);
+}
+.flavor-slider-arrow:hover{ border-color: var(--ink); color: var(--ink); }
+.flavor-slider-arrow svg{ width: 16px; height: 16px; }
+.flavor-card{
+  flex: 0 0 auto;
+  width: 84px;
+  height: auto; /* la clase .pill (compartida, para reusar la lógica de activo/inactivo) trae height:28px fijo — sin este override, el contenido se recortaba */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--paper);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+.flavor-card:hover{ border-color: var(--ink-3); }
+.flavor-card img{ width: 56px; height: 56px; object-fit: contain; }
+.flavor-card-name{ font-size: 11.5px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+.flavor-card-price{ font-size: 11px; color: var(--ink-3); }
+.flavor-card.pill--active{ border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
 
 .pdp-availability{
   display: flex;
@@ -1812,6 +1900,10 @@ button.pill:hover{ border-color: var(--ink); }
   gap: var(--sp-3);
   margin-top: var(--sp-5);
 }
+/* display:flex arriba le gana al [hidden] del navegador (misma especificidad,
+   pero display:flex es una regla de autor) — sin esto, ocultar la fila con
+   JS (.hidden = true) no tenía ningún efecto visual. */
+.pdp-buy-row[hidden]{ display: none; }
 .qty-stepper{
   display: flex;
   align-items: center;
@@ -1837,6 +1929,88 @@ button.pill:hover{ border-color: var(--ink); }
   font-weight: 600;
 }
 .pdp-buy-row .btn{ flex: 1; }
+
+/* ---------- Elegir mezcla de sabores al comprar una caja (x6/x12/x24) ---------- */
+.box-builder{
+  margin-top: var(--sp-5);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-control);
+  padding: var(--sp-4);
+  background: var(--paper);
+}
+.box-builder-head{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.box-builder-title{ font-size: 15px; font-weight: 700; color: var(--ink); }
+.box-builder-subtitle{ font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.box-builder-total{ font-size: 13px; color: var(--ink-3); font-weight: 600; white-space: nowrap; padding-top: 2px; }
+.box-builder-total.is-complete{ color: var(--ok); }
+
+.box-builder-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--sp-3);
+  min-width: 0; /* deja que la grilla se achique dentro de .pdp-info en vez de desbordar */
+}
+.box-builder-card{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0; /* los grid items no se achican bajo su contenido por defecto */
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--paper);
+  text-align: center;
+  transition: border-color var(--ease);
+}
+.box-builder-card:hover{ border-color: var(--ink-3); }
+.box-builder-card img{ width: 100%; max-width: 96px; height: 96px; object-fit: contain; }
+.box-builder-name{ font-size: 13px; font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
+
+/* Clase propia (no reusa .qty-stepper) para que la función genérica del
+   stepper de cantidad de la ficha de producto no se enganche también aquí. */
+.box-qty-stepper{
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  height: 32px;
+  flex-shrink: 0;
+}
+.box-qty-stepper button{
+  width: 32px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  font-size: 14px;
+}
+.box-qty-stepper button:hover{ background: var(--paper-2); }
+.box-qty-stepper output{ width: 28px; text-align: center; font-size: 13px; font-weight: 600; }
+
+.box-builder [data-box-add]{ width: 100%; margin-top: var(--sp-4); }
+.box-builder [data-box-add]:disabled{ opacity: .45; cursor: not-allowed; }
+
+/* De aquí hasta 768px cubre celulares Y tablets chicas — antes solo aplicaba
+   debajo de 480px y dejaba un rango "intermedio" (480-768px) usando la
+   grilla de escritorio, que en pantallas angostas podía verse apretada. */
+@media (max-width: 768px){
+  .box-builder{ padding: var(--sp-3); max-width: 100%; overflow: hidden; }
+  .box-builder-head{ flex-direction: column; align-items: flex-start; gap: 2px; }
+  .box-builder-total{ white-space: normal; }
+  .box-builder-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+  .box-builder-card{ padding: var(--sp-2); min-width: 0; }
+  .box-builder-card img{ max-width: 72px; height: 72px; }
+  .box-qty-stepper{ height: 30px; }
+  .box-qty-stepper button{ width: 28px; }
+}
 
 .pdp-badges{
   display: flex;
@@ -2343,6 +2517,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .cart-line-name{ font-size: 14.5px; font-weight: 600; color: var(--ink); margin-top: 2px; }
 .cart-line-variant{ font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.cart-line-tier-note{ font-size: 12px; color: var(--ok); margin-top: 4px; font-weight: 600; }
 .cart-line-price{ text-align: right; font-size: 15px; font-weight: 700; color: var(--ink); white-space: nowrap; }
 .cart-line-remove{
   width: 32px; height: 32px;

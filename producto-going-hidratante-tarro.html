@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
-<link rel="stylesheet" href="styles.css?v=86">
+<link rel="stylesheet" href="styles.css?v=98">
 </head>
 <body>
 
@@ -168,12 +168,32 @@
         </div>
         <p class="pdp-price-bs" id="pdp-price-bs"></p>
 
-        <div class="pdp-field" hidden>
+        <div class="pdp-field">
           <p class="pdp-field-label">Sabor: <span data-pill-label>Uva</span></p>
-          <div class="pill-group" data-flavor-group>
-            <button type="button" class="pill pill--active" aria-pressed="true" data-flavor-name="Uva" data-flavor-img="assets/going/hidratante-uva.png">Uva</button>
-            <button type="button" class="pill" aria-pressed="false" data-flavor-name="Coco" data-flavor-img="assets/going/hidratante-coco.png">Coco</button>
-            <button type="button" class="pill" aria-pressed="false" data-flavor-name="Pitaya" data-flavor-img="assets/going/hidratante-pitaya.png">Pitaya</button>
+          <div class="flavor-slider">
+            <button type="button" class="flavor-slider-arrow flavor-slider-prev" aria-label="Sabor anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="flavor-slider-track" data-flavor-group>
+            <button type="button" class="flavor-card pill pill--active" aria-pressed="true" data-flavor-name="Uva" data-flavor-img="assets/going/hidratante-uva.png">
+              <img src="assets/going/hidratante-uva.png" alt="Uva" width="56" height="56">
+              <span class="flavor-card-name">Uva</span>
+              <span class="flavor-card-price">$25,99</span>
+            </button>
+            <button type="button" class="flavor-card pill" aria-pressed="false" data-flavor-name="Coco" data-flavor-img="assets/going/hidratante-coco.png">
+              <img src="assets/going/hidratante-coco.png" alt="Coco" width="56" height="56">
+              <span class="flavor-card-name">Coco</span>
+              <span class="flavor-card-price">$25,99</span>
+            </button>
+            <button type="button" class="flavor-card pill" aria-pressed="false" data-flavor-name="Pitaya" data-flavor-img="assets/going/hidratante-pitaya.png">
+              <img src="assets/going/hidratante-pitaya.png" alt="Pitaya" width="56" height="56">
+              <span class="flavor-card-name">Pitaya</span>
+              <span class="flavor-card-price">$25,99</span>
+            </button>
+            </div>
+            <button type="button" class="flavor-slider-arrow flavor-slider-next" aria-label="Siguiente sabor">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
 
@@ -191,20 +211,6 @@
           <button type="button" class="btn btn--primary" data-add-to-cart-qty>Agregar al carrito</button>
         </div>
 
-        <div class="pdp-badges">
-          <span class="pdp-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="14" height="11"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/></svg>
-            Despacho en 24–48h
-          </span>
-          <span class="pdp-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/><polyline points="9 12 11 14 15 10"/></svg>
-            Producto 100% original
-          </span>
-          <span class="pdp-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 2-9.5L1 10"/></svg>
-            Cambios dentro de 7 días
-          </span>
-        </div>
       </div>
     </div>
 
@@ -433,6 +439,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=56"></script>
+<script src="app.js?v=63"></script>
 </body>
 </html>

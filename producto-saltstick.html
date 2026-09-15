@@ -15,12 +15,12 @@
 <meta name="description" content="Masticables FastChews de SaltStick: electrolitos de acción rápida, sin cafeína. Cuatro sabores, despacho en 24–48h en Venezuela.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Permanent+Marker&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
-<link rel="stylesheet" href="styles.css?v=86">
+<link rel="stylesheet" href="styles.css?v=98">
 </head>
 <body>
 
@@ -204,13 +204,48 @@
         <p class="pdp-price-bs" id="pdp-price-bs"></p>
 
         <div class="pdp-field">
+          <p class="pdp-field-label">Sabor: <span data-pill-label>Naranja</span></p>
+          <div class="flavor-slider">
+            <button type="button" class="flavor-slider-arrow flavor-slider-prev" aria-label="Sabor anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="flavor-slider-track" data-gallery-flavor-group>
+              <button type="button" class="flavor-card pill pill--active" aria-pressed="true" data-gallery-flavor="Naranja">
+                <img src="assets/saltstick/fastchews-packet-tartorange.png" alt="Naranja" width="56" height="56">
+                <span class="flavor-card-name">Naranja</span>
+                <span class="flavor-card-price">$5,99</span>
+              </button>
+              <button type="button" class="flavor-card pill" aria-pressed="false" data-gallery-flavor="Frutos Rojos">
+                <img src="assets/saltstick/fastchews-packet-mixedberry.png" alt="Frutos Rojos" width="56" height="56">
+                <span class="flavor-card-name">Frutos Rojos</span>
+                <span class="flavor-card-price">$5,99</span>
+              </button>
+              <button type="button" class="flavor-card pill" aria-pressed="false" data-gallery-flavor="Limón Lima">
+                <img src="assets/saltstick/fastchews-packet-lemonlime.png" alt="Limón Lima" width="56" height="56">
+                <span class="flavor-card-name">Limón Lima</span>
+                <span class="flavor-card-price">$5,99</span>
+              </button>
+              <button type="button" class="flavor-card pill" aria-pressed="false" data-gallery-flavor="Limonada Rosada">
+                <img src="assets/saltstick/fastchews-packet-pinklemonade.png" alt="Limonada Rosada" width="56" height="56">
+                <span class="flavor-card-name">Limonada Rosada</span>
+                <span class="flavor-card-price">$5,99</span>
+              </button>
+            </div>
+            <button type="button" class="flavor-slider-arrow flavor-slider-next" aria-label="Siguiente sabor">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="pdp-field">
           <p class="pdp-field-label">Presentación</p>
           <div class="pill-group" data-pill-group="presentation">
-            <button type="button" class="pill pill--active" aria-pressed="true" data-price="5.99" data-unit-label="por sobre de 10 unidades" data-package-type="packet">Individual</button>
-            <button type="button" class="pill" aria-pressed="false" data-price="33.78" data-unit-label="caja de 6 sobres ($5,63 c/u)" data-package-type="box">Caja x6</button>
-            <button type="button" class="pill" aria-pressed="false" data-price="66.12" data-unit-label="caja de 12 sobres ($5,51 c/u)" data-package-type="box">Caja x12</button>
-            <button type="button" class="pill" aria-pressed="false" data-price="129.36" data-unit-label="caja de 24 sobres ($5,39 c/u)" data-package-type="box">Caja x24</button>
+            <div class="pill-slot"><button type="button" class="pill pill--active" aria-pressed="true" data-price="5.99" data-unit-label="por sobre de 10 unidades" data-package-type="packet">Individual</button></div>
+            <div class="pill-slot"><button type="button" class="pill" aria-pressed="false" data-price="33.78" data-unit-label="caja de 6 sobres ($5,63 c/u)" data-package-type="box">Caja x6</button><span class="pill-discount">-6%</span></div>
+            <div class="pill-slot"><button type="button" class="pill" aria-pressed="false" data-price="66.12" data-unit-label="caja de 12 sobres ($5,51 c/u)" data-package-type="box">Caja x12</button><span class="pill-discount">-8%</span></div>
+            <div class="pill-slot"><button type="button" class="pill" aria-pressed="false" data-price="129.36" data-unit-label="caja de 24 sobres ($5,39 c/u)" data-package-type="box">Caja x24</button><span class="pill-discount">-10%</span></div>
           </div>
+          <div class="assorted-doodle"><svg class="assorted-doodle-arrow" viewBox="0 0 100 70" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 62 C 28 42, 52 18, 86 8" stroke="#e0261c" stroke-width="5" stroke-linecap="round"/><path d="M86 8 L72 9 M86 8 L79 21" stroke="#e0261c" stroke-width="5" stroke-linecap="round"/></svg><span class="assorted-doodle-text">¡Puedes escoger<br>surtidos!!!</span></div>
         </div>
 
         <p class="pdp-availability">
@@ -227,20 +262,6 @@
           <button type="button" class="btn btn--primary" data-add-to-cart-qty>Agregar al carrito</button>
         </div>
 
-        <div class="pdp-badges">
-          <span class="pdp-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="14" height="11"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/></svg>
-            Despacho en 24–48h
-          </span>
-          <span class="pdp-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/><polyline points="9 12 11 14 15 10"/></svg>
-            Producto 100% original
-          </span>
-          <span class="pdp-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 2-9.5L1 10"/></svg>
-            Cambios dentro de 7 días
-          </span>
-        </div>
       </div>
     </div>
 
@@ -472,6 +493,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=56"></script>
+<script src="app.js?v=63"></script>
 </body>
 </html>

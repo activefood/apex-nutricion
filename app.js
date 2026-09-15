@@ -147,20 +147,81 @@ function initCartCount(){
   });
 }
 
+// Tope de unidades por línea del carrito. Antes era 10 pensando en "cantidad
+// de tarros/paquetes"; ahora que las cajas (x6/x12/x24) se guardan como
+// unidades individuales para poder mezclar sabores, 10 sería demasiado bajo
+// (ni siquiera cabría una sola caja de x12).
+const CART_LINE_QTY_MAX = 120;
+
 /* Agrega un producto al carrito real, combinando cantidad si ya existe la misma variante. */
 function addItemToCart(item){
   const cart = getCart();
   const existing = cart.find(function(c){ return c.name === item.name && c.brand === item.brand && c.variant === item.variant; });
   if(existing){
-    existing.quantity = Math.min(10, existing.quantity + item.quantity);
+    existing.quantity = Math.min(CART_LINE_QTY_MAX, existing.quantity + item.quantity);
   } else {
-    cart.push({ name: item.name, brand: item.brand, photo: item.photo, variant: item.variant, unitPrice: item.unitPrice, quantity: Math.min(10, item.quantity) });
+    cart.push({
+      name: item.name,
+      brand: item.brand,
+      photo: item.photo,
+      variant: item.variant,
+      unitPrice: item.unitPrice,
+      quantity: Math.min(CART_LINE_QTY_MAX, item.quantity),
+      // "family" agrupa sabores de un mismo producto (ej. FastChews Naranja
+      // y Frutos Rojos comparten family) para poder sumar unidades entre
+      // sabores y aplicar el descuento por cantidad aunque estén mezclados.
+      // "tiers" es la tabla de precios por unidad en cada tramo (1/6/12/24)
+      // tal como está configurada en la ficha de ese producto.
+      family: item.family || null,
+      tiers: item.tiers || null
+    });
   }
   saveCart(cart);
   initCartCount();
 }
 
-/* Lee el producto/precio/foto actuales de la ficha (ya reflejan el sabor/presentación elegidos) y lo agrega al carrito real. */
+/* Agrupa el carrito por "family" y recalcula el precio por unidad de cada
+   línea según el total combinado de unidades de esa familia (sumando todos
+   los sabores). Tramos: si el total llega al umbral de una caja (6/12/24),
+   TODAS las unidades de esa familia pagan el precio por unidad de esa caja,
+   sin importar cómo estén repartidas entre sabores. No modifica el carrito
+   guardado — devuelve una copia con el unitPrice ya recalculado. */
+function applyFamilyPricing(cart){
+  const totalsByFamily = {};
+  cart.forEach(function(item){
+    if(!item.family) return;
+    totalsByFamily[item.family] = (totalsByFamily[item.family] || 0) + item.quantity;
+  });
+
+  return cart.map(function(item){
+    if(!item.family || !item.tiers || !item.tiers.length) return item;
+    const totalQty = totalsByFamily[item.family];
+    let bestTier = item.tiers[0];
+    item.tiers.forEach(function(tier){
+      if(totalQty >= tier.units && tier.units >= bestTier.units) bestTier = tier;
+    });
+    if(bestTier.unitPrice === item.unitPrice && bestTier.units <= 1) return item;
+    const priced = Object.assign({}, item);
+    priced.unitPrice = bestTier.unitPrice;
+    priced.appliedTierUnits = bestTier.units;
+    return priced;
+  });
+}
+
+// Lee cuántas unidades representa una píldora de presentación ("Individual" = 1,
+// "Caja x6" = 6, etc.) a partir de su propio texto, para no depender de ningún
+// atributo nuevo en el HTML.
+function pillUnits(pill){
+  if(!pill) return 1;
+  const match = pill.textContent.trim().match(/Caja\s*x\s*(\d+)/i);
+  return match ? parseInt(match[1], 10) : 1;
+}
+
+/* Lee el producto/precio/foto actuales de la ficha (ya reflejan el sabor/presentación elegidos) y lo agrega al carrito real.
+   Si la ficha tiene selector de "Presentación" (cajas de 6/12/24), la cantidad
+   se guarda como unidades individuales (no cajas) y se etiqueta con una
+   "family" — así el carrito puede sumar unidades de distintos sabores de la
+   misma ficha y aplicar el descuento por volumen aunque el cliente mezcle. */
 function addProductToCart(quantity){
   const titleEl = document.getElementById('pdp-main-title');
   const priceEl = document.getElementById('pdp-price');
@@ -169,13 +230,36 @@ function addProductToCart(quantity){
   const unitEl = document.querySelector('.pdp-price-unit');
   if(!titleEl || !priceEl) return;
 
+  const presentationGroup = document.querySelector('[data-pill-group="presentation"]');
+  const totalPrice = parseFloat(priceEl.textContent.replace(/[^0-9,.-]/g, '').replace(',', '.')) || 0;
+
+  let family = null;
+  let tiers = null;
+  let units = 1;
+
+  if(presentationGroup){
+    const activePill = presentationGroup.querySelector('.pill--active') || presentationGroup.querySelector('.pill');
+    units = pillUnits(activePill);
+    tiers = Array.from(presentationGroup.querySelectorAll('.pill')).map(function(pill){
+      const n = pillUnits(pill);
+      const total = parseFloat(pill.dataset.price) || 0;
+      return { units: n, unitPrice: n > 0 ? total / n : total };
+    });
+    family = window.location.pathname;
+  }
+
+  const totalUnits = units * quantity;
+  const unitPrice = units > 0 ? totalPrice / units : totalPrice;
+
   addItemToCart({
     name: titleEl.textContent.trim(),
     brand: brandEl ? brandEl.textContent.trim() : '',
     photo: photoEl ? photoEl.src : '',
-    variant: unitEl ? unitEl.textContent.trim() : '',
-    unitPrice: parseFloat(priceEl.textContent.replace(/[^0-9,.-]/g, '').replace(',', '.')) || 0,
-    quantity: quantity
+    variant: family ? (totalUnits + ' unidad' + (totalUnits === 1 ? '' : 'es')) : (unitEl ? unitEl.textContent.trim() : ''),
+    unitPrice: unitPrice,
+    quantity: family ? totalUnits : quantity,
+    family: family,
+    tiers: tiers
   });
 }
 
@@ -615,6 +699,156 @@ function initPdpPresentationSelector(){
   });
 }
 
+/* ---------- Elegir mezcla de sabores al comprar una caja (x6/x12/x24) ----------
+   Cuando el cliente selecciona una presentación de caja, en vez del stepper
+   normal se muestra un panel para repartir las unidades entre los sabores
+   disponibles. Cada sabor se agrega como una línea de carrito aparte, con la
+   misma "family" — así el descuento por volumen (applyFamilyPricing) se
+   aplica automáticamente sobre el total combinado, igual que si el cliente
+   hubiera agregado cada sabor por separado. */
+function initBoxFlavorBuilder(){
+  const presentationGroup = document.querySelector('[data-pill-group="presentation"]');
+  const flavorTrack = document.querySelector('.flavor-slider-track');
+  if(!presentationGroup || !flavorTrack) return;
+
+  const flavors = Array.from(flavorTrack.querySelectorAll('.flavor-card')).map(function(card){
+    const img = card.querySelector('img');
+    return {
+      name: card.dataset.flavorName || card.dataset.galleryFlavor || '',
+      img: img ? img.src : ''
+    };
+  }).filter(function(f){ return f.name; });
+  if(flavors.length < 2) return;
+
+  const buyRow = document.querySelector('.pdp-buy-row');
+  if(!buyRow) return;
+
+  const panel = document.createElement('div');
+  panel.className = 'box-builder';
+  panel.hidden = true;
+  panel.innerHTML =
+    '<div class="box-builder-head">' +
+      '<div>' +
+        '<p class="box-builder-title">Elige tus <span data-box-target>6</span> unidades</p>' +
+        '<p class="box-builder-subtitle">Puedes mezclar sabores</p>' +
+      '</div>' +
+      '<p class="box-builder-total"><span data-box-count>0</span> / <span data-box-target-2>6</span> seleccionados</p>' +
+    '</div>' +
+    '<div class="box-builder-grid">' +
+    flavors.map(function(f){
+      return '<div class="box-builder-card" data-box-flavor="' + escapeHtml(f.name) + '">' +
+        '<img src="' + escapeHtml(f.img) + '" alt="">' +
+        '<span class="box-builder-name">' + escapeHtml(f.name) + '</span>' +
+        '<div class="box-qty-stepper" role="group" aria-label="Cantidad de ' + escapeHtml(f.name) + '">' +
+          '<button type="button" data-box-decrease aria-label="Reducir">−</button>' +
+          '<output>0</output>' +
+          '<button type="button" data-box-increase aria-label="Aumentar">+</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '</div>' +
+    '<button type="button" class="btn btn--primary" data-box-add disabled>Agregar caja al carrito</button>';
+
+  buyRow.parentNode.insertBefore(panel, buyRow);
+
+  let target = 6;
+  const rows = Array.from(panel.querySelectorAll('.box-builder-card'));
+  const countEl = panel.querySelector('[data-box-count]');
+  const totalEl = panel.querySelector('.box-builder-total');
+  const addBtn = panel.querySelector('[data-box-add]');
+  const targetEls = panel.querySelectorAll('[data-box-target], [data-box-target-2]');
+
+  function currentTotal(){
+    return rows.reduce(function(sum, row){
+      return sum + (parseInt(row.querySelector('output').textContent, 10) || 0);
+    }, 0);
+  }
+
+  function refresh(){
+    const total = currentTotal();
+    countEl.textContent = total;
+    const complete = total === target;
+    addBtn.disabled = !complete;
+    totalEl.classList.toggle('is-complete', complete);
+  }
+
+  rows.forEach(function(row){
+    const output = row.querySelector('output');
+    row.querySelector('[data-box-decrease]').addEventListener('click', function(){
+      const v = Math.max(0, (parseInt(output.textContent, 10) || 0) - 1);
+      output.textContent = String(v);
+      refresh();
+    });
+    row.querySelector('[data-box-increase]').addEventListener('click', function(){
+      if(currentTotal() >= target) return;
+      const v = (parseInt(output.textContent, 10) || 0) + 1;
+      output.textContent = String(v);
+      refresh();
+    });
+  });
+
+  addBtn.addEventListener('click', function(){
+    if(currentTotal() !== target) return;
+
+    const titleEl = document.getElementById('pdp-main-title');
+    const brandEl = document.querySelector('.pdp-brand');
+    const activePill = presentationGroup.querySelector('.pill--active');
+    const totalPrice = parseFloat(activePill.dataset.price) || 0;
+    const unitPrice = target > 0 ? totalPrice / target : totalPrice;
+    const family = window.location.pathname;
+    const tiers = Array.from(presentationGroup.querySelectorAll('.pill')).map(function(pill){
+      const n = pillUnits(pill);
+      const t = parseFloat(pill.dataset.price) || 0;
+      return { units: n, unitPrice: n > 0 ? t / n : t };
+    });
+    const brand = brandEl ? brandEl.textContent.trim() : '';
+    const namePrefix = titleEl ? (titleEl.dataset.titlePrefix || '') : '';
+
+    rows.forEach(function(row){
+      const qty = parseInt(row.querySelector('output').textContent, 10) || 0;
+      if(qty <= 0) return;
+      const flavorName = row.dataset.boxFlavor;
+      const img = row.querySelector('img').src;
+      addItemToCart({
+        name: namePrefix ? (namePrefix + flavorName) : flavorName,
+        brand: brand,
+        photo: img,
+        variant: qty + ' unidad' + (qty === 1 ? '' : 'es'),
+        unitPrice: unitPrice,
+        quantity: qty,
+        family: family,
+        tiers: tiers
+      });
+    });
+
+    rows.forEach(function(row){ row.querySelector('output').textContent = '0'; });
+    refresh();
+
+    const label = addBtn.textContent;
+    addBtn.textContent = 'Agregado ✓';
+    setTimeout(function(){ addBtn.textContent = label; }, 1400);
+  });
+
+  function syncVisibility(){
+    const activePill = presentationGroup.querySelector('.pill--active');
+    const units = pillUnits(activePill);
+    const isBox = units > 1;
+    panel.hidden = !isBox;
+    buyRow.hidden = isBox;
+    if(isBox){
+      target = units;
+      targetEls.forEach(function(el){ el.textContent = String(units); });
+      rows.forEach(function(row){ row.querySelector('output').textContent = '0'; });
+      refresh();
+    }
+  }
+
+  presentationGroup.querySelectorAll('.pill').forEach(function(pill){
+    pill.addEventListener('click', syncVisibility);
+  });
+  syncVisibility();
+}
+
 /* ---------- Galería de producto (varias fotos por sabor, sincronizada con sabor y presentación) ---------- */
 function initPdpGallery(){
   const root = document.querySelector('[data-gallery]');
@@ -685,6 +919,29 @@ function initPdpGallery(){
 }
 
 /* ---------- Selectores tipo píldora (sabor, presentación, miniaturas) ---------- */
+/* ---------- Flechas del carrusel de sabor (foto/nombre/precio) ----------
+   Solo maneja el scroll horizontal con las flechas — de cuál sabor queda
+   seleccionado se encarga initPdpFlavorSelector o initPdpGallery, según
+   qué atributos (data-flavor-group o data-gallery-flavor-group) tenga la
+   ficha; esta función no necesita saber cuál de los dos es. */
+function initFlavorSliders(){
+  document.querySelectorAll('.flavor-slider').forEach(function(slider){
+    const track = slider.querySelector('.flavor-slider-track');
+    const prev = slider.querySelector('.flavor-slider-prev');
+    const next = slider.querySelector('.flavor-slider-next');
+    if(!track) return;
+
+    function scrollByCard(direction){
+      const card = track.querySelector('.flavor-card');
+      const amount = (card ? card.offsetWidth + 12 : 100) * direction;
+      track.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
+    if(prev) prev.addEventListener('click', function(){ scrollByCard(-1); });
+    if(next) next.addEventListener('click', function(){ scrollByCard(1); });
+  });
+}
+
 function initPillGroups(){
   document.querySelectorAll('[data-pill-group]').forEach(function(group){
     const options = Array.from(group.querySelectorAll('.pill, .pdp-thumb'));
@@ -887,7 +1144,22 @@ function initCartPage(){
     if(layout) layout.hidden = false;
     if(emptyState) emptyState.hidden = true;
 
-    list.innerHTML = cart.map(function(item, index){
+    // El precio por unidad de cada línea se recalcula según el total combinado
+    // de esa "family" (sumando todos los sabores) — así se aplica el
+    // descuento por caja aunque el cliente haya mezclado sabores.
+    const pricedCart = applyFamilyPricing(cart);
+
+    list.innerHTML = pricedCart.map(function(item, index){
+      const tierNote = item.family && item.appliedTierUnits > 1
+        ? '<p class="cart-line-tier-note">✓ Precio por volumen aplicado (caja x' + item.appliedTierUnits + ', combinando sabores)</p>'
+        : '';
+      // Para productos por familia, "variant" describe la cantidad ("N
+      // unidades") — se recalcula con la cantidad actual de la línea en vez
+      // de usar el texto fijo guardado al agregarlo, para que no quede
+      // desactualizado cuando el cliente cambia la cantidad en el carrito.
+      const variantText = item.family
+        ? (item.quantity + ' unidad' + (item.quantity === 1 ? '' : 'es'))
+        : item.variant;
       return (
         '<div class="cart-line" data-index="' + index + '">' +
           '<div class="cart-line-media">' +
@@ -896,7 +1168,8 @@ function initCartPage(){
           '<div class="cart-line-info">' +
             '<p class="cart-line-brand">' + escapeHtml(item.brand) + '</p>' +
             '<p class="cart-line-name">' + escapeHtml(item.name) + '</p>' +
-            '<p class="cart-line-variant">' + escapeHtml(item.variant) + '</p>' +
+            '<p class="cart-line-variant">' + escapeHtml(variantText) + '</p>' +
+            tierNote +
           '</div>' +
           '<div class="cart-line-qty">' +
             '<div class="qty-stepper" role="group" aria-label="Cantidad">' +
@@ -927,7 +1200,7 @@ function initCartPage(){
       });
       if(increase) increase.addEventListener('click', function(){
         const c = getCart();
-        c[index].quantity = Math.min(10, c[index].quantity + 1);
+        c[index].quantity = Math.min(CART_LINE_QTY_MAX, c[index].quantity + 1);
         saveCart(c);
         render();
       });
@@ -939,7 +1212,7 @@ function initCartPage(){
       });
     });
 
-    const subtotal = cartSubtotal(cart);
+    const subtotal = cartSubtotal(pricedCart);
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = "a coordinar" (MRW) | undefined = todavía no elige estado/zona
     let shipping;
@@ -1043,14 +1316,19 @@ function initCheckoutButton(){
     }
     if(errorEl) errorEl.hidden = true;
 
-    const subtotal = cartSubtotal(cart);
+    // Precio final por unidad ya con el descuento por volumen aplicado
+    // (sumando sabores de la misma familia de producto) — esto es lo que
+    // se cobra de verdad y lo que se registra en el pedido.
+    const pricedCart = applyFamilyPricing(cart);
+
+    const subtotal = cartSubtotal(pricedCart);
     let shipping = 0;
     if(deliveryCtx.type === 'pickup') shipping = 0;
     else if(deliveryCtx.isCaracas) shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_COST;
     else shipping = null; // MRW, a coordinar
     const total = subtotal + (shipping || 0);
 
-    const items = cart.map(function(item){
+    const items = pricedCart.map(function(item){
       return { brand: item.brand, product: item.name, unitPrice: item.unitPrice, quantity: item.quantity };
     });
 
@@ -1071,7 +1349,7 @@ function initCheckoutButton(){
     }
 
     // 2) Abrir WhatsApp de inmediato, sin esperar la respuesta del registro.
-    const lines = cart.map(function(item){
+    const lines = pricedCart.map(function(item){
       return '• ' + item.name + ' x' + item.quantity + ' — ' + formatPrice(item.unitPrice * item.quantity);
     });
     const bsSuffix = function(usd){
@@ -1279,6 +1557,8 @@ document.addEventListener('DOMContentLoaded', function(){
   initFiltersToggle();
   initCategoryFilters();
   initPillGroups();
+  initFlavorSliders();
+  initBoxFlavorBuilder();
   initPdpFlavorSelector();
   initPdpGallery();
   initPdpPhotoGallery();
