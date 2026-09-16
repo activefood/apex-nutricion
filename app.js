@@ -1365,6 +1365,11 @@ function initCheckoutButton(){
         '\nEstado: ' + deliveryCtx.state +
         '\n' + (deliveryCtx.isCaracas ? 'Zona' : 'Dirección') + ': ' + location;
 
+    const paymentLine = '\n\nDatos para pago móvil:' +
+      '\nBanco: Banesco' +
+      '\nTeléfono: 0414-2333620' +
+      '\nC.I.: 9879375';
+
     const message = 'Hola, quiero hacer este pedido:\n\n' +
       lines.join('\n') +
       '\n\nSubtotal: ' + formatPrice(subtotal) + bsSuffix(subtotal) +
@@ -1372,7 +1377,8 @@ function initCheckoutButton(){
       '\nTotal: ' + formatPrice(total) + bsSuffix(total) + (shipping === null ? ' + envío' : '') +
       (bcvRate != null ? '\n\nTasa BCV: Bs ' + formatBsNumber(1) : '') +
       '\n\nNombre: ' + customerName +
-      deliveryLine;
+      deliveryLine +
+      paymentLine;
 
     const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message);
     window.location.href = waUrl;
