@@ -160,19 +160,29 @@ async function handleTelegramWebhook(request, env) {
 async function handleCallbackQuery(callbackQuery, appsScriptUrl, botToken) {
   const data = callbackQuery.data || '';
   const chatId = callbackQuery.message.chat.id;
+  const messageId = callbackQuery.message.message_id;
   const parts = data.split(':');
   const action = parts[0];
   const orderId = parts[1];
 
   await answerCallbackQuery(botToken, callbackQuery.id);
 
-  if (action === 'priceother') {
-    await sendTelegramMessage(botToken, chatId, 'Escribe el delivery para ' + orderId + ' (un monto como 8, o una nota como "Coordinar por WhatsApp"):', {
-      force_reply: true
-    });
-    return;
+  // Le quita los botones a ESTE mensaje apenas se presiona uno, para que no se
+  // pueda volver a tocar (ni ese ni el otro botón del mismo mensaje) y así
+  // evitar reprocesar la orden y que se sigan mandando mensajes sobre algo
+  // que ya fue resuelto. Si falla (mensaje muy viejo, etc.) no debe frenar el
+  // resto de la acción, por eso va en su propio try/catch.
+  try {
+    await stripInlineKeyboard(botToken, chatId, messageId);
+  } catch (err) {
+    console.error('[telegram-webhook] stripInlineKeyboard failed: ' + String(err));
   }
 
+  // 'priceother' también se maneja igual que las demás acciones: Apps Script
+  // es quien decide qué texto/botones va en el mensaje único de la orden (y,
+  // para este caso puntual, también manda el mensaje aparte con force_reply
+  // pidiendo el monto, porque Telegram no permite pedir texto libre editando
+  // un mensaje existente).
   const body = { source: 'netlify-telegram', action: action, orderId: orderId };
   if (parts[2] !== undefined) body.value = parts[2];
 
@@ -200,6 +210,16 @@ async function handleReplyMessage(message, appsScriptUrl, botToken) {
 
   if (!result || result.ok === false) {
     await sendTelegramMessage(botToken, chatId, 'No se pudo registrar el monto: ' + (result && result.error), null);
+    return;
+  }
+
+  // Limpieza: borra el mensaje "Escribe el delivery para..." ya que cumplió
+  // su propósito. Así el chat no va acumulando prompts viejos y queda un
+  // solo mensaje vivo por orden.
+  try {
+    await deleteTelegramMessage(botToken, chatId, message.reply_to_message.message_id);
+  } catch (err) {
+    console.error('[telegram-webhook] deleteTelegramMessage failed: ' + String(err));
   }
 }
 
@@ -237,6 +257,31 @@ async function answerCallbackQuery(botToken, callbackQueryId, text) {
   if (text) params.set('text', text);
 
   await fetch('https://api.telegram.org/bot' + botToken + '/answerCallbackQuery', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  });
+}
+
+async function deleteTelegramMessage(botToken, chatId, messageId) {
+  const params = new URLSearchParams();
+  params.set('chat_id', String(chatId));
+  params.set('message_id', String(messageId));
+
+  await fetch('https://api.telegram.org/bot' + botToken + '/deleteMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  });
+}
+
+async function stripInlineKeyboard(botToken, chatId, messageId) {
+  const params = new URLSearchParams();
+  params.set('chat_id', String(chatId));
+  params.set('message_id', String(messageId));
+  params.set('reply_markup', JSON.stringify({ inline_keyboard: [] }));
+
+  await fetch('https://api.telegram.org/bot' + botToken + '/editMessageReplyMarkup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString()
