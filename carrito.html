@@ -240,6 +240,16 @@
               <label for="checkout-zone">Zona de despacho</label>
               <input id="checkout-zone" type="text" placeholder="Ej. Caracas - Chacao" autocomplete="address-line1">
             </div>
+            <div id="mrw-fields" hidden>
+              <div class="checkout-field">
+                <label for="checkout-ci">Cédula de identidad (C.I.)</label>
+                <input id="checkout-ci" type="text" placeholder="Ej. V-12.345.678" autocomplete="off" inputmode="numeric">
+              </div>
+              <div class="checkout-field">
+                <label for="checkout-mrw-address">Dirección de la agencia MRW</label>
+                <input id="checkout-mrw-address" type="text" placeholder="Nombre y dirección de la agencia MRW donde recibirás el pedido" autocomplete="off">
+              </div>
+            </div>
           </div>
 
           <p class="checkout-error" id="checkout-error" hidden></p>
@@ -327,6 +337,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=64"></script>
+<script src="app.js?v=65"></script>
 </body>
 </html>

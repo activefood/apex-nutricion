@@ -1077,6 +1077,7 @@ function initDeliveryType(){
   const zoneField = document.getElementById('checkout-zone-field');
   const zoneLabel = zoneField ? zoneField.querySelector('label') : null;
   const zoneInput = document.getElementById('checkout-zone');
+  const mrwFields = document.getElementById('mrw-fields');
 
   function refresh(){
     const ctx = getDeliveryContext();
@@ -1086,8 +1087,10 @@ function initDeliveryType(){
     if(ctx.type === 'delivery'){
       const hasState = ctx.state !== '';
       const isMiranda = ctx.state === 'Miranda';
+      const isMrw = hasState && !ctx.isCaracas;
       if(caracasNote) caracasNote.hidden = !(hasState && ctx.isCaracas);
-      if(mrwNote) mrwNote.hidden = !(hasState && !ctx.isCaracas);
+      if(mrwNote) mrwNote.hidden = !isMrw;
+      if(mrwFields) mrwFields.hidden = !isMrw;
       if(zoneField) zoneField.hidden = !hasState;
       if(zoneLabel){
         zoneLabel.textContent = (ctx.isCaracas || isMiranda) ? 'Zona de despacho' : 'Dirección de envío (MRW)';
@@ -1291,6 +1294,8 @@ function initCheckoutButton(){
   const nameInput = document.getElementById('checkout-name');
   const zoneInput = document.getElementById('checkout-zone');
   const stateSelect = document.getElementById('checkout-state');
+  const ciInput = document.getElementById('checkout-ci');
+  const mrwAddressInput = document.getElementById('checkout-mrw-address');
   const errorEl = document.getElementById('checkout-error');
   if(!btn) return;
 
@@ -1299,19 +1304,23 @@ function initCheckoutButton(){
     if(cart.length === 0) return;
 
     const deliveryCtx = getDeliveryContext();
+    const isMrw = deliveryCtx.type === 'delivery' && !deliveryCtx.isCaracas;
     const customerName = nameInput ? nameInput.value.trim() : '';
     const location = zoneInput ? zoneInput.value.trim() : '';
+    const ci = ciInput ? ciInput.value.trim() : '';
+    const mrwAddress = mrwAddressInput ? mrwAddressInput.value.trim() : '';
 
     let missingMsg = '';
-    if(!customerName) missingMsg = 'Por favor completa tu nombre.';
-    else if(deliveryCtx.type === 'delivery' && !deliveryCtx.state) missingMsg = 'Por favor selecciona tu estado.';
-    else if(deliveryCtx.type === 'delivery' && !location) missingMsg = deliveryCtx.isCaracas ? 'Por favor completa tu zona de despacho.' : 'Por favor completa tu dirección de envío.';
+    let focusEl = null;
+    if(!customerName){ missingMsg = 'Por favor completa tu nombre.'; focusEl = nameInput; }
+    else if(deliveryCtx.type === 'delivery' && !deliveryCtx.state){ missingMsg = 'Por favor selecciona tu estado.'; focusEl = stateSelect; }
+    else if(deliveryCtx.type === 'delivery' && !location){ missingMsg = deliveryCtx.isCaracas ? 'Por favor completa tu zona de despacho.' : 'Por favor completa tu dirección de envío.'; focusEl = zoneInput; }
+    else if(isMrw && !ci){ missingMsg = 'Por favor completa tu cédula de identidad.'; focusEl = ciInput; }
+    else if(isMrw && !mrwAddress){ missingMsg = 'Por favor completa la dirección de la agencia MRW.'; focusEl = mrwAddressInput; }
 
     if(missingMsg){
       if(errorEl){ errorEl.textContent = missingMsg; errorEl.hidden = false; }
-      if(!customerName && nameInput) nameInput.focus();
-      else if(deliveryCtx.type === 'delivery' && !deliveryCtx.state && stateSelect) stateSelect.focus();
-      else if(zoneInput) zoneInput.focus();
+      if(focusEl) focusEl.focus();
       return;
     }
     if(errorEl) errorEl.hidden = true;
@@ -1340,6 +1349,10 @@ function initCheckoutButton(){
       total: total,
       items: items
     };
+    if(isMrw){
+      orderPayload.ci = ci;
+      orderPayload.mrwAddress = mrwAddress;
+    }
 
     // 1) Registrar el pedido en segundo plano — sendBeacon sigue funcionando aunque la página navegue a WhatsApp.
     try {
@@ -1363,7 +1376,8 @@ function initCheckoutButton(){
       ? '\n\nTipo de entrega: Pickup\nUbicación: https://maps.app.goo.gl/TbLsaqxRNXJYe4zb9'
       : '\n\nTipo de entrega: Delivery' +
         '\nEstado: ' + deliveryCtx.state +
-        '\n' + (deliveryCtx.isCaracas ? 'Zona' : 'Dirección') + ': ' + location;
+        '\n' + (deliveryCtx.isCaracas ? 'Zona' : 'Dirección') + ': ' + location +
+        (isMrw ? '\nC.I.: ' + ci + '\nAgencia MRW: ' + mrwAddress : '');
 
     const paymentLine = '\n\nDatos para pago móvil:' +
       '\nBanco: Banesco' +
