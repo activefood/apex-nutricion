@@ -297,6 +297,13 @@ function initCardAddToCartButtons(){
   });
 }
 
+/* El nombre del producto siempre termina en la marca, pero para Going se
+   usa la forma corta "Going" en vez del nombre completo "Going Nutrición"
+   (que sí se sigue mostrando tal cual en la etiqueta de marca aparte). */
+function shortBrandName(brand){
+  return brand === 'Going Nutrición' ? 'Going' : brand;
+}
+
 function escapeHtml(str){
   return String(str)
     .replace(/&/g, '&amp;')
@@ -615,6 +622,12 @@ function initPdpFlavorSelector(){
   const mainTitle = document.getElementById('pdp-main-title');
   const label = document.querySelector('[data-pill-label]');
   const allOptions = groups.reduce(function(acc, g){ return acc.concat(Array.from(g.children)); }, []);
+  // El nombre del producto siempre termina en la marca (p. ej. "... Honey
+  // Stinger") — se toma una sola vez de <p class="pdp-brand"> y se reaplica
+  // cada vez que se reconstruye el título al cambiar de sabor, para no
+  // perderlo.
+  const brandEl = document.querySelector('.pdp-brand');
+  const brandSuffix = brandEl && brandEl.textContent.trim() ? ' ' + shortBrandName(brandEl.textContent.trim()) : '';
 
   function selectFlavor(name, img){
     let matchedOpt = null;
@@ -627,7 +640,7 @@ function initPdpFlavorSelector(){
     });
     if(mainPhoto && img) mainPhoto.src = withImgV(img);
     if(mainPhoto && img) mainPhoto.alt = (mainPhoto.dataset.altPrefix || '') + name;
-    if(mainTitle) mainTitle.textContent = (mainTitle.dataset.titlePrefix || '') + name;
+    if(mainTitle) mainTitle.textContent = (mainTitle.dataset.titlePrefix || '') + name + brandSuffix;
     if(label) label.textContent = name;
     applyNutrition(matchedOpt);
     /* Muestra la galería de fotos extra solo del sabor activo, y la reinicia en la primera foto */
@@ -809,8 +822,9 @@ function initBoxFlavorBuilder(){
       if(qty <= 0) return;
       const flavorName = row.dataset.boxFlavor;
       const img = row.querySelector('img').src;
+      const baseName = namePrefix ? (namePrefix + flavorName) : flavorName;
       addItemToCart({
-        name: namePrefix ? (namePrefix + flavorName) : flavorName,
+        name: brand ? (baseName + ' ' + shortBrandName(brand)) : baseName,
         brand: brand,
         photo: img,
         variant: qty + ' unidad' + (qty === 1 ? '' : 'es'),
@@ -859,6 +873,10 @@ function initPdpGallery(){
   const label = document.querySelector('[data-pill-label]');
   const thumbs = Array.from(root.querySelectorAll('[data-gallery-flavor]'));
   const flavorPills = Array.from(document.querySelectorAll('[data-gallery-flavor-group] [data-gallery-flavor]'));
+  // Igual que en initPdpFlavorSelector: el nombre del producto siempre
+  // termina en la marca, tomada una sola vez de <p class="pdp-brand">.
+  const brandEl = document.querySelector('.pdp-brand');
+  const brandSuffix = brandEl && brandEl.textContent.trim() ? ' ' + shortBrandName(brandEl.textContent.trim()) : '';
 
   const activePresentationPill = document.querySelector('[data-pill-group="presentation"] .pill--active');
   const urlFlavor = new URLSearchParams(window.location.search).get('flavor');
@@ -899,7 +917,7 @@ function initPdpGallery(){
       p.setAttribute('aria-pressed', String(on));
     });
     if(label) label.textContent = flavor;
-    if(mainTitle) mainTitle.textContent = (mainTitle.dataset.titlePrefix || '') + flavor;
+    if(mainTitle) mainTitle.textContent = (mainTitle.dataset.titlePrefix || '') + flavor + brandSuffix;
   }
 
   thumbs.forEach(function(t){
