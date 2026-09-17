@@ -1067,10 +1067,6 @@ button.pill:hover{ border-color: var(--ink); }
   font-weight: 600;
   color: var(--ink);
   margin-top: 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   min-height: 2.6em;
 }
 .product-stat{
@@ -1704,6 +1700,7 @@ button.pill:hover{ border-color: var(--ink); }
   gap: 52px;
   padding: var(--sp-2) 0 var(--sp-9);
 }
+.pdp-grid > *{ min-width: 0; }
 
 .pdp-main-image{
   aspect-ratio: 1;
@@ -1740,7 +1737,7 @@ button.pill:hover{ border-color: var(--ink); }
 .pdp-thumb .product-placeholder{ font-size: 8.5px; border-radius: 3px; }
 /* .pdp-thumbs--bleed ya no quita el fondo: todas las miniaturas usan el mismo fondo azul claro */
 
-.pdp-info{ padding-top: var(--sp-2); }
+.pdp-info{ padding-top: var(--sp-2); min-width: 0; }
 .pdp-brand{
   font-size: 11px;
   text-transform: uppercase;
@@ -1783,7 +1780,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .pdp-box-line strong{ color: var(--ok); font-weight: 700; }
 
-.pdp-field{ margin-top: var(--sp-6); }
+.pdp-field{ margin-top: var(--sp-6); min-width: 0; }
 .pdp-field-label{
   font-size: 12.5px;
   font-weight: 700;
@@ -1832,7 +1829,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 
 /* ---------- Selector de sabor tipo carrusel (foto + nombre + precio) ---------- */
-.flavor-slider{ display: flex; align-items: center; gap: var(--sp-2); }
+.flavor-slider{ display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
 .flavor-slider-track{
   display: flex;
   gap: var(--sp-3);
@@ -1840,6 +1837,7 @@ button.pill:hover{ border-color: var(--ink); }
   scroll-behavior: smooth;
   scrollbar-width: none;
   padding: 2px;
+  min-width: 0;
 }
 .flavor-slider-track::-webkit-scrollbar{ display: none; }
 .flavor-slider-arrow{
