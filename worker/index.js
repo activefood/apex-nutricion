@@ -12,6 +12,9 @@ export default {
     if (url.pathname === '/api/submit-review') {
       return handleSubmitReview(request, env);
     }
+    if (url.pathname === '/api/check-welcome-coupon') {
+      return handleCheckWelcomeCoupon(request, env);
+    }
     if (url.pathname === '/api/telegram-webhook') {
       return handleTelegramWebhook(request, env);
     }
@@ -85,6 +88,36 @@ async function handleSubmitReview(request, env) {
   }
 
   return forwardAndRelay(appsScriptUrl, { source: 'website-review', payload }, '[submit-review]');
+}
+
+/* ---------- /api/check-welcome-coupon ----------
+   Consulta de solo lectura: cruza nombre + teléfono contra pedidos
+   anteriores en la hoja para decidir si el código de bienvenida (10% en la
+   primera compra) es válido para esta persona. No escribe nada ni manda
+   Telegram — es independiente del flujo de registrar un pedido. */
+async function handleCheckWelcomeCoupon(request, env) {
+  if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
+
+  const appsScriptUrl = env.APPS_SCRIPT_URL;
+  if (!appsScriptUrl) {
+    console.error('[check-welcome-coupon] Falta APPS_SCRIPT_URL en variables de entorno');
+    return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (err) {
+    return json({ ok: false, error: 'Invalid payload (bad JSON)' }, 400);
+  }
+
+  const name = payload && typeof payload.name === 'string' ? payload.name.trim() : '';
+  const phone = payload && typeof payload.phone === 'string' ? payload.phone.trim() : '';
+  if (!name || !phone) {
+    return json({ ok: false, error: 'Missing name or phone' }, 400);
+  }
+
+  return forwardAndRelay(appsScriptUrl, { source: 'check-welcome-coupon', payload: { name, phone } }, '[check-welcome-coupon]');
 }
 
 async function forwardAndRelay(appsScriptUrl, body, logTag) {

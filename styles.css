@@ -2538,6 +2538,7 @@ button.pill:hover{ border-color: var(--ink); }
   padding: var(--sp-6);
 }
 .cart-summary h2{ font-size: 17px; margin-bottom: var(--sp-4); }
+.summary-row[hidden]{ display: none; }
 .summary-row{
   display: flex;
   align-items: center;
@@ -2672,6 +2673,19 @@ button.pill:hover{ border-color: var(--ink); }
   color: var(--ink-3);
   margin-top: var(--sp-2);
 }
+.coupon-note.ok{ color: var(--ok); }
+.coupon-note.error{ color: var(--sale); }
+
+.welcome-coupon-banner{
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--accent-sf);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-control);
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+#cart-discount-row .summary-amount{ color: var(--ok); }
 
 /* ---------- Estado vacío ---------- */
 .cart-empty{

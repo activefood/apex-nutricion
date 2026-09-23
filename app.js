@@ -16,6 +16,36 @@ function initImageCacheBust(){
   });
 }
 
+/* ---------- Cupón de bienvenida (10% en la primera compra) ----------
+   No hay cuentas de usuario, así que "primera compra" se detecta por
+   navegador: si este dispositivo/navegador nunca completó un pedido con el
+   código, se ofrece y se aplica en el carrito. Se puede evitar con
+   incógnito/otro dispositivo — es una limitación conocida y aceptada, sin
+   verificación adicional del lado del backend. */
+const WELCOME_COUPON_CODE = 'BIENVENIDO10';
+const WELCOME_COUPON_RATE = 0.10;
+const WELCOME_COUPON_STORAGE_KEY = 'apex_welcome_coupon_used';
+let appliedCoupon = null; // { code, rate } mientras dure la sesión del carrito, o null
+
+function hasUsedWelcomeCoupon(){
+  try { return localStorage.getItem(WELCOME_COUPON_STORAGE_KEY) === '1'; }
+  catch(e){ return false; }
+}
+function markWelcomeCouponUsed(){
+  try { localStorage.setItem(WELCOME_COUPON_STORAGE_KEY, '1'); } catch(e){}
+}
+
+/* Barra negra de anuncio (arriba del header, en todas las páginas): le
+   muestra el código de bienvenida a quien todavía no lo haya usado, en vez
+   del mensaje fijo de envío gratis. */
+function initAnnounceBar(){
+  const el = document.querySelector('.announce p');
+  if(!el) return;
+  if(!hasUsedWelcomeCoupon()){
+    el.innerHTML = '🎉 <strong>10% OFF</strong> en tu primera compra con el código <strong>BIENVENIDO10</strong>';
+  }
+}
+
 /* ---------- Tasa BCV (Banco Central de Venezuela) ---------- */
 const BCV_CACHE_KEY = 'apex_bcv_rate';
 let bcvRate = null; // Bs por $1, null hasta que se obtenga (o si falla)
@@ -1152,6 +1182,12 @@ function initCartPage(){
   const shippingEl = document.getElementById('cart-shipping');
   const shippingNoteEl = document.getElementById('cart-shipping-note');
   const totalEl = document.getElementById('cart-total');
+  const discountRowEl = document.getElementById('cart-discount-row');
+  const discountEl = document.getElementById('cart-discount');
+  const discountBsEl = document.getElementById('cart-discount-bs');
+  const welcomeBannerEl = document.getElementById('welcome-coupon-banner');
+
+  if(welcomeBannerEl) welcomeBannerEl.hidden = hasUsedWelcomeCoupon() || !!appliedCoupon;
 
   function render(){
     const cart = getCart();
@@ -1234,6 +1270,9 @@ function initCartPage(){
     });
 
     const subtotal = cartSubtotal(pricedCart);
+    // El descuento no afecta el umbral de envío gratis — se calcula sobre
+    // el subtotal real, no sobre el subtotal ya rebajado.
+    const discount = appliedCoupon ? subtotal * appliedCoupon.rate : 0;
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = "a coordinar" (MRW) | undefined = todavía no elige estado/zona
     let shipping;
@@ -1247,11 +1286,13 @@ function initCartPage(){
       shipping = null; // MRW, se coordina
     }
     const pending = shipping === undefined;
-    const total = subtotal + (shipping || 0);
+    const total = (subtotal - discount) + (shipping || 0);
 
     if(subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
+    if(discountRowEl) discountRowEl.hidden = discount <= 0;
+    if(discountEl) discountEl.textContent = '-' + formatPrice(discount);
     if(shippingEl) shippingEl.textContent = pending ? '—' : (shipping === null ? 'A coordinar' : (shipping === 0 ? 'Gratis' : formatPrice(shipping)));
-    if(totalEl) totalEl.textContent = pending ? formatPrice(subtotal) + ' + envío' : (formatPrice(total) + (shipping === null ? ' + envío' : ''));
+    if(totalEl) totalEl.textContent = pending ? formatPrice(subtotal - discount) + ' + envío' : (formatPrice(total) + (shipping === null ? ' + envío' : ''));
     if(shippingNoteEl){
       if(pending){
         shippingNoteEl.textContent = 'Selecciona tu estado para ver el costo de envío.';
@@ -1278,11 +1319,13 @@ function initCartPage(){
     if(bcvRate != null){
       if(rateNoteEl) rateNoteEl.textContent = 'Tasa BCV: Bs ' + formatBsNumber(1);
       if(subtotalBsEl) subtotalBsEl.textContent = 'Bs ' + formatBsNumber(subtotal);
+      if(discountBsEl) discountBsEl.textContent = discount > 0 ? '-Bs ' + formatBsNumber(discount) : '';
       if(shippingBsEl) shippingBsEl.textContent = (pending || shipping === 0 || shipping === null) ? '' : 'Bs ' + formatBsNumber(shipping);
-      if(totalBsEl) totalBsEl.textContent = pending ? 'Bs ' + formatBsNumber(subtotal) : 'Bs ' + formatBsNumber(total);
+      if(totalBsEl) totalBsEl.textContent = pending ? 'Bs ' + formatBsNumber(subtotal - discount) : 'Bs ' + formatBsNumber(total);
     } else {
       if(rateNoteEl) rateNoteEl.textContent = 'Tasa BCV no disponible por ahora.';
       if(subtotalBsEl) subtotalBsEl.textContent = '';
+      if(discountBsEl) discountBsEl.textContent = '';
       if(shippingBsEl) shippingBsEl.textContent = '';
       if(totalBsEl) totalBsEl.textContent = '';
     }
@@ -1293,11 +1336,79 @@ function initCartPage(){
   window.__apexCartRerender = render;
 
   const couponForm = document.getElementById('coupon-form');
+  const couponInput = document.getElementById('coupon');
   const couponNote = document.getElementById('coupon-note');
+  const couponSubmitBtn = couponForm ? couponForm.querySelector('button[type="submit"]') : null;
+
+  function showCouponNote(text, kind){
+    if(!couponNote) return;
+    couponNote.textContent = text;
+    couponNote.className = 'coupon-note' + (kind ? ' ' + kind : '');
+    couponNote.hidden = false;
+  }
+
   if(couponForm){
     couponForm.addEventListener('submit', function(e){
       e.preventDefault();
-      if(couponNote) couponNote.hidden = false;
+      const code = couponInput ? couponInput.value.trim() : '';
+      if(!code) return;
+
+      if(code.toUpperCase() !== WELCOME_COUPON_CODE){
+        showCouponNote('Código no válido.', 'error');
+        return;
+      }
+      if(hasUsedWelcomeCoupon()){
+        showCouponNote('Código no válido.', 'error');
+        return;
+      }
+
+      // El código es de "primera compra" de verdad: se cruza nombre +
+      // teléfono contra pedidos anteriores en el backend, no solo si este
+      // navegador ya lo usó (eso se evita fácil con incógnito/otro
+      // dispositivo).
+      const nameEl = document.getElementById('checkout-name');
+      const phoneEl = document.getElementById('checkout-phone');
+      const name = nameEl ? nameEl.value.trim() : '';
+      const phone = phoneEl ? phoneEl.value.trim() : '';
+      if(!name){
+        showCouponNote('Completa tu nombre arriba antes de aplicar el código.', 'error');
+        if(nameEl) nameEl.focus();
+        return;
+      }
+      if(!phone){
+        showCouponNote('Completa tu teléfono arriba antes de aplicar el código.', 'error');
+        if(phoneEl) phoneEl.focus();
+        return;
+      }
+
+      if(couponSubmitBtn) couponSubmitBtn.disabled = true;
+      showCouponNote('Verificando código…', '');
+
+      fetch('/api/check-welcome-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, phone: phone })
+      })
+        .then(function(res){ return res.json(); })
+        .then(function(data){
+          if(data && data.ok && data.eligible){
+            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE };
+            if(welcomeBannerEl) welcomeBannerEl.hidden = true;
+            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.', 'ok');
+          } else {
+            appliedCoupon = null;
+            showCouponNote('Código no válido.', 'error');
+          }
+          render();
+        })
+        .catch(function(){
+          appliedCoupon = null;
+          showCouponNote('No se pudo verificar el código. Intenta de nuevo.', 'error');
+          render();
+        })
+        .finally(function(){
+          if(couponSubmitBtn) couponSubmitBtn.disabled = false;
+        });
     });
   }
 
@@ -1310,6 +1421,7 @@ function initCartPage(){
 function initCheckoutButton(){
   const btn = document.getElementById('checkout-whatsapp');
   const nameInput = document.getElementById('checkout-name');
+  const phoneInput = document.getElementById('checkout-phone');
   const zoneInput = document.getElementById('checkout-zone');
   const stateSelect = document.getElementById('checkout-state');
   const ciInput = document.getElementById('checkout-ci');
@@ -1324,6 +1436,7 @@ function initCheckoutButton(){
     const deliveryCtx = getDeliveryContext();
     const isMrw = deliveryCtx.type === 'delivery' && !deliveryCtx.isCaracas;
     const customerName = nameInput ? nameInput.value.trim() : '';
+    const phone = phoneInput ? phoneInput.value.trim() : '';
     const location = zoneInput ? zoneInput.value.trim() : '';
     const ci = ciInput ? ciInput.value.trim() : '';
     const mrwAddress = mrwAddressInput ? mrwAddressInput.value.trim() : '';
@@ -1331,6 +1444,7 @@ function initCheckoutButton(){
     let missingMsg = '';
     let focusEl = null;
     if(!customerName){ missingMsg = 'Por favor completa tu nombre.'; focusEl = nameInput; }
+    else if(!phone){ missingMsg = 'Por favor completa tu teléfono.'; focusEl = phoneInput; }
     else if(deliveryCtx.type === 'delivery' && !deliveryCtx.state){ missingMsg = 'Por favor selecciona tu estado.'; focusEl = stateSelect; }
     else if(deliveryCtx.type === 'delivery' && !location){ missingMsg = deliveryCtx.isCaracas ? 'Por favor completa tu zona de despacho.' : 'Por favor completa tu dirección de envío.'; focusEl = zoneInput; }
     else if(isMrw && !ci){ missingMsg = 'Por favor completa tu cédula de identidad.'; focusEl = ciInput; }
@@ -1349,18 +1463,27 @@ function initCheckoutButton(){
     const pricedCart = applyFamilyPricing(cart);
 
     const subtotal = cartSubtotal(pricedCart);
+    // El envío gratis se decide sobre el subtotal real (sin descuento), para
+    // que el 10% de bienvenida no le haga perder a nadie el envío gratis.
     let shipping = 0;
     if(deliveryCtx.type === 'pickup') shipping = 0;
     else if(deliveryCtx.isCaracas) shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_COST;
     else shipping = null; // MRW, a coordinar
-    const total = subtotal + (shipping || 0);
+    const discount = appliedCoupon ? subtotal * appliedCoupon.rate : 0;
+    const discountedSubtotal = subtotal - discount;
+    const total = discountedSubtotal + (shipping || 0);
 
+    // El descuento se reparte proporcionalmente en el precio unitario de
+    // cada línea, para que el total que se registra en la hoja y en
+    // Telegram sea exactamente lo que el cliente debe pagar.
+    const priceMultiplier = appliedCoupon ? (1 - appliedCoupon.rate) : 1;
     const items = pricedCart.map(function(item){
-      return { brand: item.brand, product: item.name, unitPrice: item.unitPrice, quantity: item.quantity };
+      return { brand: item.brand, product: item.name, unitPrice: item.unitPrice * priceMultiplier, quantity: item.quantity };
     });
 
     const orderPayload = {
       customerName: customerName,
+      phone: phone,
       location: deliveryCtx.type === 'pickup' ? 'Pickup' : location,
       deliveryType: deliveryCtx.type,
       state: deliveryCtx.state,
@@ -1402,18 +1525,27 @@ function initCheckoutButton(){
       '\nTeléfono: 0414-2333620' +
       '\nC.I.: 9879375';
 
+    const discountLine = appliedCoupon
+      ? '\nDescuento (código ' + appliedCoupon.code + '): -' + formatPrice(discount) + bsSuffix(discount)
+      : '';
+
     const message = 'Hola, quiero hacer este pedido:\n\n' +
       lines.join('\n') +
       '\n\nSubtotal: ' + formatPrice(subtotal) + bsSuffix(subtotal) +
+      discountLine +
       '\nEnvío: ' + shippingLine +
       '\nTotal: ' + formatPrice(total) + bsSuffix(total) + (shipping === null ? ' + envío' : '') +
       (bcvRate != null ? '\n\nTasa BCV: Bs ' + formatBsNumber(1) : '') +
       '\n\nNombre: ' + customerName +
+      '\nTeléfono: ' + phone +
       deliveryLine +
       paymentLine;
 
     const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message);
     window.location.href = waUrl;
+
+    // El código de bienvenida ya se usó en este navegador — no se vuelve a ofrecer.
+    if(appliedCoupon) markWelcomeCouponUsed();
 
     // Vaciar el carrito ya que el pedido quedó "enviado" hacia WhatsApp.
     saveCart([]);
@@ -1585,6 +1717,7 @@ function initReviewForm(){
 
 document.addEventListener('DOMContentLoaded', function(){
   initImageCacheBust();
+  initAnnounceBar();
   initCartCount();
   initMegaMenu();
   initMobileMenu();
