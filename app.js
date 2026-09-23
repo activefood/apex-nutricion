@@ -35,14 +35,14 @@ function markWelcomeCouponUsed(){
   try { localStorage.setItem(WELCOME_COUPON_STORAGE_KEY, '1'); } catch(e){}
 }
 
-/* Barra negra de anuncio (arriba del header, en todas las páginas): le
-   muestra el código de bienvenida a quien todavía no lo haya usado, en vez
-   del mensaje fijo de envío gratis. */
+/* Barra negra de anuncio (arriba del header, en todas las páginas): a quien
+   todavía no haya usado el código de bienvenida le suma ese mensaje al de
+   envío gratis (que queda fijo, siempre visible). */
 function initAnnounceBar(){
   const el = document.querySelector('.announce p');
   if(!el) return;
   if(!hasUsedWelcomeCoupon()){
-    el.innerHTML = '🎉 <strong>10% OFF</strong> en tu primera compra con el código <strong>APEX2026</strong>';
+    el.innerHTML = '🎉 <strong>10% OFF</strong> en tu primera compra con el código <strong>APEX2026</strong> &nbsp;·&nbsp; Envío gratis desde <strong>$30</strong> en Caracas';
   }
 }
 
