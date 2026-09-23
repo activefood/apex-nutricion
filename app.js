@@ -22,7 +22,7 @@ function initImageCacheBust(){
    código, se ofrece y se aplica en el carrito. Se puede evitar con
    incógnito/otro dispositivo — es una limitación conocida y aceptada, sin
    verificación adicional del lado del backend. */
-const WELCOME_COUPON_CODE = 'BIENVENIDO10';
+const WELCOME_COUPON_CODE = 'APEX2026';
 const WELCOME_COUPON_RATE = 0.10;
 const WELCOME_COUPON_STORAGE_KEY = 'apex_welcome_coupon_used';
 let appliedCoupon = null; // { code, rate } mientras dure la sesión del carrito, o null
@@ -42,7 +42,7 @@ function initAnnounceBar(){
   const el = document.querySelector('.announce p');
   if(!el) return;
   if(!hasUsedWelcomeCoupon()){
-    el.innerHTML = '🎉 <strong>10% OFF</strong> en tu primera compra con el código <strong>BIENVENIDO10</strong>';
+    el.innerHTML = '🎉 <strong>10% OFF</strong> en tu primera compra con el código <strong>APEX2026</strong>';
   }
 }
 
