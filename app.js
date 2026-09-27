@@ -1090,9 +1090,32 @@ const FREE_SHIPPING_AT = 30;
 const SHIPPING_COST = 6;
 const CARACAS_STATES = ['Distrito Capital'];
 // Miranda cuenta como "envío estándar $6" si la zona escrita cae dentro del
-// área metropolitana de Caracas — mismo criterio que usa el bot de Telegram
-// (CARACAS_ZONE_RE en Code.gs), para que ambos lados coincidan.
-const CARACAS_ZONE_KEYWORDS = ['hatillo', 'oripoto', 'la lagunita', 'lagunita', 'la boyera', 'boyera', 'loma alta', 'los naranjos', 'la union', 'la unión', 'alto hatillo', 'chacao', 'baruta', 'petare', 'libertador', 'caracas'];
+// área metropolitana de Caracas — mismo criterio y misma lista que usa el
+// bot de Telegram (CARACAS_ZONE_KEYWORDS en Code.gs); mantener ambas iguales.
+// Cubre los 4 municipios de Miranda que forman la Gran Caracas junto con
+// Libertador/Distrito Capital (que ya cuenta aparte, por estado, arriba).
+const CARACAS_ZONE_KEYWORDS = [
+  // Genérico
+  'caracas', 'distrito capital', 'libertador',
+  // Chacao
+  'chacao', 'altamira', 'bello campo', 'campo alegre', 'chuao', 'country club',
+  'el bosque', 'el dorado', 'el pedregal', 'el retiro', 'el rosal', 'estado leal',
+  'la castellana', 'la floresta', 'los palos grandes', 'san marino', 'sans souci', 'chacaito',
+  // Baruta
+  'baruta', 'las mercedes', 'la trinidad', 'el cafetal', 'santa marta', 'santa sofia',
+  'san luis', 'santa paula', 'cerro verde', 'las minas', 'colinas de bello monte',
+  'valle arriba', 'cumbres de curumo', 'caurimare', 'lomas del sol',
+  // El Hatillo
+  'hatillo', 'oripoto', 'la lagunita', 'lagunita', 'la boyera', 'boyera', 'loma alta',
+  'los naranjos', 'la union', 'la unión', 'alto hatillo',
+  // Sucre (Petare y alrededores)
+  'petare', 'caucagüita', 'filas de mariche', 'la dolorita', 'leoncio martinez',
+  'las brisas de petare', 'buena vista', 'campo claro', 'colinas de la california',
+  'la california', 'el llanito', 'la carlota', 'la lucha', 'la urbina', 'los chorros',
+  'los dos caminos', 'los ruices', 'macaracuay', 'monseñor lebrun', 'montecristo',
+  'parque miranda', 'parque francisco de miranda', 'san miguel', 'santa cecilia',
+  'santa eduvigis', 'sebucan', 'boleita', 'horizonte', 'los cortijos'
+];
 
 function normalizeText(s){
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
