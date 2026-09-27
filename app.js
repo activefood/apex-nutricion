@@ -1089,16 +1089,18 @@ const WHATSAPP_NUMBER = '584143695233';
 const FREE_SHIPPING_AT = 30;
 const SHIPPING_COST = 6;
 const CARACAS_STATES = ['Distrito Capital'];
-// Miranda solo cuenta como "envío estándar $6" si la zona escrita está cerca de El Hatillo.
-const HATILLO_KEYWORDS = ['hatillo', 'oripoto', 'la lagunita', 'lagunita', 'la boyera', 'boyera', 'loma alta', 'los naranjos', 'la union', 'la unión', 'alto hatillo'];
+// Miranda cuenta como "envío estándar $6" si la zona escrita cae dentro del
+// área metropolitana de Caracas — mismo criterio que usa el bot de Telegram
+// (CARACAS_ZONE_RE en Code.gs), para que ambos lados coincidan.
+const CARACAS_ZONE_KEYWORDS = ['hatillo', 'oripoto', 'la lagunita', 'lagunita', 'la boyera', 'boyera', 'loma alta', 'los naranjos', 'la union', 'la unión', 'alto hatillo', 'chacao', 'baruta', 'petare', 'libertador', 'caracas'];
 
 function normalizeText(s){
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
-function isNearHatillo(zoneText){
+function isCaracasZoneText(zoneText){
   const t = normalizeText(zoneText);
   if(!t) return false;
-  return HATILLO_KEYWORDS.some(function(kw){ return t.indexOf(normalizeText(kw)) !== -1; });
+  return CARACAS_ZONE_KEYWORDS.some(function(kw){ return t.indexOf(normalizeText(kw)) !== -1; });
 }
 
 /* ---------- Tipo de entrega (Pickup / Delivery) ---------- */
@@ -1109,7 +1111,7 @@ function getDeliveryContext(){
   const state = stateSelect ? stateSelect.value : '';
   const zoneInput = document.getElementById('checkout-zone');
   const zoneText = zoneInput ? zoneInput.value : '';
-  const isCaracas = CARACAS_STATES.indexOf(state) !== -1 || (state === 'Miranda' && isNearHatillo(zoneText));
+  const isCaracas = CARACAS_STATES.indexOf(state) !== -1 || (state === 'Miranda' && isCaracasZoneText(zoneText));
   return { type: type, state: state, isCaracas: isCaracas, zoneText: zoneText };
 }
 
