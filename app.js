@@ -1099,22 +1099,25 @@ const CARACAS_ZONE_KEYWORDS = [
   'caracas', 'distrito capital', 'libertador',
   // Chacao
   'chacao', 'altamira', 'bello campo', 'campo alegre', 'chuao', 'country club',
-  'el bosque', 'el dorado', 'el pedregal', 'el retiro', 'el rosal', 'estado leal',
+  'el bosque', 'el pedregal', 'el rosal', 'estado leal',
   'la castellana', 'la floresta', 'los palos grandes', 'san marino', 'sans souci', 'chacaito',
   // Baruta
   'baruta', 'las mercedes', 'la trinidad', 'el cafetal', 'santa marta', 'santa sofia',
   'san luis', 'santa paula', 'cerro verde', 'las minas', 'colinas de bello monte',
   'valle arriba', 'cumbres de curumo', 'caurimare', 'lomas del sol',
+  'cafetal', 'santa fe', 'bello monte', 'prados del este', 'los samanes', 'el placer',
+  'santa rosa de lima', 'la tahona', 'sorocaima', 'la guairita', 'el penon', 'club hipico',
+  'alto prado', 'manzanares',
   // El Hatillo
   'hatillo', 'oripoto', 'la lagunita', 'lagunita', 'la boyera', 'boyera', 'loma alta',
   'los naranjos', 'la union', 'la unión', 'alto hatillo',
   // Sucre (Petare y alrededores)
   'petare', 'caucagüita', 'filas de mariche', 'la dolorita', 'leoncio martinez',
-  'las brisas de petare', 'buena vista', 'campo claro', 'colinas de la california',
-  'la california', 'el llanito', 'la carlota', 'la lucha', 'la urbina', 'los chorros',
+  'las brisas de petare', 'campo claro', 'colinas de la california',
+  'la california', 'el llanito', 'la carlota', 'urbina', 'los chorros',
   'los dos caminos', 'los ruices', 'macaracuay', 'monseñor lebrun', 'montecristo',
-  'parque miranda', 'parque francisco de miranda', 'san miguel', 'santa cecilia',
-  'santa eduvigis', 'sebucan', 'boleita', 'horizonte', 'los cortijos'
+  'parque miranda', 'parque francisco de miranda', 'santa cecilia',
+  'santa eduvigis', 'sebucan', 'boleita', 'los cortijos', 'palo verde', 'el marques', 'mariche'
 ];
 
 function normalizeText(s){
