@@ -7,7 +7,16 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-8QH40K8HJK');
+  // Tráfico del equipo: abrir cualquier página con ?interno=1 marca este
+  // navegador como interno (con ?interno=0 se desmarca), para poder
+  // excluirlo de los datos de clientes en GA4.
+  var apexGaConfig = {};
+  try {
+    if(/[?&]interno=1\b/.test(location.search)) localStorage.setItem('apex_interno', '1');
+    if(/[?&]interno=0\b/.test(location.search)) localStorage.removeItem('apex_interno');
+    if(localStorage.getItem('apex_interno') === '1') apexGaConfig.traffic_type = 'internal';
+  } catch(e){}
+  gtag('config', 'G-8QH40K8HJK', apexGaConfig);
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,7 +30,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
-<link rel="stylesheet" href="styles.css?v=104">
+<link rel="stylesheet" href="styles.css?v=105">
 </head>
 <body>
 
@@ -352,6 +361,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=78"></script>
+<script src="app.js?v=79"></script>
 </body>
 </html>
