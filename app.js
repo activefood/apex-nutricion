@@ -146,6 +146,13 @@ function injectPdpBsPrice(){
   bsEl.textContent = '≈ Bs ' + bsFormatted + ' · Tasa BCV: Bs ' + formatBsNumber(1);
 }
 
+/* ---------- Eventos de embudo para GA4 (view_item / add_to_cart / begin_checkout) ----------
+   Antes el sitio solo mandaba el pageview automático — no había forma de ver en
+   qué paso se cae la gente entre entrar y llegar a WhatsApp. */
+function trackEvent(name, params){
+  try { if(typeof gtag === 'function') gtag('event', name, params || {}); } catch(e){}
+}
+
 /* ---------- Carrito real (localStorage) ---------- */
 const CART_STORAGE_KEY = 'apex_cart';
 
@@ -208,6 +215,11 @@ function addItemToCart(item){
   }
   saveCart(cart);
   initCartCount();
+  trackEvent('add_to_cart', {
+    currency: 'USD',
+    value: item.unitPrice * item.quantity,
+    items: [{ item_name: item.name, item_brand: item.brand, price: item.unitPrice, quantity: item.quantity }]
+  });
 }
 
 /* Agrupa el carrito por "family" y recalcula el precio por unidad de cada
@@ -1569,6 +1581,8 @@ function initCheckoutButton(){
       deliveryLine +
       paymentLine;
 
+    trackEvent('begin_checkout', { currency: 'USD', value: total, coupon: appliedCoupon ? appliedCoupon.code : undefined });
+
     const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message);
     window.location.href = waUrl;
 
@@ -1743,6 +1757,18 @@ function initReviewForm(){
   });
 }
 
+function trackPdpViewItem(){
+  const titleEl = document.getElementById('pdp-main-title');
+  const priceEl = document.getElementById('pdp-price');
+  const brandEl = document.querySelector('.pdp-brand');
+  if(!titleEl) return;
+  trackEvent('view_item', {
+    currency: 'USD',
+    value: priceEl ? parsePriceText(priceEl.textContent) || undefined : undefined,
+    items: [{ item_name: titleEl.textContent.trim(), item_brand: brandEl ? brandEl.textContent.trim() : '' }]
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function(){
   initImageCacheBust();
   initAnnounceBar();
@@ -1762,6 +1788,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initPdpGallery();
   initPdpPhotoGallery();
   initPdpPresentationSelector();
+  trackPdpViewItem();
   initQuantitySteppers();
   initArticleFilter();
   initArticleToc();
