@@ -12,6 +12,9 @@ export default {
     if (url.pathname === '/api/submit-review') {
       return handleSubmitReview(request, env);
     }
+    if (url.pathname === '/api/get-reviews') {
+      return handleGetReviews(request, env);
+    }
     if (url.pathname === '/api/check-welcome-coupon') {
       return handleCheckWelcomeCoupon(request, env);
     }
@@ -88,6 +91,30 @@ async function handleSubmitReview(request, env) {
   }
 
   return forwardAndRelay(appsScriptUrl, { source: 'website-review', payload }, '[submit-review]');
+}
+
+/* ---------- /api/get-reviews ----------
+   Consulta de solo lectura: devuelve las reseñas ya guardadas para un
+   producto, para mostrarlas en la ficha (antes solo se podían escribir,
+   nunca se mostraban las que ya existían). */
+async function handleGetReviews(request, env) {
+  if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
+
+  const appsScriptUrl = env.APPS_SCRIPT_URL;
+  if (!appsScriptUrl) {
+    console.error('[get-reviews] Falta APPS_SCRIPT_URL en variables de entorno');
+    return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (err) {
+    payload = {};
+  }
+
+  const product = payload && typeof payload.product === 'string' ? payload.product.trim() : '';
+  return forwardAndRelay(appsScriptUrl, { source: 'get-reviews', payload: { product: product } }, '[get-reviews]');
 }
 
 /* ---------- /api/check-welcome-coupon ----------

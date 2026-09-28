@@ -1769,6 +1769,64 @@ function trackPdpViewItem(){
   });
 }
 
+/* ---------- Reseñas ya publicadas (ficha de producto) ----------
+   Antes solo se podían ESCRIBIR reseñas, nunca se mostraban las que ya
+   existían — un cliente nuevo no veía ninguna prueba social. Si el producto
+   todavía no tiene reseñas, esto no cambia nada visible (se queda igual que
+   antes, sin bloque vacío). */
+const STAR_PATH = '<polygon points="12 2 15 9 22 9.5 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.5 9 9"/>';
+function renderStars(rating){
+  const rounded = Math.round(rating);
+  let out = '';
+  for(let i = 1; i <= 5; i++){
+    const filled = i <= rounded;
+    out += '<svg viewBox="0 0 24 24" fill="' + (filled ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="' + (filled ? '0' : '1.5') + '" class="' + (filled ? 'star-filled' : 'star-empty') + '">' + STAR_PATH + '</svg>';
+  }
+  return out;
+}
+
+function initProductReviews(){
+  const titleEl = document.getElementById('pdp-main-title');
+  const summaryEl = document.getElementById('pdp-rating-summary');
+  const starsEl = document.getElementById('pdp-rating-stars');
+  const textEl = document.getElementById('pdp-rating-text');
+  const listEl = document.getElementById('reviews-list');
+  if(!titleEl) return;
+
+  fetch('/api/get-reviews', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product: titleEl.textContent.trim() })
+  })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if(!data || !data.ok || !Array.isArray(data.reviews) || data.reviews.length === 0) return;
+      const reviews = data.reviews;
+      const avg = reviews.reduce(function(sum, r){ return sum + (r.rating || 0); }, 0) / reviews.length;
+
+      if(summaryEl && starsEl && textEl){
+        starsEl.innerHTML = renderStars(avg);
+        textEl.textContent = avg.toFixed(1).replace('.', ',') + ' · ' + reviews.length + (reviews.length === 1 ? ' reseña' : ' reseñas');
+        summaryEl.hidden = false;
+      }
+
+      if(listEl){
+        listEl.innerHTML = reviews.map(function(r){
+          return '<div class="review-card">' +
+            '<div class="review-card-head">' +
+              '<span class="review-card-stars">' + renderStars(r.rating) + '</span>' +
+              '<span class="review-card-name">' + escapeHtml(r.name || 'Cliente') + '</span>' +
+              (r.date ? '<span class="review-card-date">' + escapeHtml(r.date) + '</span>' : '') +
+            '</div>' +
+            (r.review ? '<p class="review-card-text">' + escapeHtml(r.review) + '</p>' : '') +
+          '</div>';
+        }).join('');
+        listEl.hidden = false;
+      }
+    })
+    .catch(function(){ /* si falla, la ficha se ve igual que antes de este cambio */ });
+}
+
 document.addEventListener('DOMContentLoaded', function(){
   initImageCacheBust();
   initAnnounceBar();
@@ -1789,6 +1847,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initPdpPhotoGallery();
   initPdpPresentationSelector();
   trackPdpViewItem();
+  initProductReviews();
   initQuantitySteppers();
   initArticleFilter();
   initArticleToc();
