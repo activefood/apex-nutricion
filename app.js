@@ -10,6 +10,28 @@
   document.addEventListener(type, function(e){ e.preventDefault(); }, { passive: false });
 });
 
+/* ---------- Reset de zoom pegado por sitio (Safari) ----------
+   Safari en iPhone permite fijar un nivel de zoom guardado para todo un
+   sitio (ícono "Aa" en la barra de direcciones) que no depende de nada de
+   esta página — ni maximum-scale ni gesturestart lo evitan, porque no es un
+   gesto, es una preferencia ya guardada que se vuelve a aplicar en cada
+   carga. window.visualViewport.scale expone el zoom real con el que se
+   está viendo la página ahora mismo; si no es 1, se lo forzamos una sola
+   vez al cargar (no en cada resize/scroll) para no pelear con un zoom que
+   alguien haga a propósito durante la sesión. */
+if (window.visualViewport) {
+  window.addEventListener('load', function(){
+    if (Math.abs(window.visualViewport.scale - 1) < 0.01) return;
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) return;
+    var original = meta.getAttribute('content');
+    meta.setAttribute('content', original + ', user-scalable=no');
+    requestAnimationFrame(function(){
+      meta.setAttribute('content', original);
+    });
+  });
+}
+
 /* ---------- Cache-busting de fotos de producto ----------
    Los archivos de foto se reemplazan manteniendo el mismo nombre, así que el
    navegador puede seguir mostrando una copia vieja en caché. Subir este número
