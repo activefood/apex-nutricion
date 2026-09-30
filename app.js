@@ -1,5 +1,15 @@
 'use strict';
 
+/* ---------- Bloqueo de pellizco para zoom (iOS Safari) ----------
+   maximum-scale=1.0 en el viewport y touch-action en el CSS no siempre
+   alcanzan en Safari de iPhone — a veces igual deja hacer zoom por
+   pellizco. gesturestart/gesturechange son eventos propios de WebKit que
+   se disparan específicamente con ese gesto; cancelarlos es la forma más
+   directa de bloquearlo, sin afectar el scroll normal. */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type){
+  document.addEventListener(type, function(e){ e.preventDefault(); }, { passive: false });
+});
+
 /* ---------- Cache-busting de fotos de producto ----------
    Los archivos de foto se reemplazan manteniendo el mismo nombre, así que el
    navegador puede seguir mostrando una copia vieja en caché. Subir este número
