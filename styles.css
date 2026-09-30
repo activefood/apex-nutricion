@@ -1042,6 +1042,17 @@ button.pill:hover{ border-color: var(--ink); }
   object-position: center;
   border-radius: 6px;
 }
+/* Centrado por flexbox + object-fit no siempre es consistente en Safari de
+   iPhone (se vio corrida ~58px hacia la derecha en la tarjeta del catálogo,
+   confirmado con medición de píxeles reales, aunque en Chrome se veía bien).
+   Posición absoluta llenando la caja exacta evita depender del algoritmo de
+   flexbox para centrar un elemento reemplazado — queda sin ambigüedad. */
+.product-media .product-photo{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
 .feature-media img.product-photo,
 .pdp-main-image img.product-photo{
   border-radius: 6px;
