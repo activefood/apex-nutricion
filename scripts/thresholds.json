@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-10-01T17:12:14.201Z",
+  "_note": "Medido con el servidor local plano (sin compresión de Cloudflare), con scripts/check-performance.mjs --all. 'default' aplica a las 25 páginas no medidas explícitamente (mismas plantillas/CSS/JS compartidos): un poco por debajo del mínimo medido, para no generar falsos positivos en páginas estructuralmente parecidas pero no idénticas.",
+  "default": {
+    "performance": 70,
+    "accessibility": 80
+  },
+  "pages": {
+    "index.html": {
+      "performance": 74,
+      "accessibility": 81
+    },
+    "categoria.html?cat=hidratacion": {
+      "performance": 73,
+      "accessibility": 89
+    },
+    "producto.html": {
+      "performance": 74,
+      "accessibility": 85
+    },
+    "carrito.html": {
+      "performance": 90,
+      "accessibility": 89
+    }
+  }
+}

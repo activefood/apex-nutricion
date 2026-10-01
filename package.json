@@ -1,0 +1,14 @@
+{
+  "name": "apex-nutricion-site",
+  "private": true,
+  "description": "Sitio estático de Apex Nutrición (sin build step; servido tal cual por Cloudflare Workers). package.json existe solo para las herramientas de CONSTRAINTS.md.",
+  "scripts": {
+    "check:fast": "node scripts/check-secrets.mjs",
+    "check:task": "node scripts/check-performance.mjs",
+    "check:full": "node scripts/check-performance.mjs --all"
+  },
+  "devDependencies": {
+    "lighthouse": "^12.8.2",
+    "chrome-launcher": "^1.2.2"
+  }
+}

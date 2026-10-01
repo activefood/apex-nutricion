@@ -8,3 +8,9 @@ _redirects
 .git
 .gitignore
 README.md
+node_modules
+package.json
+package-lock.json
+scripts
+CONSTRAINTS.md
+CLAUDE.md
