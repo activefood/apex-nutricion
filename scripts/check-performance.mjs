@@ -40,7 +40,7 @@ function getChangedHtmlPages() {
   try {
     const out = execSync('git diff --name-only HEAD -- "*.html"', { cwd: ROOT, encoding: 'utf8' });
     return out.split('\n').map((l) => l.trim()).filter(Boolean);
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -130,17 +130,15 @@ async function main() {
       measured[page] = r;
       console.log(`Performance ${r.performance}  Accesibilidad ${r.accessibility}  LCP ${(r.lcp / 1000).toFixed(1)}s  CLS ${r.cls?.toFixed(3)}  TBT ${Math.round(r.tbt)}ms`);
 
-      if (thresholds) {
-        const floor = thresholds.pages?.[page] || thresholds.default;
-        if (floor) {
-          if (r.performance < floor.performance) {
-            anyBelowFloor = true;
-            console.log(`  ⚠️  Performance ${r.performance} < piso ${floor.performance}`);
-          }
-          if (r.accessibility < floor.accessibility) {
-            anyBelowFloor = true;
-            console.log(`  ⚠️  Accesibilidad ${r.accessibility} < piso ${floor.accessibility}`);
-          }
+      const floor = thresholds && (thresholds.pages?.[page] || thresholds.default);
+      if (floor) {
+        if (r.performance < floor.performance) {
+          anyBelowFloor = true;
+          console.log(`  ⚠️  Performance ${r.performance} < piso ${floor.performance}`);
+        }
+        if (r.accessibility < floor.accessibility) {
+          anyBelowFloor = true;
+          console.log(`  ⚠️  Accesibilidad ${r.accessibility} < piso ${floor.accessibility}`);
         }
       }
       if (r.a11yFailures.length) {

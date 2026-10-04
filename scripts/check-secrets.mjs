@@ -33,7 +33,7 @@ function getDiff() {
     const staged = execSync('git diff --cached -U0', { encoding: 'utf8', maxBuffer: 1024 * 1024 * 20 });
     const unstaged = execSync('git diff -U0', { encoding: 'utf8', maxBuffer: 1024 * 1024 * 20 });
     return staged + '\n' + unstaged;
-  } catch (e) {
+  } catch {
     return '';
   }
 }
