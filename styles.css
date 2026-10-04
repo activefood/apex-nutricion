@@ -15,11 +15,15 @@
   --paper-3:  #EFEBE3;
   --line:     #E4DFD5;
 
-  /* Acento — coral (The Feed) */
-  --accent:   #FF7A47;
-  --accent-dk:#E35F2E;
-  --accent-sf:#FFEEE5;
-  --accent-text:#CC3800; /* naranja para letras y anillos de foco: 4.5:1+ sobre blanco y beige */
+  /* Acento — Lima (decidido 2026-10-04, reemplaza al coral; estilo The Feed).
+     La lima es solo FONDO (botón del carrusel, "Nuevo", contador del carrito)
+     siempre con texto tinta encima (14.9:1), o texto/detalle sobre fondos
+     OSCUROS. Sobre blanco es casi invisible (1.3:1): ahí textos, estrellas,
+     viñetas y anillos de foco usan --accent-text (tinta). */
+  --accent:   #D8F24C;
+  --accent-dk:#C4DE36;
+  --accent-sf:#F5FBD9;
+  --accent-text:#14120F;
   --spark:    #D8F24C;
 
   /* Fondo de foto en tarjetas de producto */
@@ -160,7 +164,7 @@ p{ color: var(--ink-2); }
   color: var(--accent-text);
   white-space: nowrap;
 }
-.section-head .link-more:hover{ color: var(--accent-dk); }
+.section-head .link-more:hover{ color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 640px){
   .section-head{ flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
@@ -263,7 +267,7 @@ button.pill:hover{ border-color: var(--ink); }
   text-align: center;
   padding: 0 var(--sp-4);
 }
-.announce strong{ color: #ffb08a; font-weight: 700; }
+.announce strong{ color: var(--accent); font-weight: 700; }   /* lima sobre tinta: 14.9:1 */
 
 /* ==========================================================================
    Header
@@ -339,7 +343,7 @@ button.pill:hover{ border-color: var(--ink); }
   gap: 4px;
   height: 100%;
 }
-.nav-item > a:hover, .nav-item > button.nav-trigger:hover{ color: var(--accent-text); }
+.nav-item > a:hover, .nav-item > button.nav-trigger:hover{ color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; }
 .nav-item svg.chev{ width: 12px; height: 12px; transition: transform var(--ease); }
 .nav-item.open svg.chev{ transform: rotate(180deg); }
 
@@ -380,7 +384,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .mega-group ul{ display: flex; flex-direction: column; gap: var(--sp-3); }
 .mega-group a{ font-size: 14px; color: var(--ink-2); }
-.mega-group a:hover{ color: var(--accent-text); }
+.mega-group a:hover{ color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
 
 .header-actions{
   display: flex;
@@ -645,10 +649,12 @@ button.pill:hover{ border-color: var(--ink); }
    Texto real (no imagen) a la izquierda y fotos de producto recortadas a la
    derecha (assets/banners/). En celular: texto arriba, fotos abajo ocupando lo
    que sobra, mismo alto 3:4 en todos los banners. Ver SPEC-carrusel.md. */
+/* Un solo color para todos los banners (aprobado 2026-10-04): tinta oscura
+   + texto blanco; acento lima en detalles y botón principal (texto tinta).
+   Los empaques (claros y coloridos) resaltan sobre el oscuro, como en The Feed. */
 .hero-slide--promo{
-  background: var(--paper);
-  color: var(--ink);
-  border-bottom: 1px solid var(--line);
+  background: var(--ink);
+  color: #fff;
 }
 .hero-slide--promo .container{
   grid-template-columns: 1fr 1fr;
@@ -661,8 +667,9 @@ button.pill:hover{ border-color: var(--ink); }
   padding-right: 88px;
 }
 .promo-copy{ max-width: 520px; }
-.promo-copy .eyebrow{ color: var(--accent-text); }
+.promo-copy .eyebrow{ color: var(--accent); }
 .promo-title{
+  color: #fff;
   margin-top: var(--sp-3);
   line-height: 1.02;
   /* Una línea de alto fijo: al llegar la fuente Anton el título cambia de
@@ -670,23 +677,29 @@ button.pill:hover{ border-color: var(--ink); }
   height: 1.02em;
   white-space: nowrap;
 }
-.promo-text{ margin-top: var(--sp-4); font-size: 16px; color: var(--ink-2); max-width: 44ch; }
-.promo-price{ margin-top: var(--sp-3); font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
-.promo-price span{ font-weight: 500; color: var(--ink-3); }
+.promo-text{ margin-top: var(--sp-4); font-size: 16px; color: rgba(255,255,255,.88); max-width: 44ch; }
+.promo-price{ margin-top: var(--sp-3); font-size: 15px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+.promo-price span{ font-weight: 500; color: rgba(255,255,255,.88); }
 .promo-actions{ display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-5); }
+.hero-slide--promo .btn--primary{ background: var(--accent); color: var(--ink); }
+.hero-slide--promo .btn--primary:hover{ background: var(--accent-dk); }
+.hero-slide--promo .btn--ghost{ color: #fff; border-color: #fff; }
+.hero-slide--promo .btn--ghost:hover{ background: rgba(255,255,255,.1); }
+.hero-slide--promo :focus-visible{ outline-color: #fff; }                                 /* anillo de foco visible sobre tinta */
 
 /* Cupón: código en Space Mono dentro de un recuadro punteado, como un ticket */
-.promo-code{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); margin-top: var(--sp-4); font-size: 14px; color: var(--ink-2); }
+.promo-code{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); margin-top: var(--sp-4); font-size: 14px; color: rgba(255,255,255,.88); }
 .promo-code-chip{ font-family: var(--font-mono); font-weight: 700; font-size: 18px; letter-spacing: .08em;
-  color: var(--ink); border: 1.5px dashed var(--ink); border-radius: var(--r-control); padding: 6px 12px; }
-.promo-perk{ display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); font-size: 14px; font-weight: 600; color: var(--ok); }
+  color: #fff; border: 1.5px dashed #fff; border-radius: var(--r-control); padding: 6px 12px; }
+.promo-perk{ display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); font-size: 14px; font-weight: 600; color: #fff; }
 .promo-perk svg{ width: 18px; height: 18px; flex-shrink: 0; }
 
 /* Fotos de producto (recortadas al contorno, sobre blanco). Dos disposiciones:
    --fila: productos verticales lado a lado (geles, sobres Skratch)
    --escalera: sobres horizontales escalonados (hidratante Going) */
 .promo-media{ height: 340px; display: flex; justify-content: center; align-items: flex-end; gap: var(--sp-4); }
-.promo-media img{ display: block; width: auto; min-width: 0; object-fit: contain; --giro: 0deg; transform: rotate(var(--giro)); }
+.promo-media img{ display: block; width: auto; min-width: 0; object-fit: contain; --giro: 0deg; transform: rotate(var(--giro));
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.35)); }   /* los productos recortados "flotan" sobre el oscuro */
 .promo-media--fila img{ height: 100%; max-width: 30%; }
 .promo-media--fila img.is-side{ height: 78%; max-width: 40%; }
 .promo-media--fila img:nth-child(1){ --giro: -7deg; }
@@ -923,7 +936,7 @@ button.pill:hover{ border-color: var(--ink); }
   width: 44px; height: 44px;
   border-radius: var(--r-control);
   background: var(--accent-sf);
-  color: var(--accent);
+  color: var(--accent-text);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: var(--sp-4);
 }
@@ -1135,7 +1148,7 @@ button.pill:hover{ border-color: var(--ink); }
   color: var(--ink-2);
   white-space: nowrap;
 }
-.product-rating svg{ width: 13px; height: 13px; color: var(--accent); }
+.product-rating svg{ width: 13px; height: 13px; color: var(--accent-text); }
 .product-rating .count{ color: var(--ink-3); }
 .product-add-btn{
   display: block;
@@ -1316,7 +1329,7 @@ button.pill:hover{ border-color: var(--ink); }
   padding: var(--sp-5);
 }
 .review-stars{ display: flex; gap: 2px; }
-.review-stars svg{ width: 14px; height: 14px; color: var(--accent); }
+.review-stars svg{ width: 14px; height: 14px; color: var(--accent-text); }
 .review-quote{
   font-size: 14px;
   color: var(--ink);
@@ -1582,7 +1595,7 @@ button.pill:hover{ border-color: var(--ink); }
   font-weight: 600;
   color: var(--accent-text);
 }
-.cat-clear:hover{ color: var(--accent-dk); }
+.cat-clear:hover{ color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
 
 .filters-toggle{
   display: none;
@@ -1630,7 +1643,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .filter-list input[type="checkbox"]{
   width: 16px; height: 16px;
-  accent-color: var(--accent);
+  accent-color: var(--accent-text);
   flex-shrink: 0;
 }
 .filter-count{ font-size: 12px; color: var(--ink-3); }
@@ -1775,7 +1788,7 @@ button.pill:hover{ border-color: var(--ink); }
   color: var(--ink-2);
 }
 .pdp-rating .stars{ display: flex; gap: 2px; }
-.pdp-rating .stars svg{ width: 15px; height: 15px; color: var(--accent); }
+.pdp-rating .stars svg{ width: 15px; height: 15px; color: var(--accent-text); }
 .pdp-rating .stars svg.star-empty{ color: var(--line); }
 .pdp-rating a{ color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
 .pdp-rating a:hover{ color: var(--ink); }
@@ -1796,7 +1809,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .review-card-head{ display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .review-card-stars{ display: flex; gap: 2px; }
-.review-card-stars svg{ width: 13px; height: 13px; color: var(--accent); }
+.review-card-stars svg{ width: 13px; height: 13px; color: var(--accent-text); }
 .review-card-stars svg.star-empty{ color: var(--line); }
 .review-card-name{ font-size: 13.5px; font-weight: 700; color: var(--ink); }
 .review-card-date{ font-size: 12px; color: var(--ink-3); margin-left: auto; }
@@ -2152,7 +2165,7 @@ button.pill:hover{ border-color: var(--ink); }
   line-height: 1;
 }
 .rating-summary-score .stars{ display: flex; gap: 3px; justify-content: center; margin-top: var(--sp-2); }
-.rating-summary-score .stars svg{ width: 16px; height: 16px; color: var(--accent); }
+.rating-summary-score .stars svg{ width: 16px; height: 16px; color: var(--accent-text); }
 .rating-summary-score .count{ font-size: 12.5px; color: var(--ink-3); margin-top: var(--sp-2); white-space: nowrap; }
 
 .rating-bars{ display: flex; flex-direction: column; gap: var(--sp-2); }
@@ -2165,7 +2178,7 @@ button.pill:hover{ border-color: var(--ink); }
   border-radius: var(--r-pill);
   overflow: hidden;
 }
-.rating-bar-fill{ height: 100%; background: var(--accent); }
+.rating-bar-fill{ height: 100%; background: var(--accent-text); }
 .rating-bar-row .pct{ width: 36px; flex-shrink: 0; text-align: right; font-size: 12px; color: var(--ink-3); }
 
 @media (max-width: 640px){
@@ -2210,7 +2223,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .star-btn svg{ width: 30px; height: 30px; display: block; }
 .star-btn:hover{ transform: scale(1.1); }
-.star-btn.active{ color: var(--accent); }
+.star-btn.active{ color: var(--accent-text); }
 
 .review-form-note{ font-size: 13px; margin: 0; }
 .review-form-note[data-review-success]{ color: var(--ok); }
@@ -2418,7 +2431,7 @@ button.pill:hover{ border-color: var(--ink); }
   transition: color var(--ease), border-color var(--ease);
 }
 .article-toc a:hover{ color: var(--ink); }
-.article-toc a.active{ color: var(--ink); border-left-color: var(--accent); font-weight: 600; }
+.article-toc a.active{ color: var(--ink); border-left-color: var(--accent-text); font-weight: 600; }
 
 .article-main{ max-width: 720px; min-width: 0; }
 .article-header h1{ font-size: 36px; line-height: 1.15; letter-spacing: -.03em; }
@@ -2482,7 +2495,7 @@ button.pill:hover{ border-color: var(--ink); }
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent-text);
 }
 .article-body ul.article-tips strong{ color: var(--ink); }
 
@@ -2650,7 +2663,7 @@ button.pill:hover{ border-color: var(--ink); }
 .delivery-toggle-btn:hover{ border-color: var(--ink); }
 .delivery-toggle-btn.active{ background: var(--ink); border-color: var(--ink); color: #fff; }
 .pickup-location{ font-size: 13.5px; color: var(--ink-2); }
-.pickup-location a{ color: var(--accent-dk); text-decoration: underline; text-underline-offset: 2px; }
+.pickup-location a{ color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
 #checkout-state{
   width: 100%;
   height: 44px;
