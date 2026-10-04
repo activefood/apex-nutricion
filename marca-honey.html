@@ -20,6 +20,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#ffffff">
 <style>img,svg{max-width:100%;display:block}html,body{overflow-x:hidden;margin:0}.mobile-nav{display:none}</style>
 <title>Honey Stinger — Energía a base de miel | Apex Nutrición</title>
 <meta name="description" content="Honey Stinger: waffles, geles y gomitas energéticas orgánicas a base de miel natural, distribuidos por Apex Nutrición en Venezuela.">
@@ -30,9 +31,10 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
-<link rel="stylesheet" href="styles.css?v=107">
+<link rel="stylesheet" href="styles.css?v=108">
 </head>
 <body>
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
 
 <!-- ============ Barra de anuncio ============ -->
 <div class="announce">
@@ -44,18 +46,18 @@
   <div class="container">
 
     <button class="menu-toggle icon-btn" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-nav">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
 
     <a href="index.html" class="logo" aria-label="Apex Nutrición — Inicio">
-      <img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición">
+      <img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición" width="2200" height="531">
     </a>
 
     <nav class="main-nav" aria-label="Navegación principal">
       <ul>
         <li class="nav-item has-mega">
           <button class="nav-trigger" aria-haspopup="true">HIDRATACIÓN
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg aria-hidden="true" class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="mega">
             <div class="mega-group">
@@ -78,7 +80,7 @@
 
         <li class="nav-item has-mega">
           <button class="nav-trigger" aria-haspopup="true">GELES Y ENERGÍA
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg aria-hidden="true" class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="mega">
             <div class="mega-group">
@@ -103,15 +105,12 @@
 
     <div class="header-actions">
       <form class="search-form" role="search" action="busqueda.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <label for="search-input" class="visually-hidden">Buscar productos</label>
         <input id="search-input" type="search" name="q" placeholder="Buscar geles, proteína…">
       </form>
-      <a class="icon-btn" href="#" aria-label="Mi cuenta">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-      </a>
       <a class="icon-btn cart-btn" href="carrito.html" aria-label="Carrito de compras">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.3"/><circle cx="18" cy="21" r="1.3"/><path d="M2.5 3h2.6l2.4 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6l1.5-8.2H6"/></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.3"/><circle cx="18" cy="21" r="1.3"/><path d="M2.5 3h2.6l2.4 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6l1.5-8.2H6"/></svg>
         <span class="cart-count" data-cart-count>0</span>
       </a>
     </div>
@@ -120,13 +119,13 @@
   <!-- Menú móvil -->
   <nav id="mobile-nav" class="mobile-nav" aria-label="Navegación móvil">
     <form class="search-form" role="search" action="busqueda.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <label for="search-input-mobile" class="visually-hidden">Buscar productos</label>
       <input id="search-input-mobile" type="search" name="q" placeholder="Buscar geles, proteína…">
     </form>
 
     <details>
-      <summary>HIDRATACIÓN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
+      <summary>HIDRATACIÓN <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
       <div class="mobile-links">
         <a href="categoria.html?cat=hidratacion&sub=polvo">Polvos</a>
         <a href="categoria.html?cat=hidratacion&sub=masticable">Masticables</a>
@@ -136,7 +135,7 @@
     <a class="mobile-plain" href="categoria.html?cat=proteina">PROTEÍNA</a>
     <a class="mobile-plain" href="categoria.html?cat=recuperacion">RECUPERACIÓN</a>
     <details>
-      <summary>GELES Y ENERGÍA <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
+      <summary>GELES Y ENERGÍA <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
       <div class="mobile-links">
         <a href="categoria.html?cat=geles-energia&sub=gel">Geles</a>
         <a href="categoria.html?cat=geles-energia&sub=waffle">Waffles</a>
@@ -148,7 +147,7 @@
   </nav>
 </header>
 
-<main>
+<main id="contenido">
 
   <!-- ============ Banner de marca ============ -->
   <section class="brand-banner">
@@ -160,12 +159,12 @@
         <span class="sep">/</span>
         <span class="current">Honey Stinger</span>
       </nav>
-      <div class="brand-banner-logo"><img src="assets/logos/honey-stinger-logo.png" alt="Honey Stinger"></div>
+      <div class="brand-banner-logo"><img src="assets/logos/honey-stinger-logo.png" alt="Honey Stinger" width="1430" height="452"></div>
       <h1 class="h-46 visually-hidden">Honey Stinger</h1>
         <div class="brand-social">
           <span class="brand-social-label">Síguenos</span>
           <a href="https://instagram.com/honeystingerve" target="_blank" rel="noopener" aria-label="Instagram de Honey Stinger">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
           </a>
         </div>
     </div>
@@ -209,10 +208,10 @@
       </div>
       <div class="product-grid">
 
-        <a class="product-card" href="producto-honey-gomitas.html?flavor=Citrus%20Splash">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-gomitas.html?flavor=Citrus%20Splash">
         <div class="product-media">
-            <img class="product-photo" src="assets/honey/gomitas-citrus-splash.png" alt="Gomitas Energéticas Honey Stinger sabor Citrus Splash">
+            <img class="product-photo" src="assets/honey/gomitas-citrus-splash.png" alt="Gomitas Energéticas Honey Stinger sabor Citrus Splash" width="1000" height="1000">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -221,14 +220,14 @@
             <div class="product-bottom">
               <span class="product-price">Desde $5,99</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-gomitas.html?flavor=Fruit%20Smoothie">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-gomitas.html?flavor=Fruit%20Smoothie">
         <div class="product-media">
-            <img class="product-photo" src="assets/honey/gomitas-fruit-smoothie.png" alt="Gomitas Energéticas Honey Stinger sabor Fruit Smoothie">
+            <img class="product-photo" src="assets/honey/gomitas-fruit-smoothie.png" alt="Gomitas Energéticas Honey Stinger sabor Fruit Smoothie" width="1000" height="1000">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -237,15 +236,15 @@
             <div class="product-bottom">
               <span class="product-price">Desde $5,99</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-gel.html?flavor=Strawberry%20Kiwi">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-gel.html?flavor=Strawberry%20Kiwi">
         <div class="product-media">
             <span class="tag tag--new">Nuevo</span>
-            <img class="product-photo" src="assets/honey/gel-strawberry-kiwi.png" alt="Gel Energético Honey Stinger sabor Strawberry Kiwi">
+            <img class="product-photo" src="assets/honey/gel-strawberry-kiwi.png" alt="Gel Energético Honey Stinger sabor Strawberry Kiwi" width="1000" height="1000">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -254,14 +253,14 @@
             <div class="product-bottom">
               <span class="product-price">Desde $4,50</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-gel.html?flavor=Acai%20Pomegranate">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-gel.html?flavor=Acai%20Pomegranate">
         <div class="product-media">
-            <img class="product-photo" src="assets/honey/gel-acai-pomegranate.png" alt="Gel Energético Honey Stinger sabor Acai Pomegranate">
+            <img class="product-photo" src="assets/honey/gel-acai-pomegranate.png" alt="Gel Energético Honey Stinger sabor Acai Pomegranate" width="1000" height="1000" loading="lazy">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -270,14 +269,14 @@
             <div class="product-bottom">
               <span class="product-price">Desde $4,50</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-gel.html?flavor=Fruit%20Smoothie">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-gel.html?flavor=Fruit%20Smoothie">
         <div class="product-media">
-            <img class="product-photo" src="assets/honey/gel-fruit-smoothie.png" alt="Gel Energético Honey Stinger sabor Fruit Smoothie">
+            <img class="product-photo" src="assets/honey/gel-fruit-smoothie.png" alt="Gel Energético Honey Stinger sabor Fruit Smoothie" width="1000" height="1000" loading="lazy">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -286,14 +285,14 @@
             <div class="product-bottom">
               <span class="product-price">Desde $4,50</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-gel.html?flavor=Gold">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-gel.html?flavor=Gold">
         <div class="product-media">
-            <img class="product-photo" src="assets/honey/gel-gold.png" alt="Gel Energético Honey Stinger sabor Gold">
+            <img class="product-photo" src="assets/honey/gel-gold.png" alt="Gel Energético Honey Stinger sabor Gold" width="1000" height="1000" loading="lazy">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -302,15 +301,15 @@
             <div class="product-bottom">
               <span class="product-price">Desde $4,50</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-waffle.html?flavor=Miel">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-waffle.html?flavor=Miel">
         <div class="product-media">
             <span class="tag tag--best">Más vendido</span>
-            <img class="product-photo" src="assets/honey/waffle-miel.png" alt="Waffle Energético Honey Stinger sabor Miel">
+            <img class="product-photo" src="assets/honey/waffle-miel.png" alt="Waffle Energético Honey Stinger sabor Miel" width="1000" height="1000" loading="lazy">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -319,14 +318,14 @@
             <div class="product-bottom">
               <span class="product-price">Desde $3,65</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-waffle.html?flavor=Vainilla">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-waffle.html?flavor=Vainilla">
         <div class="product-media">
-            <img class="product-photo" src="assets/honey/waffle-vainilla.png" alt="Waffle Energético Honey Stinger sabor Vainilla">
+            <img class="product-photo" src="assets/honey/waffle-vainilla.png" alt="Waffle Energético Honey Stinger sabor Vainilla" width="1000" height="1000" loading="lazy">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -335,14 +334,14 @@
             <div class="product-bottom">
               <span class="product-price">Desde $3,65</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
-        <a class="product-card" href="producto-honey-waffle.html?flavor=Chocolate">
-          <div class="product-card-box">
+        <div class="product-card">
+          <a class="product-card-box" href="producto-honey-waffle.html?flavor=Chocolate">
         <div class="product-media">
-            <img class="product-photo" src="assets/honey/waffle-chocolate.png" alt="Waffle Energético Honey Stinger sabor Chocolate">
+            <img class="product-photo" src="assets/honey/waffle-chocolate.png" alt="Waffle Energético Honey Stinger sabor Chocolate" width="1000" height="1000" loading="lazy">
           </div>
         <div class="product-info">
             <p class="product-brand">Honey Stinger</p>
@@ -351,9 +350,9 @@
             <div class="product-bottom">
               <span class="product-price">Desde $3,65</span>
             </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-        </a>
+        </div>
 
       </div>
     </div>
@@ -370,21 +369,21 @@
       <div class="trust-grid">
 
         <div class="trust-item">
-          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/><polyline points="9 12 11 14 15 10"/></svg></span>
+          <span class="icon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/><polyline points="9 12 11 14 15 10"/></svg></span>
           <div>
             <h3>Endulzado con miel, no con jarabe</h3>
             <p>Un sabor menos artificial que el resto de la categoría.</p>
           </div>
         </div>
         <div class="trust-item">
-          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5v7M4 10v4M17.5 8.5v7M20 10v4M6.5 12h11"/></svg></span>
+          <span class="icon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5v7M4 10v4M17.5 8.5v7M20 10v4M6.5 12h11"/></svg></span>
           <div>
             <h3>El waffle que todos repiten</h3>
             <p>Nuestro producto con mejor calificación de toda la tienda importada.</p>
           </div>
         </div>
         <div class="trust-item">
-          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 15a2.5 2.5 0 0 0 2.5 1.6c1.6 0 2.6-.9 2.6-2 0-1.4-1.4-1.9-2.9-2.3-1.5-.4-2.6-1-2.6-2.3 0-1.1 1-2 2.5-2a2.5 2.5 0 0 1 2.5 1.5"/><line x1="12" y1="6.5" x2="12" y2="17.5"/></svg></span>
+          <span class="icon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 15a2.5 2.5 0 0 0 2.5 1.6c1.6 0 2.6-.9 2.6-2 0-1.4-1.4-1.9-2.9-2.3-1.5-.4-2.6-1-2.6-2.3 0-1.1 1-2 2.5-2a2.5 2.5 0 0 1 2.5 1.5"/><line x1="12" y1="6.5" x2="12" y2="17.5"/></svg></span>
           <div>
             <h3>Se siente como comida real</h3>
             <p>Para quienes ya se cansaron del sabor a gel de siempre.</p>
@@ -401,11 +400,11 @@
   <div class="container">
     <div class="footer-grid">
       <div class="footer-col footer-about">
-        <a href="index.html" class="logo"><img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición"></a>
+        <a href="index.html" class="logo"><img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición" width="2200" height="531" loading="lazy"></a>
         <p>Tienda venezolana especializada en nutrición deportiva. Reunimos el portafolio de Going Nutrición, Probar, Skratch Labs, SaltStick y Honey Stinger bajo un solo techo, con despacho local.</p>
       </div>
       <div class="footer-col">
-        <h4>Comprar</h4>
+        <h2>Comprar</h2>
         <ul>
           <li><a href="categoria.html?cat=hidratacion">Hidratación</a></li>
           <li><a href="categoria.html?cat=proteina">Proteína</a></li>
@@ -414,7 +413,7 @@
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Marcas</h4>
+        <h2>Marcas</h2>
         <ul>
           <li><a href="marca.html">Going Nutrición</a></li>
           <li><a href="marca-probar.html">Probar</a></li>
@@ -432,19 +431,16 @@
     <div class="footer-bottom">
       <div class="footer-social">
         <a href="https://instagram.com/apexnutricionve" target="_blank" rel="noopener" aria-label="Instagram">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
-        </a>
-        <a href="#" aria-label="Facebook">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8h-2a2 2 0 0 0-2 2v10M8 13h5"/><circle cx="12" cy="12" r="9"/></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
         </a>
         <a href="https://www.tiktok.com/@apex.nutricin" target="_blank" rel="noopener" aria-label="TikTok">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 4c.5 2.4 2.2 4 4.5 4.3"/></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 4c.5 2.4 2.2 4 4.5 4.3"/></svg>
         </a>
       </div>
     </div>
   </div>
 </footer>
 
-<script src="app.js?v=81"></script>
+<script src="app.js?v=82"></script>
 </body>
 </html>

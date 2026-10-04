@@ -124,12 +124,16 @@ function fetchBcvRate(){
     });
 }
 
+/* Formatos numéricos venezolanos: coma decimal, punto de miles en bolívares.
+   Los montos en dólares van sin separador de miles porque parsePriceText y
+   addProductToCart vuelven a leer ese texto como número. */
+const BS_FORMAT = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
+const USD_FORMAT = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+const RATING_FORMAT = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 function formatBsNumber(usdAmount){
   if(bcvRate == null || usdAmount == null || isNaN(usdAmount)) return null;
-  const bs = usdAmount * bcvRate;
-  const parts = bs.toFixed(2).split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return parts[0] + ',' + parts[1];
+  return BS_FORMAT.format(usdAmount * bcvRate);
 }
 
 function parsePriceText(text){
@@ -223,6 +227,24 @@ function initCartCount(){
 const CART_LINE_QTY_MAX = 120;
 
 /* Agrega un producto al carrito real, combinando cantidad si ya existe la misma variante. */
+/* ---------- Avisos para lectores de pantalla ----------
+   Región aria-live compartida: cambios que solo se ven ("Agregado ✓",
+   cantidades en el carrito) también se anuncian. */
+let liveRegion = null;
+function initLiveRegion(){
+  if(liveRegion) return;
+  liveRegion = document.createElement('div');
+  liveRegion.className = 'visually-hidden';
+  liveRegion.setAttribute('role', 'status');
+  liveRegion.setAttribute('aria-live', 'polite');
+  document.body.appendChild(liveRegion);
+}
+function announce(text){
+  initLiveRegion();
+  liveRegion.textContent = '';
+  setTimeout(function(){ liveRegion.textContent = text; }, 50);
+}
+
 function addItemToCart(item){
   const cart = getCart();
   const existing = cart.find(function(c){ return c.name === item.name && c.brand === item.brand && c.variant === item.variant; });
@@ -247,6 +269,7 @@ function addItemToCart(item){
   }
   saveCart(cart);
   initCartCount();
+  announce(item.name + ' agregado al carrito.');
   trackEvent('add_to_cart', {
     currency: 'USD',
     value: item.unitPrice * item.quantity,
@@ -1126,7 +1149,7 @@ function initArticleToc(){
 
 /* ---------- Página de carrito ---------- */
 function formatPrice(amount){
-  return '$' + amount.toFixed(2).replace('.', ',');
+  return '$' + USD_FORMAT.format(amount);
 }
 
 const WHATSAPP_NUMBER = '584143695233';
@@ -1309,7 +1332,7 @@ function initCartPage(){
           '</div>' +
           '<p class="cart-line-price">' + formatPrice(item.unitPrice * item.quantity) + '</p>' +
           '<button type="button" class="cart-line-remove" data-cart-remove aria-label="Eliminar ' + escapeHtml(item.name) + ' del carrito">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+            '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
           '</button>' +
         '</div>'
       );
@@ -1326,18 +1349,23 @@ function initCartPage(){
         c[index].quantity = Math.max(1, c[index].quantity - 1);
         saveCart(c);
         render();
+        focusLineControl(index, '[data-qty-decrease]');
+        announce('Cantidad: ' + c[index].quantity);
       });
       if(increase) increase.addEventListener('click', function(){
         const c = getCart();
         c[index].quantity = Math.min(CART_LINE_QTY_MAX, c[index].quantity + 1);
         saveCart(c);
         render();
+        focusLineControl(index, '[data-qty-increase]');
+        announce('Cantidad: ' + c[index].quantity);
       });
       if(removeBtn) removeBtn.addEventListener('click', function(){
         const c = getCart();
-        c.splice(index, 1);
+        const removed = c.splice(index, 1)[0];
         saveCart(c);
         render();
+        showUndo(removed, index);
       });
     });
 
@@ -1406,6 +1434,46 @@ function initCartPage(){
   }
 
   window.__apexCartRerender = render;
+
+  /* render() reemplaza toda la lista, así que el botón que tenía el foco
+     desaparece; se le devuelve el foco al mismo control de la misma línea. */
+  function focusLineControl(index, selector){
+    const el = list.querySelector('.cart-line[data-index="' + index + '"] ' + selector);
+    if(el) el.focus();
+  }
+
+  /* Eliminar no es inmediato-sin-vuelta: se ofrece "Deshacer" hasta la
+     siguiente eliminación. */
+  const undoEl = document.getElementById('cart-undo');
+  const undoTextEl = document.getElementById('cart-undo-text');
+  const undoBtn = document.getElementById('cart-undo-btn');
+  let lastRemoved = null;
+
+  function showUndo(item, index){
+    lastRemoved = { item: item, index: index };
+    if(undoEl && undoTextEl){
+      undoTextEl.textContent = 'Eliminaste ' + item.name + '.';
+      undoEl.hidden = false;
+    }
+    announce('Eliminaste ' + item.name + ' del carrito. Puedes deshacerlo.');
+    const lines = list.querySelectorAll('.cart-line');
+    const next = lines[Math.min(index, lines.length - 1)];
+    const target = (next && !layout.hidden) ? next.querySelector('[data-cart-remove]') : undoBtn;
+    if(target) target.focus();
+  }
+
+  if(undoBtn) undoBtn.addEventListener('click', function(){
+    if(!lastRemoved) return;
+    const c = getCart();
+    const index = Math.min(lastRemoved.index, c.length);
+    c.splice(index, 0, lastRemoved.item);
+    saveCart(c);
+    announce(lastRemoved.item.name + ' volvió al carrito.');
+    lastRemoved = null;
+    if(undoEl) undoEl.hidden = true;
+    render();
+    focusLineControl(index, '[data-cart-remove]');
+  });
 
   const couponForm = document.getElementById('coupon-form');
   const couponInput = document.getElementById('coupon');
@@ -1501,9 +1569,30 @@ function initCheckoutButton(){
   const errorEl = document.getElementById('checkout-error');
   if(!btn) return;
 
+  /* El mensaje de error se muestra debajo del campo que falta, y el campo
+     queda marcado (aria-invalid) hasta que el cliente lo corrige. */
+  function clearFieldError(){
+    document.querySelectorAll('.checkout-fields [aria-invalid]').forEach(function(el){
+      el.removeAttribute('aria-invalid');
+      el.removeAttribute('aria-describedby');
+    });
+  }
+  const fieldsWrap = document.querySelector('.checkout-fields');
+  if(fieldsWrap){
+    ['input', 'change'].forEach(function(type){
+      fieldsWrap.addEventListener(type, function(e){
+        if(e.target.getAttribute && e.target.getAttribute('aria-invalid') === 'true'){
+          clearFieldError();
+          if(errorEl) errorEl.hidden = true;
+        }
+      });
+    });
+  }
+
   btn.addEventListener('click', function(){
     const cart = getCart();
     if(cart.length === 0) return;
+    clearFieldError();
 
     const deliveryCtx = getDeliveryContext();
     const isMrw = deliveryCtx.type === 'delivery' && !deliveryCtx.isCaracas;
@@ -1523,8 +1612,17 @@ function initCheckoutButton(){
     else if(isMrw && !mrwAddress){ missingMsg = 'Por favor completa la dirección de la agencia MRW.'; focusEl = mrwAddressInput; }
 
     if(missingMsg){
-      if(errorEl){ errorEl.textContent = missingMsg; errorEl.hidden = false; }
-      if(focusEl) focusEl.focus();
+      if(errorEl){
+        const field = focusEl ? focusEl.closest('.checkout-field') : null;
+        if(field) field.appendChild(errorEl);
+        errorEl.textContent = missingMsg;
+        errorEl.hidden = false;
+      }
+      if(focusEl){
+        focusEl.setAttribute('aria-invalid', 'true');
+        focusEl.setAttribute('aria-describedby', 'checkout-error');
+        focusEl.focus();
+      }
       return;
     }
     if(errorEl) errorEl.hidden = true;
@@ -1635,6 +1733,7 @@ function initHeroCarousel(){
   const dotsWrap = root.querySelector('.carousel-dots');
   const prevBtn = root.querySelector('.carousel-arrow--prev');
   const nextBtn = root.querySelector('.carousel-arrow--next');
+  const pauseBtn = root.querySelector('.carousel-pause');
 
   /* Con una sola diapositiva no hay nada que recorrer: se ocultan flechas y puntos. */
   if(slides.length <= 1){
@@ -1648,11 +1747,18 @@ function initHeroCarousel(){
   let index = slides.findIndex(function(s){ return s.classList.contains('active'); });
   if(index < 0) index = 0;
   let timer = null;
+  let userPaused = false;
+
+  /* Sin autoplay (una sola diapositiva o movimiento reducido) no hay nada que pausar. */
+  if(pauseBtn && (slides.length < 2 || reduceMotion)) pauseBtn.hidden = true;
 
   function render(){
     slides.forEach(function(s, i){ s.classList.toggle('active', i === index); });
     if(dotsWrap){
-      Array.from(dotsWrap.children).forEach(function(d, i){ d.classList.toggle('active', i === index); });
+      Array.from(dotsWrap.children).forEach(function(d, i){
+        d.classList.toggle('active', i === index);
+        if(i === index) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current');
+      });
     }
   }
 
@@ -1666,7 +1772,7 @@ function initHeroCarousel(){
   }
 
   function startAutoplay(){
-    if(reduceMotion || slides.length < 2) return;
+    if(reduceMotion || slides.length < 2 || userPaused) return;
     stopAutoplay();
     timer = setInterval(function(){ go(index + 1); }, AUTOPLAY_MS);
   }
@@ -1686,6 +1792,15 @@ function initHeroCarousel(){
       dotsWrap.appendChild(dot);
     });
   }
+  if(pauseBtn) pauseBtn.addEventListener('click', function(){
+    userPaused = !userPaused;
+    if(userPaused) stopAutoplay(); else startAutoplay();
+    pauseBtn.setAttribute('aria-label', userPaused ? 'Reanudar carrusel' : 'Pausar carrusel');
+    const pauseIcon = pauseBtn.querySelector('.icon-pause');
+    const playIcon = pauseBtn.querySelector('.icon-play');
+    if(pauseIcon) pauseIcon.hidden = userPaused;
+    if(playIcon) playIcon.hidden = !userPaused;
+  });
   if(prevBtn) prevBtn.addEventListener('click', function(){ goManual(index - 1); });
   if(nextBtn) nextBtn.addEventListener('click', function(){ goManual(index + 1); });
 
@@ -1713,16 +1828,32 @@ function initReviewForm(){
     const errorEl = form.querySelector('[data-review-error]');
     const submitBtn = form.querySelector('[data-review-submit]');
 
+    /* role="radiogroup" en el HTML: cada estrella es un radio, con
+       aria-checked y flechas del teclado como un grupo de radios nativo. */
     function setRating(value){
       ratingInput.value = value || '';
-      starButtons.forEach(function(btn){
-        btn.classList.toggle('active', Number(btn.dataset.starValue) <= value);
+      starButtons.forEach(function(btn, i){
+        const v = Number(btn.dataset.starValue);
+        btn.classList.toggle('active', v <= value);
+        btn.setAttribute('aria-checked', String(v === value));
+        btn.tabIndex = (value ? v === value : i === 0) ? 0 : -1;
       });
     }
 
-    starButtons.forEach(function(btn){
+    starButtons.forEach(function(btn, i){
+      btn.setAttribute('role', 'radio');
       btn.addEventListener('click', function(){ setRating(Number(btn.dataset.starValue)); });
+      btn.addEventListener('keydown', function(e){
+        let next;
+        if(e.key === 'ArrowRight' || e.key === 'ArrowUp') next = Math.min(starButtons.length - 1, i + 1);
+        else if(e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = Math.max(0, i - 1);
+        else return;
+        e.preventDefault();
+        setRating(Number(starButtons[next].dataset.starValue));
+        starButtons[next].focus();
+      });
     });
+    setRating(Number(ratingInput.value) || 0);
 
     form.addEventListener('submit', function(e){
       e.preventDefault();
@@ -1863,7 +1994,7 @@ function initProductReviews(){
 
       if(summaryEl && starsEl && textEl){
         starsEl.innerHTML = renderStars(avg);
-        textEl.textContent = avg.toFixed(1).replace('.', ',') + ' · ' + reviews.length + (reviews.length === 1 ? ' reseña' : ' reseñas');
+        textEl.textContent = RATING_FORMAT.format(avg) + ' · ' + reviews.length + (reviews.length === 1 ? ' reseña' : ' reseñas');
         summaryEl.hidden = false;
       }
 
@@ -1886,6 +2017,7 @@ function initProductReviews(){
 
 document.addEventListener('DOMContentLoaded', function(){
   initImageCacheBust();
+  initLiveRegion();
   initAnnounceBar();
   initCartCount();
   initMegaMenu();

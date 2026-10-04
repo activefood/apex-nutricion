@@ -20,6 +20,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#ffffff">
 <style>img,svg{max-width:100%;display:block}html,body{overflow-x:hidden;margin:0}.mobile-nav{display:none}</style>
 <title>Carbohidratos — Geles, gomitas, waffles y barras | Apex Nutrición</title>
 <meta name="description" content="Geles, gomitas, waffles y barras de las cinco marcas de Apex Nutrición. Filtra por cafeína, carbohidratos y sodio por porción — compara lo que ningún catálogo venezolano muestra.">
@@ -30,9 +31,10 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
-<link rel="stylesheet" href="styles.css?v=107">
+<link rel="stylesheet" href="styles.css?v=108">
 </head>
 <body>
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
 
 <!-- ============ Barra de anuncio ============ -->
 <div class="announce">
@@ -44,18 +46,18 @@
   <div class="container">
 
     <button class="menu-toggle icon-btn" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-nav">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
 
     <a href="index.html" class="logo" aria-label="Apex Nutrición — Inicio">
-      <img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición">
+      <img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición" width="2200" height="531">
     </a>
 
     <nav class="main-nav" aria-label="Navegación principal">
       <ul>
         <li class="nav-item has-mega">
           <button class="nav-trigger" aria-haspopup="true">HIDRATACIÓN
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg aria-hidden="true" class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="mega">
             <div class="mega-group">
@@ -78,7 +80,7 @@
 
         <li class="nav-item has-mega">
           <button class="nav-trigger" aria-haspopup="true">GELES Y ENERGÍA
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg aria-hidden="true" class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="mega">
             <div class="mega-group">
@@ -103,15 +105,12 @@
 
     <div class="header-actions">
       <form class="search-form" role="search" action="busqueda.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <label for="search-input" class="visually-hidden">Buscar productos</label>
         <input id="search-input" type="search" name="q" placeholder="Buscar geles, proteína…">
       </form>
-      <a class="icon-btn" href="#" aria-label="Mi cuenta">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-      </a>
       <a class="icon-btn cart-btn" href="carrito.html" aria-label="Carrito de compras">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.3"/><circle cx="18" cy="21" r="1.3"/><path d="M2.5 3h2.6l2.4 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6l1.5-8.2H6"/></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.3"/><circle cx="18" cy="21" r="1.3"/><path d="M2.5 3h2.6l2.4 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6l1.5-8.2H6"/></svg>
         <span class="cart-count" data-cart-count>0</span>
       </a>
     </div>
@@ -120,13 +119,13 @@
   <!-- Menú móvil -->
   <nav id="mobile-nav" class="mobile-nav" aria-label="Navegación móvil">
     <form class="search-form" role="search" action="busqueda.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <label for="search-input-mobile" class="visually-hidden">Buscar productos</label>
       <input id="search-input-mobile" type="search" name="q" placeholder="Buscar geles, proteína…">
     </form>
 
     <details>
-      <summary>HIDRATACIÓN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
+      <summary>HIDRATACIÓN <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
       <div class="mobile-links">
         <a href="categoria.html?cat=hidratacion&sub=polvo">Polvos</a>
         <a href="categoria.html?cat=hidratacion&sub=masticable">Masticables</a>
@@ -136,7 +135,7 @@
     <a class="mobile-plain" href="categoria.html?cat=proteina">PROTEÍNA</a>
     <a class="mobile-plain" href="categoria.html?cat=recuperacion">RECUPERACIÓN</a>
     <details>
-      <summary>GELES Y ENERGÍA <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
+      <summary>GELES Y ENERGÍA <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
       <div class="mobile-links">
         <a href="categoria.html?cat=geles-energia&sub=gel">Geles</a>
         <a href="categoria.html?cat=geles-energia&sub=waffle">Waffles</a>
@@ -148,7 +147,7 @@
   </nav>
 </header>
 
-<main>
+<main id="contenido">
   <div class="container">
 
     <!-- ============ Migas de pan ============ -->
@@ -169,7 +168,7 @@
       <!-- ============ Filtros ============ -->
       <button type="button" class="filters-toggle" id="filters-toggle" aria-expanded="false" aria-controls="filters-panel">
         Filtros
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
 
       <aside class="filters" id="filters-panel" aria-label="Filtros de productos">
@@ -258,11 +257,11 @@
 
         <div class="product-grid" id="product-grid">
 
-          <a class="product-card" href="producto-going-hidratante.html?flavor=Uva" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="1.79" data-rating="4.6" data-bestseller="true" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="1.79" data-rating="4.6" data-bestseller="true" data-category="hidratacion">
+            <a class="product-card-box" href="producto-going-hidratante.html?flavor=Uva">
         <div class="product-media">
               <span class="tag tag--best">Más vendido</span>
-              <img class="product-photo" src="assets/going/hidratante-sobre-uva.png" alt="Hidratante Uva">
+              <img class="product-photo" src="assets/going/hidratante-sobre-uva.png" alt="Hidratante Uva" width="1000" height="1000">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -271,14 +270,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $1,79</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-hidratante.html?flavor=Coco" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="1.79" data-rating="4.6" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="1.79" data-rating="4.6" data-category="hidratacion">
+            <a class="product-card-box" href="producto-going-hidratante.html?flavor=Coco">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/hidratante-sobre-coco.png" alt="Hidratante Coco">
+              <img class="product-photo" src="assets/going/hidratante-sobre-coco.png" alt="Hidratante Coco" width="1000" height="1000">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -287,14 +286,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $1,79</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-hidratante.html?flavor=Pitaya" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="1.79" data-rating="4.6" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="1.79" data-rating="4.6" data-category="hidratacion">
+            <a class="product-card-box" href="producto-going-hidratante.html?flavor=Pitaya">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/hidratante-sobre-pitaya.png" alt="Hidratante Pitaya">
+              <img class="product-photo" src="assets/going/hidratante-sobre-pitaya.png" alt="Hidratante Pitaya" width="1000" height="1000">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -303,14 +302,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $1,79</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-hidratante-tarro.html?flavor=Uva" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
+            <a class="product-card-box" href="producto-going-hidratante-tarro.html?flavor=Uva">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/hidratante-uva.png" alt="Hidratante Uva — 300 g">
+              <img class="product-photo" src="assets/going/hidratante-uva.png" alt="Hidratante Uva — 300 g" width="1000" height="1000">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -319,14 +318,14 @@
               <div class="product-bottom">
                 <span class="product-price">$25,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-hidratante-tarro.html?flavor=Coco" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
+            <a class="product-card-box" href="producto-going-hidratante-tarro.html?flavor=Coco">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/hidratante-coco.png" alt="Hidratante Coco — 300 g">
+              <img class="product-photo" src="assets/going/hidratante-coco.png" alt="Hidratante Coco — 300 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -335,14 +334,14 @@
               <div class="product-bottom">
                 <span class="product-price">$25,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-hidratante-tarro.html?flavor=Pitaya" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
+            <a class="product-card-box" href="producto-going-hidratante-tarro.html?flavor=Pitaya">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/hidratante-pitaya.png" alt="Hidratante Pitaya — 300 g">
+              <img class="product-photo" src="assets/going/hidratante-pitaya.png" alt="Hidratante Pitaya — 300 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -351,15 +350,15 @@
               <div class="product-bottom">
                 <span class="product-price">$25,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto.html?flavor=Fresa%20Banano" data-brand="going" data-format="gel" data-caffeine="30" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.7" data-bestseller="true" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="gel" data-caffeine="30" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.7" data-bestseller="true" data-category="geles-energia">
+            <a class="product-card-box" href="producto.html?flavor=Fresa%20Banano">
         <div class="product-media">
               <span class="tag tag--best">Más vendido</span>
-              <img class="product-photo" src="assets/going/gel-fresa-banano.png" alt="Gel Energético Fresa Banano">
+              <img class="product-photo" src="assets/going/gel-fresa-banano.png" alt="Gel Energético Fresa Banano" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -368,14 +367,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,44</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto.html?flavor=Granada" data-brand="going" data-format="gel" data-caffeine="0" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.7" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="gel" data-caffeine="0" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.7" data-category="geles-energia">
+            <a class="product-card-box" href="producto.html?flavor=Granada">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/gel-granada.png" alt="Gel Energético Granada — Sin Cafeína">
+              <img class="product-photo" src="assets/going/gel-granada.png" alt="Gel Energético Granada — Sin Cafeína" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -384,14 +383,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,44</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto.html?flavor=Guayaba" data-brand="going" data-format="gel" data-caffeine="30" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.7" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="gel" data-caffeine="30" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.7" data-category="geles-energia">
+            <a class="product-card-box" href="producto.html?flavor=Guayaba">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/gel-guayaba.png" alt="Gel Energético Guayaba">
+              <img class="product-photo" src="assets/going/gel-guayaba.png" alt="Gel Energético Guayaba" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -400,14 +399,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,44</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-gel-cafe.html" data-brand="going" data-format="gel" data-caffeine="30" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.6" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="gel" data-caffeine="30" data-carbs="19" data-sodium="35" data-sport="running ciclismo triatlon trail" data-price="3.44" data-rating="4.6" data-category="geles-energia">
+            <a class="product-card-box" href="producto-going-gel-cafe.html">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/gel-cafe-colombia.png" alt="Gel Energético Café">
+              <img class="product-photo" src="assets/going/gel-cafe-colombia.png" alt="Gel Energético Café" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -416,14 +415,14 @@
               <div class="product-bottom">
                 <span class="product-price">$3,44</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-barra.html?flavor=Chocolate" data-brand="going" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="80" data-sport="running ciclismo trail gimnasio" data-price="4.10" data-rating="4.4" data-category="recuperacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="80" data-sport="running ciclismo trail gimnasio" data-price="4.10" data-rating="4.4" data-category="recuperacion">
+            <a class="product-card-box" href="producto-going-barra.html?flavor=Chocolate">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/barra-chocolate-mani.png" alt="Barra Endurance Chocolate">
+              <img class="product-photo" src="assets/going/barra-chocolate-mani.png" alt="Barra Endurance Chocolate" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -432,14 +431,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,10</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-barra.html?flavor=Frutos%20Rojos" data-brand="going" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="80" data-sport="running ciclismo trail gimnasio" data-price="4.10" data-rating="4.4" data-category="recuperacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="80" data-sport="running ciclismo trail gimnasio" data-price="4.10" data-rating="4.4" data-category="recuperacion">
+            <a class="product-card-box" href="producto-going-barra.html?flavor=Frutos%20Rojos">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/barra-frutos.png" alt="Barra Endurance Frutos Rojos">
+              <img class="product-photo" src="assets/going/barra-frutos.png" alt="Barra Endurance Frutos Rojos" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -448,14 +447,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,10</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-proteina.html?flavor=Chocolate" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="3.76" data-rating="4.5" data-category="proteina">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="3.76" data-rating="4.5" data-category="proteina">
+            <a class="product-card-box" href="producto-going-proteina.html?flavor=Chocolate">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/proteina-chocolate.png" alt="Proteína en Polvo Chocolate — Sobre 30 g">
+              <img class="product-photo" src="assets/going/proteina-chocolate.png" alt="Proteína en Polvo Chocolate — Sobre 30 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -464,14 +463,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,76</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-proteina.html?flavor=Vainilla" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="3.76" data-rating="4.5" data-category="proteina">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="3.76" data-rating="4.5" data-category="proteina">
+            <a class="product-card-box" href="producto-going-proteina.html?flavor=Vainilla">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/proteina-vainilla.png" alt="Proteína en Polvo Vainilla — Sobre 30 g">
+              <img class="product-photo" src="assets/going/proteina-vainilla.png" alt="Proteína en Polvo Vainilla — Sobre 30 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -480,14 +479,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,76</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-proteina-tarro.html?flavor=Chocolate" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="32.00" data-rating="4.6" data-category="proteina">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="32.00" data-rating="4.6" data-category="proteina">
+            <a class="product-card-box" href="producto-going-proteina-tarro.html?flavor=Chocolate">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/proteina-tarro-chocolate.png" alt="Proteína en Polvo Chocolate — 600 g">
+              <img class="product-photo" src="assets/going/proteina-tarro-chocolate.png" alt="Proteína en Polvo Chocolate — 600 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -496,14 +495,14 @@
               <div class="product-bottom">
                 <span class="product-price">$32,00</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-going-proteina-tarro.html?flavor=Vainilla" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="32.00" data-rating="4.5" data-category="proteina">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="3" data-sodium="50" data-sport="gimnasio" data-price="32.00" data-rating="4.5" data-category="proteina">
+            <a class="product-card-box" href="producto-going-proteina-tarro.html?flavor=Vainilla">
         <div class="product-media">
-              <img class="product-photo" src="assets/going/proteina-tarro-vainilla.png" alt="Proteína en Polvo Vainilla — 600 g">
+              <img class="product-photo" src="assets/going/proteina-tarro-vainilla.png" alt="Proteína en Polvo Vainilla — 600 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Going Nutrición</p>
@@ -512,14 +511,14 @@
               <div class="product-bottom">
                 <span class="product-price">$32,00</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-gomitas.html?flavor=Citrus%20Splash" data-brand="honey" data-format="gomitas" data-caffeine="0" data-carbs="39" data-sodium="60" data-sport="running ciclismo trail" data-price="5.99" data-rating="4.6" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="gomitas" data-caffeine="0" data-carbs="39" data-sodium="60" data-sport="running ciclismo trail" data-price="5.99" data-rating="4.6" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-gomitas.html?flavor=Citrus%20Splash">
         <div class="product-media">
-              <img class="product-photo" src="assets/honey/gomitas-citrus-splash.png" alt="Gomitas Energéticas Honey Stinger sabor Citrus Splash">
+              <img class="product-photo" src="assets/honey/gomitas-citrus-splash.png" alt="Gomitas Energéticas Honey Stinger sabor Citrus Splash" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -528,14 +527,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $5,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-gomitas.html?flavor=Fruit%20Smoothie" data-brand="honey" data-format="gomitas" data-caffeine="0" data-carbs="39" data-sodium="60" data-sport="running ciclismo trail" data-price="5.99" data-rating="4.5" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="gomitas" data-caffeine="0" data-carbs="39" data-sodium="60" data-sport="running ciclismo trail" data-price="5.99" data-rating="4.5" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-gomitas.html?flavor=Fruit%20Smoothie">
         <div class="product-media">
-              <img class="product-photo" src="assets/honey/gomitas-fruit-smoothie.png" alt="Gomitas Energéticas Honey Stinger sabor Fruit Smoothie">
+              <img class="product-photo" src="assets/honey/gomitas-fruit-smoothie.png" alt="Gomitas Energéticas Honey Stinger sabor Fruit Smoothie" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -544,15 +543,15 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $5,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-gel.html?flavor=Strawberry%20Kiwi" data-brand="honey" data-format="gel" data-caffeine="32" data-carbs="24" data-sodium="50" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.6" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="gel" data-caffeine="32" data-carbs="24" data-sodium="50" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.6" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-gel.html?flavor=Strawberry%20Kiwi">
         <div class="product-media">
               <span class="tag tag--new">Nuevo</span>
-              <img class="product-photo" src="assets/honey/gel-strawberry-kiwi.png" alt="Gel Energético Honey Stinger sabor Strawberry Kiwi">
+              <img class="product-photo" src="assets/honey/gel-strawberry-kiwi.png" alt="Gel Energético Honey Stinger sabor Strawberry Kiwi" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -561,14 +560,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,50</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-gel.html?flavor=Acai%20Pomegranate" data-brand="honey" data-format="gel" data-caffeine="0" data-carbs="24" data-sodium="50" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.5" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="gel" data-caffeine="0" data-carbs="24" data-sodium="50" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.5" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-gel.html?flavor=Acai%20Pomegranate">
         <div class="product-media">
-              <img class="product-photo" src="assets/honey/gel-acai-pomegranate.png" alt="Gel Energético Honey Stinger sabor Acai Pomegranate">
+              <img class="product-photo" src="assets/honey/gel-acai-pomegranate.png" alt="Gel Energético Honey Stinger sabor Acai Pomegranate" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -577,14 +576,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,50</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-gel.html?flavor=Fruit%20Smoothie" data-brand="honey" data-format="gel" data-caffeine="0" data-carbs="24" data-sodium="50" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.5" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="gel" data-caffeine="0" data-carbs="24" data-sodium="50" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.5" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-gel.html?flavor=Fruit%20Smoothie">
         <div class="product-media">
-              <img class="product-photo" src="assets/honey/gel-fruit-smoothie.png" alt="Gel Energético Honey Stinger sabor Fruit Smoothie">
+              <img class="product-photo" src="assets/honey/gel-fruit-smoothie.png" alt="Gel Energético Honey Stinger sabor Fruit Smoothie" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -593,14 +592,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,50</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-gel.html?flavor=Gold" data-brand="honey" data-format="gel" data-caffeine="0" data-carbs="24" data-sodium="45" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.6" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="gel" data-caffeine="0" data-carbs="24" data-sodium="45" data-sport="running ciclismo triatlon trail" data-price="4.50" data-rating="4.6" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-gel.html?flavor=Gold">
         <div class="product-media">
-              <img class="product-photo" src="assets/honey/gel-gold.png" alt="Gel Energético Honey Stinger sabor Gold">
+              <img class="product-photo" src="assets/honey/gel-gold.png" alt="Gel Energético Honey Stinger sabor Gold" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -609,15 +608,15 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,50</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-waffle.html?flavor=Miel" data-brand="honey" data-format="waffle" data-caffeine="0" data-carbs="19" data-sodium="50" data-sport="ciclismo trail running" data-price="3.65" data-rating="4.7" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="waffle" data-caffeine="0" data-carbs="19" data-sodium="50" data-sport="ciclismo trail running" data-price="3.65" data-rating="4.7" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-waffle.html?flavor=Miel">
         <div class="product-media">
               <span class="tag tag--best">Más vendido</span>
-              <img class="product-photo" src="assets/honey/waffle-miel.png" alt="Waffle Energético Honey Stinger sabor Miel">
+              <img class="product-photo" src="assets/honey/waffle-miel.png" alt="Waffle Energético Honey Stinger sabor Miel" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -626,14 +625,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,65</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-waffle.html?flavor=Vainilla" data-brand="honey" data-format="waffle" data-caffeine="0" data-carbs="19" data-sodium="50" data-sport="ciclismo trail running" data-price="3.65" data-rating="4.6" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="waffle" data-caffeine="0" data-carbs="19" data-sodium="50" data-sport="ciclismo trail running" data-price="3.65" data-rating="4.6" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-waffle.html?flavor=Vainilla">
         <div class="product-media">
-              <img class="product-photo" src="assets/honey/waffle-vainilla.png" alt="Waffle Energético Honey Stinger sabor Vainilla">
+              <img class="product-photo" src="assets/honey/waffle-vainilla.png" alt="Waffle Energético Honey Stinger sabor Vainilla" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -642,14 +641,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,65</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-honey-waffle.html?flavor=Chocolate" data-brand="honey" data-format="waffle" data-caffeine="0" data-carbs="19" data-sodium="50" data-sport="ciclismo trail running" data-price="3.65" data-rating="4.7" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="honey" data-format="waffle" data-caffeine="0" data-carbs="19" data-sodium="50" data-sport="ciclismo trail running" data-price="3.65" data-rating="4.7" data-category="geles-energia">
+            <a class="product-card-box" href="producto-honey-waffle.html?flavor=Chocolate">
         <div class="product-media">
-              <img class="product-photo" src="assets/honey/waffle-chocolate.png" alt="Waffle Energético Honey Stinger sabor Chocolate">
+              <img class="product-photo" src="assets/honey/waffle-chocolate.png" alt="Waffle Energético Honey Stinger sabor Chocolate" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Honey Stinger</p>
@@ -658,15 +657,15 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,65</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-skratch.html?flavor=Fresa%20Limonada" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="3.45" data-rating="4.9" data-bestseller="true" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="3.45" data-rating="4.9" data-bestseller="true" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch.html?flavor=Fresa%20Limonada">
         <div class="product-media">
               <span class="tag tag--best">Más vendido</span>
-              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada-sticks.png" alt="Sport Hydration Drink Mix Fresa Limonada — Sobres">
+              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada-sticks.png" alt="Sport Hydration Drink Mix Fresa Limonada — Sobres" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Skratch Labs</p>
@@ -675,14 +674,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,45</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-skratch.html?flavor=Lim%C3%B3n%20Lima" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="3.45" data-rating="4.9" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="3.45" data-rating="4.9" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch.html?flavor=Lim%C3%B3n%20Lima">
         <div class="product-media">
-              <img class="product-photo" src="assets/skratch/hidratacion-limon-lima-sticks.png" alt="Sport Hydration Drink Mix Limón Lima — Sobres">
+              <img class="product-photo" src="assets/skratch/hidratacion-limon-lima-sticks.png" alt="Sport Hydration Drink Mix Limón Lima — Sobres" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Skratch Labs</p>
@@ -691,14 +690,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $3,45</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-skratch-bolsa.html?flavor=Fresa%20Limonada" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Fresa%20Limonada">
         <div class="product-media">
-              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada.png" alt="Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g">
+              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada.png" alt="Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Skratch Labs</p>
@@ -707,14 +706,14 @@
               <div class="product-bottom">
                 <span class="product-price">$35,55</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-skratch-bolsa.html?flavor=Lim%C3%B3n%20Lima" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Lim%C3%B3n%20Lima">
         <div class="product-media">
-              <img class="product-photo" src="assets/skratch/hidratacion-limon-lima.png" alt="Sport Hydration Drink Mix Limón Lima — Bolsa 440 g">
+              <img class="product-photo" src="assets/skratch/hidratacion-limon-lima.png" alt="Sport Hydration Drink Mix Limón Lima — Bolsa 440 g" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Skratch Labs</p>
@@ -723,14 +722,14 @@
               <div class="product-bottom">
                 <span class="product-price">$35,55</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-saltstick.html?flavor=Naranja" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
+            <a class="product-card-box" href="producto-saltstick.html?flavor=Naranja">
         <div class="product-media">
-              <img class="product-photo" src="assets/saltstick/fastchews-packet-tartorange.png" alt="FastChews Naranja">
+              <img class="product-photo" src="assets/saltstick/fastchews-packet-tartorange.png" alt="FastChews Naranja" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">SaltStick</p>
@@ -739,14 +738,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $5,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-saltstick.html?flavor=Frutos%20Rojos" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
+            <a class="product-card-box" href="producto-saltstick.html?flavor=Frutos%20Rojos">
         <div class="product-media">
-              <img class="product-photo" src="assets/saltstick/fastchews-packet-mixedberry.png" alt="FastChews Frutos Rojos">
+              <img class="product-photo" src="assets/saltstick/fastchews-packet-mixedberry.png" alt="FastChews Frutos Rojos" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">SaltStick</p>
@@ -755,14 +754,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $5,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-saltstick.html?flavor=Lim%C3%B3n%20Lima" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
+            <a class="product-card-box" href="producto-saltstick.html?flavor=Lim%C3%B3n%20Lima">
         <div class="product-media">
-              <img class="product-photo" src="assets/saltstick/fastchews-packet-lemonlime.png" alt="FastChews Limón Lima">
+              <img class="product-photo" src="assets/saltstick/fastchews-packet-lemonlime.png" alt="FastChews Limón Lima" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">SaltStick</p>
@@ -771,14 +770,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $5,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-saltstick.html?flavor=Limonada%20Rosada" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="saltstick" data-format="masticable" data-caffeine="0" data-carbs="4" data-sodium="210" data-sport="running ciclismo triatlon trail" data-price="5.99" data-rating="4.2" data-category="hidratacion">
+            <a class="product-card-box" href="producto-saltstick.html?flavor=Limonada%20Rosada">
         <div class="product-media">
-              <img class="product-photo" src="assets/saltstick/fastchews-packet-pinklemonade.png" alt="FastChews Limonada Rosada">
+              <img class="product-photo" src="assets/saltstick/fastchews-packet-pinklemonade.png" alt="FastChews Limonada Rosada" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">SaltStick</p>
@@ -787,14 +786,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $5,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-saltstick-capsulas.html" data-brand="saltstick" data-format="capsula" data-caffeine="0" data-carbs="0" data-sport="triatlon trail running" data-price="4.99" data-rating="4.6" data-category="hidratacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="saltstick" data-format="capsula" data-caffeine="0" data-carbs="0" data-sport="triatlon trail running" data-price="4.99" data-rating="4.6" data-category="hidratacion">
+            <a class="product-card-box" href="producto-saltstick-capsulas.html">
         <div class="product-media">
-              <img class="product-photo" src="assets/saltstick/capsulas-electrolitos.png" alt="SaltStick Cápsulas de Electrolitos">
+              <img class="product-photo" src="assets/saltstick/capsulas-electrolitos.png" alt="SaltStick Cápsulas de Electrolitos" width="1200" height="1200" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">SaltStick</p>
@@ -803,14 +802,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,99</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-probar-barra.html?flavor=Peanut%20Butter%20Chocolate" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="390" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="390" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
+            <a class="product-card-box" href="producto-probar-barra.html?flavor=Peanut%20Butter%20Chocolate">
         <div class="product-media">
-              <img class="product-photo" src="assets/probar/barra-peanut-butter-chocolate.png" alt="Barra de Proteína Peanut Butter Chocolate">
+              <img class="product-photo" src="assets/probar/barra-peanut-butter-chocolate.png" alt="Barra de Proteína Peanut Butter Chocolate" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Probar</p>
@@ -819,14 +818,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,95</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-probar-barra.html?flavor=Cookie%20Dough" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="33" data-sodium="400" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="33" data-sodium="400" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
+            <a class="product-card-box" href="producto-probar-barra.html?flavor=Cookie%20Dough">
         <div class="product-media">
-              <img class="product-photo" src="assets/probar/barra-cookie-dough.png" alt="Barra de Proteína Cookie Dough">
+              <img class="product-photo" src="assets/probar/barra-cookie-dough.png" alt="Barra de Proteína Cookie Dough" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Probar</p>
@@ -835,14 +834,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,95</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-probar-barra.html?flavor=Sea%20Salt%20Caramel" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="380" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="380" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
+            <a class="product-card-box" href="producto-probar-barra.html?flavor=Sea%20Salt%20Caramel">
         <div class="product-media">
-              <img class="product-photo" src="assets/probar/barra-sea-salt-caramel.png" alt="Barra de Proteína Sea Salt Caramel">
+              <img class="product-photo" src="assets/probar/barra-sea-salt-caramel.png" alt="Barra de Proteína Sea Salt Caramel" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Probar</p>
@@ -851,14 +850,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,95</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-probar-gomas.html?flavor=Fresa" data-brand="probar" data-format="gomitas" data-caffeine="0" data-carbs="46" data-sodium="150" data-sport="running ciclismo triatlon" data-price="4.29" data-rating="4.3" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="probar" data-format="gomitas" data-caffeine="0" data-carbs="46" data-sodium="150" data-sport="running ciclismo triatlon" data-price="4.29" data-rating="4.3" data-category="geles-energia">
+            <a class="product-card-box" href="producto-probar-gomas.html?flavor=Fresa">
         <div class="product-media product-media--bleed">
-              <img class="product-photo" src="assets/probar/gomitas-bolt-fresa.png" alt="Gomas Energéticas Bolt Fresa">
+              <img class="product-photo" src="assets/probar/gomitas-bolt-fresa.png" alt="Gomas Energéticas Bolt Fresa" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Probar</p>
@@ -867,14 +866,14 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,29</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
-          <a class="product-card" href="producto-probar-gomas.html?flavor=Naranja" data-brand="probar" data-format="gomitas" data-caffeine="0" data-carbs="46" data-sodium="150" data-sport="running ciclismo triatlon" data-price="4.29" data-rating="4.3" data-category="geles-energia">
-            <div class="product-card-box">
+          <div class="product-card" data-brand="probar" data-format="gomitas" data-caffeine="0" data-carbs="46" data-sodium="150" data-sport="running ciclismo triatlon" data-price="4.29" data-rating="4.3" data-category="geles-energia">
+            <a class="product-card-box" href="producto-probar-gomas.html?flavor=Naranja">
         <div class="product-media">
-              <img class="product-photo" src="assets/probar/gomitas-bolt-naranja.png" alt="Gomas Energéticas Bolt Naranja">
+              <img class="product-photo" src="assets/probar/gomitas-bolt-naranja.png" alt="Gomas Energéticas Bolt Naranja" width="1000" height="1000" loading="lazy">
             </div>
         <div class="product-info">
               <p class="product-brand">Probar</p>
@@ -883,9 +882,9 @@
               <div class="product-bottom">
                 <span class="product-price">Desde $4,29</span>
               </div></div>
-      </div>
+      </a>
       <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
-          </a>
+          </div>
 
         </div>
 
@@ -899,11 +898,11 @@
   <div class="container">
     <div class="footer-grid">
       <div class="footer-col footer-about">
-        <a href="index.html" class="logo"><img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición"></a>
+        <a href="index.html" class="logo"><img class="logo-img" src="assets/logo-apex.png?v=7" alt="Apex Nutrición" width="2200" height="531" loading="lazy"></a>
         <p>Tienda venezolana especializada en nutrición deportiva. Reunimos el portafolio de Going Nutrición, Probar, Skratch Labs, SaltStick y Honey Stinger bajo un solo techo, con despacho local.</p>
       </div>
       <div class="footer-col">
-        <h4>Comprar</h4>
+        <h2>Comprar</h2>
         <ul>
           <li><a href="categoria.html?cat=hidratacion">Hidratación</a></li>
           <li><a href="categoria.html?cat=proteina">Proteína</a></li>
@@ -912,7 +911,7 @@
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Marcas</h4>
+        <h2>Marcas</h2>
         <ul>
           <li><a href="marca.html">Going Nutrición</a></li>
           <li><a href="marca-probar.html">Probar</a></li>
@@ -930,19 +929,16 @@
     <div class="footer-bottom">
       <div class="footer-social">
         <a href="https://instagram.com/apexnutricionve" target="_blank" rel="noopener" aria-label="Instagram">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
-        </a>
-        <a href="#" aria-label="Facebook">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8h-2a2 2 0 0 0-2 2v10M8 13h5"/><circle cx="12" cy="12" r="9"/></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
         </a>
         <a href="https://www.tiktok.com/@apex.nutricin" target="_blank" rel="noopener" aria-label="TikTok">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 4c.5 2.4 2.2 4 4.5 4.3"/></svg>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 4c.5 2.4 2.2 4 4.5 4.3"/></svg>
         </a>
       </div>
     </div>
   </div>
 </footer>
 
-<script src="app.js?v=81"></script>
+<script src="app.js?v=82"></script>
 </body>
 </html>

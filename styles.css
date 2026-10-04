@@ -60,6 +60,7 @@
 
 /* ---------- Reset ---------- */
 *, *::before, *::after{ box-sizing: border-box; }
+img{ height: auto; }
 html{ -webkit-text-size-adjust: 100%; touch-action: pan-x pan-y; }
 body{
   margin: 0;
@@ -97,6 +98,7 @@ summary:focus-visible,
    del footer, etc.) se queda en la tipografía de cuerpo — Anton a 14px
    se vuelve ilegible. */
 h1,h2,h3,h4{
+  text-wrap: balance;
   font-weight: 700;
   line-height: 1.15;
   color: var(--ink);
@@ -404,7 +406,8 @@ button.pill:hover{ border-color: var(--ink); }
   width: 240px;
   background: var(--paper);
   border-color: var(--ink);
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .search-form svg{
   position: absolute;
@@ -993,6 +996,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .product-card:hover{ transform: translateY(-3px); }
 .product-card:hover .product-card-box{ box-shadow: var(--shadow-hover); }
+.product-card-box:focus-visible{ border-radius: var(--r-card); }
 
 /* Envuelve la foto (fondo blanco) y la info (fondo azul claro) en una sola línea finita.
    flex-grow hace que todas las cajas de una misma fila terminen a la misma altura,
@@ -1413,7 +1417,7 @@ button.pill:hover{ border-color: var(--ink); }
   font-size: 14px;
   background: var(--paper);
 }
-.newsletter-form input:focus{ outline: none; border-color: var(--ink); }
+.newsletter-form input:focus{ outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--ink); }
 .newsletter-note{
   font-size: 12px;
   color: var(--ink-3);
@@ -1449,7 +1453,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .footer-about .logo-name{ font-size: 20px; }
 .footer-about p{ font-size: 13px; margin-top: var(--sp-3); max-width: 320px; }
-.footer-col h4{
+.footer-col h2{
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .1em;
@@ -1475,7 +1479,7 @@ button.pill:hover{ border-color: var(--ink); }
   background: var(--paper);
   min-width: 0;
 }
-.footer-newsletter input:focus{ outline: none; border-color: var(--ink); }
+.footer-newsletter input:focus{ outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--ink); }
 
 .footer-legal{
   margin-top: 40px;
@@ -1657,7 +1661,7 @@ button.pill:hover{ border-color: var(--ink); }
   appearance: none;
   -webkit-appearance: none;
 }
-.cat-sort select:focus{ outline: none; border-color: var(--ink); }
+.cat-sort select:focus{ outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--ink); }
 
 .product-grid[hidden]{ display: none; }
 .cat-empty{
@@ -2686,7 +2690,7 @@ button.pill:hover{ border-color: var(--ink); }
   background: var(--paper);
   box-sizing: border-box;
 }
-.checkout-field input:focus{ outline: none; border-color: var(--ink); }
+.checkout-field input:focus{ outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--ink); }
 .checkout-error{
   font-size: 12px;
   color: #c0392b;
@@ -2707,7 +2711,7 @@ button.pill:hover{ border-color: var(--ink); }
   font-size: 13px;
   background: var(--paper);
 }
-.coupon-row input:focus{ outline: none; border-color: var(--ink); }
+.coupon-row input:focus{ outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--ink); }
 .coupon-note{
   font-size: 12px;
   color: var(--ink-3);
@@ -2790,7 +2794,7 @@ button.pill:hover{ border-color: var(--ink); }
   background: var(--paper);
   transition: border-color var(--ease);
 }
-.search-hero-form input:focus{ outline: none; border-color: var(--ink); }
+.search-hero-form input:focus{ outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--ink); }
 .search-hero-form button{
   position: absolute;
   right: 6px;
@@ -2871,3 +2875,79 @@ button.pill:hover{ border-color: var(--ink); }
 @media (max-width: 480px){
   .wa-float{ padding: 12px 14px; font-size: 13px; }
 }
+
+/* ---------- Cifras alineadas (precios y cantidades no "bailan" al cambiar) ---------- */
+.product-price, .pdp-price, .pdp-price-bs, .cart-line-price, .summary-amount,
+.qty-stepper output, .box-qty-stepper output, .flavor-card-price{ font-variant-numeric: tabular-nums; }
+
+/* ---------- Saltar al contenido (visible solo al navegar con teclado) ---------- */
+.skip-link{
+  position: absolute;
+  left: var(--sp-3);
+  top: -100px;
+  z-index: 1000;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 700;
+  border-radius: var(--r-control);
+}
+.skip-link:focus{ top: var(--sp-3); }
+#contenido{ scroll-margin-top: 80px; }
+
+/* ---------- Pausar carrusel del héroe ---------- */
+.carousel-pause{
+  position: absolute;
+  right: var(--sp-4);
+  top: var(--sp-4);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.85);
+  border: 1px solid rgba(0,0,0,.2);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 5;
+  cursor: pointer;
+}
+.carousel-pause[hidden]{ display: none; }
+.carousel-pause svg{ width: 14px; height: 14px; }
+
+/* ---------- Carrito: errores junto al campo y "Deshacer" ---------- */
+.checkout-field-label{
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.checkout-field input[aria-invalid="true"],
+.checkout-field select[aria-invalid="true"],
+#checkout-state[aria-invalid="true"]{ border-color: #c0392b; }
+.coupon-row .btn{ margin-top: 0; }
+.cart-undo{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-3);
+  background: var(--paper-2);
+  border-radius: var(--r-control);
+  font-size: 13px;
+}
+.cart-undo[hidden]{ display: none; }
+.cart-undo button{
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  color: var(--ink);
+  cursor: pointer;
+}
+.carousel-pause svg[hidden]{ display: none; }
