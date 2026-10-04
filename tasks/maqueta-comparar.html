@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es-VE"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="robots" content="noindex">
+<title>Maqueta — comparar color del carrusel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+.hero-carousel{ display:block; } .hero-slide{ visibility: visible; }
+.etiqueta{ font: 700 12px/1 var(--font-mono); letter-spacing:.08em; text-transform:uppercase; padding: 20px 16px 8px; }
+/* Tema por variables: un mismo juego de reglas para las dos opciones */
+.hero-slide--promo[class*="tema-"]{ background: var(--t-bg); border-bottom-color: var(--t-bg); }
+[class*="tema-"] .eyebrow{ color: var(--t-eyebrow); }
+[class*="tema-"] .promo-title, [class*="tema-"] .promo-price{ color: var(--t-fg); }
+[class*="tema-"] .promo-text, [class*="tema-"] .promo-price span, [class*="tema-"] .promo-code, [class*="tema-"] .promo-perk{ color: var(--t-fg); }
+[class*="tema-"] .promo-code-chip{ color: var(--t-fg); border-color: var(--t-fg); }
+[class*="tema-"] .btn--primary{ background: var(--t-btn-bg); color: var(--t-btn-fg); }
+[class*="tema-"] .btn--ghost{ color: var(--t-fg); border-color: var(--t-fg); background: transparent; }
+[class*="tema-"] .promo-media img{ filter: drop-shadow(0 10px 14px rgba(0,0,0,.25)); }
+/* A — color sacado de cada producto */
+.tema-a1{ --t-bg:#EBC94A; --t-fg:var(--ink); --t-eyebrow:var(--ink); --t-btn-bg:#B42E30; --t-btn-fg:#fff; }
+.tema-a2{ --t-bg:#B6064D; --t-fg:#fff;      --t-eyebrow:#fff;      --t-btn-bg:#fff;    --t-btn-fg:var(--ink); }
+.tema-a3{ --t-bg:#F08A3E; --t-fg:var(--ink); --t-eyebrow:var(--ink); --t-btn-bg:var(--ink); --t-btn-fg:#fff; }
+/* B — un solo color para los tres (tinta + coral APEX) */
+.tema-b1, .tema-b2, .tema-b3{ --t-bg:var(--ink); --t-fg:#fff; --t-eyebrow:var(--accent); --t-btn-bg:var(--accent); --t-btn-fg:var(--ink); }
+</style></head><body>
+<p class="etiqueta">Opción A — color de cada producto</p>
+<section class="hero-carousel" id="opcion-a">
+    <div class="hero-slide hero-slide--promo tema-a1" data-promo-id="bienvenida-skratch" data-promo-name="10% bienvenida — Skratch" data-promo-slot="hero-1">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">Primera compra · Skratch Labs</p>
+          <h2 class="h-46 promo-title">10% de descuento</h2>
+          <p class="promo-code"><span class="promo-code-chip">APEX2026</span> en tu primera compra</p>
+          <p class="promo-perk"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="15" height="11"/><path d="M16 9h4l3 3v5h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Envío gratis desde $30 en Caracas</p>
+          <p class="promo-text">Hidratación Skratch Labs: 400 mg de sodio por porción, en Fresa Limonada y Limón Lima.</p>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="../producto-skratch.html" data-promo-creative="sobres">Sobres · desde $3,45</a>
+            <a class="btn btn--ghost" href="../producto-skratch-bolsa.html" data-promo-creative="bolsa">Bolsa 440 g · $35,55</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--fila">
+          <img src="../assets/banners/skratch-sobres-fresa-v2.webp" alt="Sobre de hidratación Skratch Labs Fresa Limonada" width="179" height="615" fetchpriority="high">
+          <img src="../assets/banners/skratch-sobres-limon-v2.webp" alt="Sobre de hidratación Skratch Labs Limón Lima" width="179" height="615">
+          <img class="is-side" src="../assets/banners/skratch-bolsa-v2.webp" alt="Bolsa de 440 g de hidratación Skratch Labs Fresa Limonada" width="461" height="608">
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-slide hero-slide--promo tema-a2" data-promo-id="hidratante-going" data-promo-name="Hidratante Going" data-promo-slot="hero-2">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">El más vendido · Going Nutrición</p>
+          <h2 class="h-46 promo-title">Hidratante Going</h2>
+          <p class="promo-text">115 mg de sodio y 7,5 g de carbohidratos por sobre. En Uva, Coco y Pitaya.</p>
+          <p class="promo-price">Desde $1,79 <span>· caja x24 a $1,61 c/u</span></p>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="../producto-going-hidratante.html" data-promo-creative="boton">Ver hidratante</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--escalera">
+          <img src="../assets/banners/going-hidratante-uva-v2.webp" alt="Hidratante Going sabor Uva" width="727" height="263" fetchpriority="low">
+          <img src="../assets/banners/going-hidratante-coco-v2.webp" alt="Hidratante Going sabor Coco" width="743" height="325" fetchpriority="low">
+          <img src="../assets/banners/going-hidratante-pitaya-v2.webp" alt="Hidratante Going sabor Pitaya" width="804" height="246" fetchpriority="low">
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-slide hero-slide--promo tema-a3" data-promo-id="geles-going" data-promo-name="Geles Going" data-promo-slot="hero-3">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">Arma tu caja surtida · Going Nutrición</p>
+          <h2 class="h-46 promo-title">Geles Going</h2>
+          <p class="promo-text">19 g de carbohidratos en cada gel de 33 g. Mezcla Fresa Banano, Granada y Guayaba en la misma caja.</p>
+          <p class="promo-price">Desde $3,44 <span>· caja x6 a $3,23 c/u</span></p>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="../producto.html" data-promo-creative="boton">Arma tu caja</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--fila">
+          <img src="../assets/banners/going-gel-fresa-banano-v2.webp" alt="Gel Energético Going sabor Fresa Banano" width="289" height="615" fetchpriority="low">
+          <img src="../assets/banners/going-gel-granada-v2.webp" alt="Gel Energético Going sabor Granada" width="295" height="614" fetchpriority="low">
+          <img src="../assets/banners/going-gel-guayaba-v2.webp" alt="Gel Energético Going sabor Guayaba" width="280" height="614" fetchpriority="low">
+        </div>
+      </div>
+    </div>
+
+</section>
+<p class="etiqueta">Opción B — un solo color (tinta + coral APEX)</p>
+<section class="hero-carousel" id="opcion-b">
+    <div class="hero-slide hero-slide--promo tema-b1" data-promo-id="bienvenida-skratch" data-promo-name="10% bienvenida — Skratch" data-promo-slot="hero-1">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">Primera compra · Skratch Labs</p>
+          <h2 class="h-46 promo-title">10% de descuento</h2>
+          <p class="promo-code"><span class="promo-code-chip">APEX2026</span> en tu primera compra</p>
+          <p class="promo-perk"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="15" height="11"/><path d="M16 9h4l3 3v5h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Envío gratis desde $30 en Caracas</p>
+          <p class="promo-text">Hidratación Skratch Labs: 400 mg de sodio por porción, en Fresa Limonada y Limón Lima.</p>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="../producto-skratch.html" data-promo-creative="sobres">Sobres · desde $3,45</a>
+            <a class="btn btn--ghost" href="../producto-skratch-bolsa.html" data-promo-creative="bolsa">Bolsa 440 g · $35,55</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--fila">
+          <img src="../assets/banners/skratch-sobres-fresa-v2.webp" alt="Sobre de hidratación Skratch Labs Fresa Limonada" width="179" height="615" fetchpriority="high">
+          <img src="../assets/banners/skratch-sobres-limon-v2.webp" alt="Sobre de hidratación Skratch Labs Limón Lima" width="179" height="615">
+          <img class="is-side" src="../assets/banners/skratch-bolsa-v2.webp" alt="Bolsa de 440 g de hidratación Skratch Labs Fresa Limonada" width="461" height="608">
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-slide hero-slide--promo tema-b2" data-promo-id="hidratante-going" data-promo-name="Hidratante Going" data-promo-slot="hero-2">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">El más vendido · Going Nutrición</p>
+          <h2 class="h-46 promo-title">Hidratante Going</h2>
+          <p class="promo-text">115 mg de sodio y 7,5 g de carbohidratos por sobre. En Uva, Coco y Pitaya.</p>
+          <p class="promo-price">Desde $1,79 <span>· caja x24 a $1,61 c/u</span></p>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="../producto-going-hidratante.html" data-promo-creative="boton">Ver hidratante</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--escalera">
+          <img src="../assets/banners/going-hidratante-uva-v2.webp" alt="Hidratante Going sabor Uva" width="727" height="263" fetchpriority="low">
+          <img src="../assets/banners/going-hidratante-coco-v2.webp" alt="Hidratante Going sabor Coco" width="743" height="325" fetchpriority="low">
+          <img src="../assets/banners/going-hidratante-pitaya-v2.webp" alt="Hidratante Going sabor Pitaya" width="804" height="246" fetchpriority="low">
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-slide hero-slide--promo tema-b3" data-promo-id="geles-going" data-promo-name="Geles Going" data-promo-slot="hero-3">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">Arma tu caja surtida · Going Nutrición</p>
+          <h2 class="h-46 promo-title">Geles Going</h2>
+          <p class="promo-text">19 g de carbohidratos en cada gel de 33 g. Mezcla Fresa Banano, Granada y Guayaba en la misma caja.</p>
+          <p class="promo-price">Desde $3,44 <span>· caja x6 a $3,23 c/u</span></p>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="../producto.html" data-promo-creative="boton">Arma tu caja</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--fila">
+          <img src="../assets/banners/going-gel-fresa-banano-v2.webp" alt="Gel Energético Going sabor Fresa Banano" width="289" height="615" fetchpriority="low">
+          <img src="../assets/banners/going-gel-granada-v2.webp" alt="Gel Energético Going sabor Granada" width="295" height="614" fetchpriority="low">
+          <img src="../assets/banners/going-gel-guayaba-v2.webp" alt="Gel Energético Going sabor Guayaba" width="280" height="614" fetchpriority="low">
+        </div>
+      </div>
+    </div>
+
+</section>
+</body></html>

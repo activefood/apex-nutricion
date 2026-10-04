@@ -64,7 +64,9 @@ Antes de programar te muestro una **maqueta de los 3 banners** (celular y escrit
 
 **Velocidad del carrusel: se mantiene en 3,5 s por banner** (se evaluó 4,5 s y se descartó); quedan ~2,5 s de lectura después de la entrada.
 
-**Fotos:** recortes al contorno de las fotos existentes, en `assets/banners/` (14–22 KB c/u).
+**Fotos:** recortes de las fotos existentes con fondo transparente, en `assets/banners/` (17–29 KB c/u).
+
+**Color (decidido 2026-10-04):** los tres banners en Tinta Carbón con texto blanco y **lima** (#D8F24C, como The Feed) en el detalle superior y el botón principal (texto tinta). La lima reemplazó al coral en toda la tienda el mismo día, tras probar blanco, ámbar y verde.
 
 ## Medición (nuevo)
 
