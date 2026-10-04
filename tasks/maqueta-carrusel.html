@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es-VE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Maqueta — banners del carrusel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+/* ===== Maqueta: estilos propuestos para el patrón .hero-slide--promo =====
+   (si se aprueba, esto pasa a styles.css) */
+.maqueta-label{ font: 700 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-3); padding: 24px 16px 8px; max-width: 1280px; margin: 0 auto; }
+
+.hero-slide--promo{
+  display: block;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.hero-slide--promo .container{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: var(--sp-6);
+  min-height: 480px;
+  padding-top: var(--sp-7);
+  padding-bottom: var(--sp-7);
+}
+.promo-copy{ max-width: 520px; }
+.promo-copy .eyebrow{ color: var(--accent-text); }
+.promo-title{ margin-top: var(--sp-3); line-height: 1.02; }
+.promo-text{ margin-top: var(--sp-4); font-size: 16px; color: var(--ink-2); max-width: 44ch; }
+.promo-price{ margin-top: var(--sp-3); font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.promo-price span{ font-weight: 500; color: var(--ink-3); }
+.promo-actions{ display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-5); }
+
+/* Cupón: código en Space Mono dentro de un recuadro punteado, como un ticket */
+.promo-code{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); margin-top: var(--sp-4); font-size: 14px; color: var(--ink-2); }
+.promo-code-chip{ font-family: var(--font-mono); font-weight: 700; font-size: 18px; letter-spacing: .08em;
+  color: var(--ink); border: 1.5px dashed var(--ink); border-radius: var(--r-control); padding: 6px 12px; }
+.promo-perk{ display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); font-size: 14px; font-weight: 600; color: var(--ok); }
+.promo-perk svg{ width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Fotos de producto (recortadas al contorno, sobre blanco). Dos disposiciones:
+   --fila: productos verticales lado a lado (geles, sobres Skratch)
+   --escalera: sobres horizontales escalonados (hidratante Going) */
+.promo-media{ height: 340px; display: flex; justify-content: center; align-items: flex-end; gap: var(--sp-4); }
+.promo-media img{ display: block; width: auto; min-width: 0; object-fit: contain; }
+.promo-media--fila img{ height: 100%; max-width: 30%; }
+.promo-media--fila img.is-side{ height: 78%; max-width: 40%; }
+.promo-media--escalera{ flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3); }
+.promo-media--escalera img{ height: 28%; max-width: 100%; }
+.promo-media--escalera img:nth-child(1){ transform: translateX(-12%); }
+.promo-media--escalera img:nth-child(3){ transform: translateX(12%); }
+
+@media (max-width: 1024px){
+  .hero-slide--promo .container{
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+    aspect-ratio: 3 / 4;
+    min-height: unset;
+    padding-top: var(--sp-5);
+    padding-bottom: var(--sp-4);
+    align-content: stretch;
+    grid-template-rows: auto minmax(0, 1fr); /* texto arriba; las fotos ocupan todo lo que sobra */
+  }
+  .promo-title{ font-size: 34px; }
+  .promo-text{ font-size: 14.5px; margin-top: var(--sp-3); }
+  .promo-actions{ margin-top: var(--sp-4); }
+  .promo-actions .btn{ flex: 1 1 0; padding: 0 12px; }
+  .promo-media{ height: 100%; min-height: 150px; gap: var(--sp-3); }
+  .promo-media--escalera{ gap: var(--sp-2); }
+  .promo-media--escalera img{ height: 31%; }
+}
+
+/* ===== Entrada animada de los productos (estilo The Feed, hecho con CSS) =====
+   Al activarse un banner, cada foto cae desde arriba con un leve rebote, una tras otra
+   (120 ms de diferencia), y queda inclinada su propio ángulo (--giro). Solo transform y
+   opacity: no mueve el layout ni afecta el CLS. */
+.promo-media img{ --giro: 0deg; transform: rotate(var(--giro)); }
+.promo-media--fila img:nth-child(1){ --giro: -7deg; }
+.promo-media--fila img:nth-child(2){ --giro: 3deg; }
+.promo-media--fila img:nth-child(3){ --giro: 8deg; }
+.promo-media--escalera img:nth-child(1){ --giro: -5deg; }
+.promo-media--escalera img:nth-child(2){ --giro: 4deg; }
+.promo-media--escalera img:nth-child(3){ --giro: -3deg; }
+.promo-media--escalera img:nth-child(1){ transform: translateX(-12%) rotate(var(--giro)); }
+.promo-media--escalera img:nth-child(3){ transform: translateX(12%) rotate(var(--giro)); }
+
+@keyframes promo-entrada{
+  0%   { opacity: 0; translate: 0 -48px; scale: .92; }
+  60%  { opacity: 1; translate: 0 6px;   scale: 1.02; }
+  100% { opacity: 1; translate: 0 0;     scale: 1; }
+}
+.hero-slide--promo.is-entering .promo-media img{
+  animation: promo-entrada 700ms cubic-bezier(.2,.8,.25,1) both;
+}
+.hero-slide--promo.is-entering .promo-media img:nth-child(2){ animation-delay: 120ms; }
+.hero-slide--promo.is-entering .promo-media img:nth-child(3){ animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce){
+  .hero-slide--promo.is-entering .promo-media img{ animation: none; }
+}
+
+/* Modo carrusel de la maqueta (?carrusel): un banner a la vez */
+body.modo-carrusel .maqueta-label{ display: none; }
+body.modo-carrusel .hero-slide--promo{ display: none; }
+body.modo-carrusel .hero-slide--promo.is-active{ display: block; }
+</style>
+</head>
+<body>
+
+<p class="maqueta-label">Banner 1 — 10% bienvenida · Skratch (sobres principal, bolsa secundaria)</p>
+<section class="hero-slide hero-slide--promo" data-promo-id="bienvenida-skratch" data-promo-name="10% bienvenida — Skratch" data-promo-slot="hero-1">
+  <div class="container">
+    <div class="promo-copy">
+      <p class="eyebrow">Primera compra · Skratch Labs</p>
+      <h2 class="h-46 promo-title">10% de descuento</h2>
+      <p class="promo-code"><span class="promo-code-chip">APEX2026</span> en tu primera compra</p>
+      <p class="promo-perk"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="15" height="11"/><path d="M16 9h4l3 3v5h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Envío gratis desde $30 en Caracas</p>
+      <p class="promo-text">Hidratación Skratch Labs: 400 mg de sodio por porción, en Fresa Limonada y Limón Lima.</p>
+      <div class="promo-actions">
+        <a class="btn btn--primary" href="../producto-skratch.html">Sobres · desde $3,45</a>
+        <a class="btn btn--ghost" href="../producto-skratch-bolsa.html">Bolsa 440 g · $35,55</a>
+      </div>
+    </div>
+    <div class="promo-media promo-media--fila">
+      <img src="../assets/banners/skratch-sobres-fresa.webp" alt="Sobre de hidratación Skratch Labs Fresa Limonada" width="202" height="640">
+      <img src="../assets/banners/skratch-sobres-limon.webp" alt="Sobre de hidratación Skratch Labs Limón Lima" width="202" height="640">
+      <img class="is-side" src="../assets/banners/skratch-bolsa.webp" alt="Bolsa de 440 g de hidratación Skratch Labs Fresa Limonada" width="505" height="640">
+    </div>
+  </div>
+</section>
+
+<p class="maqueta-label">Banner 2 — Hidratante Going (el más vendido)</p>
+<section class="hero-slide hero-slide--promo" data-promo-id="hidratante-going" data-promo-name="Hidratante Going" data-promo-slot="hero-2">
+  <div class="container">
+    <div class="promo-copy">
+      <p class="eyebrow">El más vendido · Going Nutrición</p>
+      <h2 class="h-46 promo-title">Hidratante Going</h2>
+      <p class="promo-text">115 mg de sodio y 7,5 g de carbohidratos por sobre. En Uva, Coco y Pitaya.</p>
+      <p class="promo-price">Desde $1,79 <span>· caja x24 a $1,61 c/u</span></p>
+      <div class="promo-actions">
+        <a class="btn btn--primary" href="../producto-going-hidratante.html">Ver hidratante</a>
+      </div>
+    </div>
+    <div class="promo-media promo-media--escalera">
+      <img src="../assets/banners/going-hidratante-uva.webp" alt="Hidratante Going sabor Uva" width="770" height="305">
+      <img src="../assets/banners/going-hidratante-coco.webp" alt="Hidratante Going sabor Coco" width="783" height="367">
+      <img src="../assets/banners/going-hidratante-pitaya.webp" alt="Hidratante Going sabor Pitaya" width="842" height="284">
+    </div>
+  </div>
+</section>
+
+<p class="maqueta-label">Banner 3 — Geles Going (el más visto y más agregado al carrito)</p>
+<section class="hero-slide hero-slide--promo" data-promo-id="geles-going" data-promo-name="Geles Going" data-promo-slot="hero-3">
+  <div class="container">
+    <div class="promo-copy">
+      <p class="eyebrow">Arma tu caja surtida · Going Nutrición</p>
+      <h2 class="h-46 promo-title">Geles Going</h2>
+      <p class="promo-text">19 g de carbohidratos en cada gel de 33 g. Mezcla Fresa Banano, Granada y Guayaba en la misma caja.</p>
+      <p class="promo-price">Desde $3,44 <span>· caja x6 a $3,23 c/u</span></p>
+      <div class="promo-actions">
+        <a class="btn btn--primary" href="../producto.html">Arma tu caja</a>
+      </div>
+    </div>
+    <div class="promo-media promo-media--fila">
+      <img src="../assets/banners/going-gel-fresa-banano.webp" alt="Gel Energético Going sabor Fresa Banano" width="315" height="640">
+      <img src="../assets/banners/going-gel-granada.webp" alt="Gel Energético Going sabor Granada" width="323" height="640">
+      <img src="../assets/banners/going-gel-guayaba.webp" alt="Gel Energético Going sabor Guayaba" width="308" height="640">
+    </div>
+  </div>
+</section>
+
+
+<script>
+/* Solo para la maqueta: simula el carrusel (4 s por banner) y dispara la entrada */
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.hero-slide--promo'));
+  function enter(slide){
+    slide.classList.remove('is-entering');
+    void slide.offsetWidth; // reinicia la animación
+    slide.classList.add('is-entering');
+  }
+  if(location.search.indexOf('carrusel') !== -1){
+    document.body.classList.add('modo-carrusel');
+    var i = 0;
+    function show(n){
+      slides.forEach(function(s, k){ s.classList.toggle('is-active', k === n); });
+      enter(slides[n]);
+    }
+    show(0);
+    setInterval(function(){ i = (i + 1) % slides.length; show(i); }, 4000);
+  } else {
+    slides.forEach(enter);
+  }
+})();
+</script>
+</body>
+</html>
