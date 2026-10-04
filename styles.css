@@ -586,28 +586,41 @@ button.pill:hover{ border-color: var(--ink); }
 .carousel-arrow--prev{ left: var(--sp-5); }
 .carousel-arrow--next{ right: var(--sp-5); }
 
+/* Los puntos van en su propia fila DEBAJO del banner, no encima: cada banner
+   tiene su propio diseño (franja de logos, botón "Ver cápsulas", fondo
+   blanco…) y no hay una posición sobre la imagen que funcione en todos. */
 .carousel-dots{
-  position: absolute;
-  bottom: var(--sp-5);
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: var(--sp-2);
-  z-index: 5;
+  min-height: 44px; /* los puntos los crea app.js: reservar su alto evita que la página salte al cargar */
+  background: var(--paper);
 }
 .carousel-dots[hidden]{ display: none; }
+/* El botón es el área táctil (32×44px, sobre el mínimo de 24px de WCAG 2.2);
+   el punto visible de 8px se dibuja adentro con ::after, igual que antes. */
 .carousel-dot{
+  position: relative;
+  width: 32px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.carousel-dot::after{
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 8px;
   height: 8px;
+  transform: translate(-50%, -50%);
   border-radius: var(--r-pill);
-  background: rgba(255,255,255,.7);
-  border: 1px solid rgba(0,0,0,.2);
-  box-shadow: 0 1px 3px rgba(0,0,0,.25);
-  padding: 0;
+  background: var(--ink-3);
   transition: background var(--ease), width var(--ease);
 }
-.carousel-dot.active{ background: #fff; border-color: rgba(0,0,0,.35); width: 22px; }
+.carousel-dot.active::after{ background: var(--ink); width: 22px; }
 
 @media (max-width: 1024px){
   .hero-slide .container{ grid-template-columns: 1fr; min-height: unset; padding-top: 56px; padding-bottom: 96px; }
