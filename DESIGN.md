@@ -82,6 +82,7 @@ Nunca se usan como acento general del sitio.
 * **Encabezado:** 70px, blanco, borde inferior de 1px, fijo arriba (sticky). Arriba de él, barra de anuncio negra de 36px.
 * **Footer:** fondo Papel Arena, borde superior de 1px; títulos de columna en eyebrow de Tinta Suave.
 * **Menú desplegable:** "sombra" dura de bloque `0 4px 0 0 #14120F`.
+* **Banner del carrusel** (`.hero-slide--promo`, ver `SPEC-carrusel.md`): fondo blanco, texto real a la izquierda (eyebrow en Coral Quemado → título Anton de una línea → dato concreto → precio o cupón → botón) y 2–3 fotos de producto recortadas al contorno (`assets/banners/`) a la derecha, inclinadas. En celular: texto arriba, fotos abajo, proporción 3:4. Cupón: código en Space Mono dentro de un recuadro punteado de 1.5px. Un botón por banner (excepción: dos cuando cada uno lleva a un producto distinto). Máximo 3 banners.
 * **Controles flotantes sobre fotos** (flechas y pausa del carrusel): círculo blanco de 44px (36px en tablet; ocultos en celular, salvo la pausa), borde 1px, sombra suave.
 * **Sabor seleccionado** (`.flavor-card` activa): borde de tinta de 2px (borde + `box-shadow: 0 0 0 1px`).
 * **Estado vacío del carrito:** ícono de línea, título, una frase y un botón "Ir a comprar". Al eliminar un producto aparece "Deshacer".
@@ -106,7 +107,8 @@ Nunca se usan como acento general del sitio.
 - **Duración única:** 140ms `ease` (`--ease`) para color, borde, fondo y `transform`. Nunca `transition: all`.
 - **Hover:** tarjetas suben 3px; botones oscurecen; bordes pasan de hueso a tinta.
 - **Foco visible:** anillo de 2px Coral Quemado en todos los controles (`:focus-visible`).
-- **Carrusel del inicio:** cambia cada 3.5s, se pausa con hover/foco, tiene botón de pausa, y no se mueve si el usuario pidió movimiento reducido.
+- **Carrusel del inicio:** cambia cada 3.5s, se pausa con hover/foco, tiene botón de pausa, y no se mueve si el usuario pidió movimiento reducido. Los puntos van en su propia fila debajo del banner.
+- **Carrusel del inicio:** cada banner (`.hero-slide--promo`) dura 3.5s. Al activarse, sus fotos de producto **caen una tras otra** (700ms, 120ms de diferencia, leve rebote) y quedan inclinadas entre −7° y +8° — inspirado en The Feed, hecho con CSS (`promo-entrada`). Es la **única animación de entrada permitida** del sitio; no se anima con "reducir movimiento".
 - **Sin animaciones decorativas en bucle,** sin parallax, sin animaciones de entrada al hacer scroll.
 
 ## 7. Anti-Patterns (Banned)

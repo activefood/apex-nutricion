@@ -510,19 +510,25 @@ button.pill:hover{ border-color: var(--ink); }
 /* ==========================================================================
    Héroe
    ========================================================================== */
+/* Todos los banners se apilan en la misma celda de la grilla: el carrusel
+   toma siempre el alto del banner más alto, así la página nunca salta al
+   rotar. Los inactivos quedan invisibles (visibility también los saca del
+   lector de pantalla y del orden de tabulación). */
 .hero-carousel{
   position: relative;
-  min-height: 480px;
-  background: linear-gradient(135deg, #12181d 0%, #2c3d44 100%);
-  color: #fff;
+  display: grid;
+  background: var(--paper);
+  color: var(--ink);
   overflow: hidden;
 }
 .hero-slide{
-  display: none;
+  grid-area: 1 / 1;
+  visibility: hidden;
 }
 .hero-slide.active{
-  display: block;
+  visibility: visible;
 }
+.carousel-dots{ grid-area: 2 / 1; }
 .hero-slide .container{
   display: grid;
   grid-template-columns: 1.1fr .9fr;
@@ -635,129 +641,106 @@ button.pill:hover{ border-color: var(--ink); }
   .carousel-arrow{ display: none; }
 }
 
-/* Diapositiva Skratch: foto de fondo a toda la sección, en vez del layout foto+copy de las demás */
-.hero-slide--skratch-banner{
-  background-image: url('assets/skratch/resumen-sodio-ancho.webp');
-  background-size: cover;
-  background-position: center;
+/* ---------- Banners del carrusel: patrón .hero-slide--promo ----------
+   Texto real (no imagen) a la izquierda y fotos de producto recortadas a la
+   derecha (assets/banners/). En celular: texto arriba, fotos abajo ocupando lo
+   que sobra, mismo alto 3:4 en todos los banners. Ver SPEC-carrusel.md. */
+.hero-slide--promo{
+  background: var(--paper);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
 }
-.hero-slide--skratch-banner .container{
-  grid-template-columns: 1fr;
+.hero-slide--promo .container{
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-6);
   min-height: 480px;
-  position: relative;
-  padding-top: 0;
-  padding-bottom: 0;
+  padding-top: var(--sp-7);
+  padding-bottom: var(--sp-7);
+  /* margen lateral que deja libres las flechas del carrusel (24px + 44px + aire) */
+  padding-left: 88px;
+  padding-right: 88px;
 }
-.hero-slide--skratch-banner .hero-actions{
-  position: absolute;
-  left: 0;
-  bottom: var(--sp-8);
+.promo-copy{ max-width: 520px; }
+.promo-copy .eyebrow{ color: var(--accent-text); }
+.promo-title{
+  margin-top: var(--sp-3);
+  line-height: 1.02;
+  /* Una línea de alto fijo: al llegar la fuente Anton el título cambia de
+     ancho, pero no de alto, y no empuja lo de abajo (CLS). */
+  height: 1.02em;
+  white-space: nowrap;
 }
+.promo-text{ margin-top: var(--sp-4); font-size: 16px; color: var(--ink-2); max-width: 44ch; }
+.promo-price{ margin-top: var(--sp-3); font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.promo-price span{ font-weight: 500; color: var(--ink-3); }
+.promo-actions{ display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-5); }
+
+/* Cupón: código en Space Mono dentro de un recuadro punteado, como un ticket */
+.promo-code{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); margin-top: var(--sp-4); font-size: 14px; color: var(--ink-2); }
+.promo-code-chip{ font-family: var(--font-mono); font-weight: 700; font-size: 18px; letter-spacing: .08em;
+  color: var(--ink); border: 1.5px dashed var(--ink); border-radius: var(--r-control); padding: 6px 12px; }
+.promo-perk{ display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); font-size: 14px; font-weight: 600; color: var(--ok); }
+.promo-perk svg{ width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Fotos de producto (recortadas al contorno, sobre blanco). Dos disposiciones:
+   --fila: productos verticales lado a lado (geles, sobres Skratch)
+   --escalera: sobres horizontales escalonados (hidratante Going) */
+.promo-media{ height: 340px; display: flex; justify-content: center; align-items: flex-end; gap: var(--sp-4); }
+.promo-media img{ display: block; width: auto; min-width: 0; object-fit: contain; --giro: 0deg; transform: rotate(var(--giro)); }
+.promo-media--fila img{ height: 100%; max-width: 30%; }
+.promo-media--fila img.is-side{ height: 78%; max-width: 40%; }
+.promo-media--fila img:nth-child(1){ --giro: -7deg; }
+.promo-media--fila img:nth-child(2){ --giro: 3deg; }
+.promo-media--fila img:nth-child(3){ --giro: 8deg; }
+.promo-media--escalera{ flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3); }
+.promo-media--escalera img{ height: 28%; max-width: 100%; }
+.promo-media--escalera img:nth-child(1){ --giro: -5deg; transform: translateX(-12%) rotate(var(--giro)); }
+.promo-media--escalera img:nth-child(2){ --giro: 4deg; }
+.promo-media--escalera img:nth-child(3){ --giro: -3deg; transform: translateX(12%) rotate(var(--giro)); }
+
+/* Entrada de los productos (inspirada en The Feed, hecha con CSS): al activarse
+   el banner, cada foto cae con un leve rebote, una tras otra (120ms). Solo
+   translate/scale/opacity: no mueve el layout. app.js pone .is-entering. */
+@keyframes promo-entrada{
+  0%   { opacity: 0; translate: 0 -48px; scale: .92; }
+  60%  { opacity: 1; translate: 0 6px;   scale: 1.02; }
+  100% { opacity: 1; translate: 0 0;     scale: 1; }
+}
+.hero-slide--promo.is-entering .promo-media img{ animation: promo-entrada 700ms cubic-bezier(.2,.8,.25,1) both; }
+.hero-slide--promo.is-entering .promo-media img:nth-child(2){ animation-delay: 120ms; }
+.hero-slide--promo.is-entering .promo-media img:nth-child(3){ animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce){
+  .hero-slide--promo.is-entering .promo-media img{ animation: none; }
+}
+
 @media (max-width: 1024px){
-  .hero-slide--skratch-banner{
-    background-image: url('assets/skratch/resumen-sodio-movil.webp');
-  }
-  .hero-slide--skratch-banner .container{
+  /* Tablet: mismas dos columnas, más compactas; flechas de 36px */
+  .hero-slide--promo .container{ min-height: 420px; gap: var(--sp-5); padding-left: 72px; padding-right: 72px; }
+  .promo-title{ font-size: 34px; }
+  .promo-media{ height: 280px; }
+}
+@media (max-width: 640px){
+  /* Celular: texto arriba, fotos abajo ocupando lo que sobra, mismo alto 3:4 en los 3 banners */
+  .hero-slide--promo .container{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--sp-3);
     aspect-ratio: 3 / 4;
+    max-height: 600px;
     min-height: unset;
+    padding-top: var(--sp-5);
+    padding-bottom: var(--sp-4);
   }
-  .hero-slide--skratch-banner .hero-actions{
-    bottom: var(--sp-5);
-  }
+  .promo-text{ font-size: 14.5px; margin-top: var(--sp-3); }
+  .promo-actions{ margin-top: var(--sp-4); }
+  .promo-actions .btn{ flex: 1 1 0; padding: 0 12px; }
+  .promo-media{ height: 100%; min-height: 150px; gap: var(--sp-3); }
+  .promo-media--escalera{ gap: var(--sp-2); }
+  .promo-media--escalera img{ height: 31%; }
 }
 @media (max-width: 480px){
-  .hero-slide--skratch-banner .hero-actions{ flex-direction: row; }
-  .hero-slide--skratch-banner .hero-actions .btn{ width: auto; }
-}
-
-/* Diapositiva SaltStick Cápsulas: mismo patrón, gráfico propio a todo el fondo */
-.hero-slide--capsulas-banner{
-  background-image: url('assets/saltstick/hero-capsulas-ancho.webp?v=2');
-  background-size: cover;
-  background-position: center;
-}
-.hero-slide--capsulas-banner .container{
-  grid-template-columns: 1fr;
-  min-height: 480px;
-  position: relative;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.hero-slide--capsulas-banner .hero-actions{
-  position: absolute;
-  left: 50%;
-  bottom: var(--sp-8);
-  transform: translateX(-50%);
-}
-@media (max-width: 1024px){
-  .hero-slide--capsulas-banner{
-    background-image: url('assets/saltstick/hero-capsulas-movil.webp?v=2');
-  }
-  .hero-slide--capsulas-banner .container{
-    aspect-ratio: 3 / 4;
-    min-height: unset;
-  }
-  .hero-slide--capsulas-banner .hero-actions{
-    bottom: var(--sp-5);
-  }
-}
-
-/* Diapositiva "Prepara tu kit para Caracas Rock": gráfico propio, fondo blanco */
-.hero-slide--kit-banner{
-  background-color: #fff;
-  background-image: url('assets/apex/hero-kit-caracasrock-ancho.webp');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-.hero-slide--kit-banner .container{
-  grid-template-columns: 1fr;
-  min-height: 480px;
-  position: relative;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-@media (max-width: 1024px){
-  .hero-slide--kit-banner{
-    background-image: url('assets/apex/hero-kit-caracasrock-movil.webp');
-  }
-  .hero-slide--kit-banner .container{
-    aspect-ratio: 3 / 4;
-    min-height: unset;
-  }
-}
-
-.hero-slide--fastchews-banner{
-  background-color: #2b76b9;
-  background-image: url('assets/saltstick/hero-fastchews-banner.webp');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-.hero-slide--fastchews-banner .container{
-  grid-template-columns: 1fr;
-  min-height: 640px;
-  position: relative;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.hero-slide--fastchews-banner .hero-actions{
-  position: absolute;
-  left: 50%;
-  bottom: var(--sp-8);
-  transform: translateX(-50%);
-}
-@media (max-width: 1024px){
-  .hero-slide--fastchews-banner{
-    background-size: cover;
-  }
-  .hero-slide--fastchews-banner .container{
-    aspect-ratio: 3 / 4;
-    min-height: unset;
-  }
-  .hero-slide--fastchews-banner .hero-actions{
-    bottom: var(--sp-5);
-  }
+  .hero-slide--promo .container{ padding-left: 20px; padding-right: 20px; } /* sin flechas en celular */
+  .hero-slide--promo .promo-actions{ flex-direction: row; }
 }
 
 /* ==========================================================================

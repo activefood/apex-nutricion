@@ -43,7 +43,10 @@ function withImgV(src){
   return src.split('?')[0] + '?v=' + IMG_V;
 }
 function initImageCacheBust(){
-  document.querySelectorAll('img[src^="assets/"]').forEach(function(img){
+  // assets/banners/ son archivos nuevos (sin copia vieja en caché): agregarles
+  // ?v= haría que el navegador descargue la foto del carrusel dos veces y
+  // retrasaría el LCP del inicio casi 3 s en celular.
+  document.querySelectorAll('img[src^="assets/"]:not([src^="assets/banners/"])').forEach(function(img){
     img.src = withImgV(img.src);
   });
 }
@@ -1757,8 +1760,50 @@ function initHeroCarousel(){
   /* Sin autoplay (una sola diapositiva o movimiento reducido) no hay nada que pausar. */
   if(pauseBtn && (slides.length < 2 || reduceMotion)) pauseBtn.hidden = true;
 
+  /* Medición de banners (GA4 ecommerce): view_promotion la primera vez que
+     cada banner se muestra en esta visita a la página, select_promotion en
+     cada clic dentro del banner. Los datos salen de data-promo-* del HTML. */
+  const viewedPromos = {};
+  function promoParams(slide, creative){
+    const params = {
+      promotion_id: slide.dataset.promoId,
+      promotion_name: slide.dataset.promoName,
+      creative_slot: slide.dataset.promoSlot,
+      creative_name: creative || 'banner'
+    };
+    params.items = [{ item_name: params.promotion_name, promotion_id: params.promotion_id, promotion_name: params.promotion_name, creative_slot: params.creative_slot, creative_name: params.creative_name }];
+    return params;
+  }
+  function trackPromoView(slide){
+    if(!slide.dataset.promoId || viewedPromos[slide.dataset.promoId]) return;
+    viewedPromos[slide.dataset.promoId] = true;
+    trackEvent('view_promotion', promoParams(slide));
+  }
+  slides.forEach(function(slide){
+    if(!slide.dataset.promoId) return;
+    slide.addEventListener('click', function(e){
+      const link = e.target.closest('a');
+      if(!link) return;
+      trackEvent('select_promotion', promoParams(slide, link.dataset.promoCreative));
+    });
+  });
+
+  /* Reinicia la entrada animada de los productos (.is-entering en styles.css). */
+  function playEntrance(slide){
+    slide.classList.remove('is-entering');
+    void slide.offsetWidth;
+    slide.classList.add('is-entering');
+  }
+
+  // El banner que se ve al cargar la página NO se anima: su foto es el LCP del
+  // inicio y ya está pintada antes de que corra este JS (animarla la haría
+  // desaparecer y volver a caer). La entrada corre en cada cambio posterior.
+  let firstRender = true;
   function render(){
     slides.forEach(function(s, i){ s.classList.toggle('active', i === index); });
+    if(!firstRender) playEntrance(slides[index]);
+    firstRender = false;
+    trackPromoView(slides[index]);
     if(dotsWrap){
       Array.from(dotsWrap.children).forEach(function(d, i){
         d.classList.toggle('active', i === index);
