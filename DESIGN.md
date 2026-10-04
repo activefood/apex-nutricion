@@ -40,7 +40,7 @@ tipografía monoespaciada — no como una tienda de lujo ni como una app de tecn
 - **Línea Foto** (#DCDFE5) `--card-media-line` — Borde de las tarjetas de producto.
 
 ### Acento: Lima (desde 2026-10-04, reemplaza al coral)
-- **Lima** (#D8F24C) `--accent` — El color de la marca, estilo The Feed. **Solo como fondo** con texto Tinta Carbón encima (14.9:1): botón principal del carrusel, etiqueta "Nuevo", contador del carrito; o como texto/detalle **sobre fondos oscuros** (eyebrow del carrusel, "10% OFF / APEX2026" en la barra de anuncio).
+- **Lima** (#D8F24C) `--accent` — El color de la marca, estilo The Feed. **Solo como fondo** con texto Tinta Carbón encima (14.9:1): botón principal del carrusel, etiqueta "Nuevo", contador del carrito; o como texto/detalle **sobre fondos oscuros** ("10% OFF / APEX2026" en la barra de anuncio).
 - **Lima Hover** (#C4DE36) `--accent-dk` — Hover de fondos lima. Nunca como color de letra.
 - **Lima Bruma** (#F5FBD9) `--accent-sf` — Fondo suave (aviso del cupón en el carrito).
 - **Tinta de acento** (#14120F) `--accent-text` — Todo lo que antes era coral **sobre blanco**: eyebrows ("01 · ANTES"), "Ver todo →", "Limpiar filtros", estrellas, barras de rating, viñetas, checkboxes y anillo de foco. Los enlaces y el menú se **subrayan** al pasar el mouse.
@@ -83,7 +83,7 @@ Nunca se usan como acento general del sitio.
 * **Encabezado:** 70px, blanco, borde inferior de 1px, fijo arriba (sticky). Arriba de él, barra de anuncio negra de 36px.
 * **Footer:** fondo Papel Arena, borde superior de 1px; títulos de columna en eyebrow de Tinta Suave.
 * **Menú desplegable:** "sombra" dura de bloque `0 4px 0 0 #14120F`.
-* **Banner del carrusel** (`.hero-slide--promo`, ver `SPEC-carrusel.md`): **fondo Tinta Carbón en los tres banners** (un solo color, como The Feed), texto real a la izquierda en blanco (eyebrow en lima → título Anton de una línea → dato concreto → precio o cupón → botón principal lima con texto tinta, secundario con borde blanco) y 2–3 fotos de producto recortadas con fondo transparente (`assets/banners/`) a la derecha, inclinadas y con sombra suave. En celular: texto arriba, fotos abajo, proporción 3:4. Cupón: código en Space Mono dentro de un recuadro punteado blanco de 1.5px. Un botón por banner (excepción: dos cuando cada uno lleva a un producto distinto). Máximo 3 banners.
+* **Banner del carrusel** (`.hero-slide--promo`, ver `SPEC-carrusel.md`): **fondo blanco** (se probó tinta oscura y se descartó el 2026-10-04), texto real a la izquierda en tinta (eyebrow en tinta → título Anton de una línea → dato concreto → precio o cupón → botón principal lima con texto tinta, secundario con borde tinta) y 2–4 fotos de producto recortadas con fondo transparente (`assets/banners/*-v2.webp`) a la derecha, inclinadas y con sombra suave. En celular: texto arriba, fotos abajo, proporción 3:4. Cupón: código en Space Mono dentro de un recuadro punteado tinta de 1.5px. Un botón por banner (excepción: dos cuando cada uno lleva a un producto distinto). Máximo 3 banners.
 * **Controles flotantes sobre fotos** (flechas y pausa del carrusel): círculo blanco de 44px (36px en tablet; ocultos en celular, salvo la pausa), borde 1px, sombra suave.
 * **Sabor seleccionado** (`.flavor-card` activa): borde de tinta de 2px (borde + `box-shadow: 0 0 0 1px`).
 * **Estado vacío del carrito:** ícono de línea, título, una frase y un botón "Ir a comprar". Al eliminar un producto aparece "Deshacer".
@@ -98,7 +98,7 @@ Nunca se usan como acento general del sitio.
   - Círculo (50%): botones de solo ícono que flotan (flechas y pausa del carrusel, redes sociales, flechas del selector de sabores) y puntos indicadores.
   - 6px: fotos de producto dentro de su caja (3px en miniaturas).
   - Cápsula (999px): solo la insignia de descuento ("-6%") y el botón flotante de WhatsApp.
-- **Profundidad:** la jerarquía se marca con bordes de 1px, cambio de fondo y peso tipográfico — no con sombras. Las únicas sombras son para **controles que flotan sobre fotos** y para las **fotos de producto recortadas del carrusel** (`drop-shadow(0 10px 14px rgba(0,0,0,.35))`, para que no se vean pegadas al fondo oscuro), para que se lean sobre cualquier imagen: flechas y puntos del carrusel (`0 2px 10px rgba(0,0,0,.18)`) y el botón de WhatsApp (`0 6px 18px rgba(20,18,15,.22)`). Más la sombra de bloque del menú desplegable.
+- **Profundidad:** la jerarquía se marca con bordes de 1px, cambio de fondo y peso tipográfico — no con sombras. Las únicas sombras son para **controles que flotan sobre fotos** y para las **fotos de producto recortadas del carrusel** (`drop-shadow(0 8px 12px rgba(20,18,15,.16))`, para que no se vean pegadas al fondo), para que se lean sobre cualquier imagen: flechas y puntos del carrusel (`0 2px 10px rgba(0,0,0,.18)`) y el botón de WhatsApp (`0 6px 18px rgba(20,18,15,.22)`). Más la sombra de bloque del menú desplegable.
 - **Puntos de quiebre:** 1024px (tablet), 768px (celular), 640px / 480px (celular chico). Diseñar primero para 375–390px de ancho.
 - **Imágenes:** formato WebP, con `width`/`height` reales (evita saltos de layout), `loading="lazy"` fuera de la primera pantalla, tamaño de archivo ≤ 2× (escritorio) / 3× (celular) del tamaño en pantalla.
 - **Accesibilidad:** áreas táctiles de 44px, `aria-label` en botones de solo ícono, íconos decorativos con `aria-hidden`, enlace "Saltar al contenido", un `<h1>` por página sin saltar niveles de encabezado.
@@ -116,7 +116,7 @@ Nunca se usan como acento general del sitio.
 
 - Sin esquinas redondeadas grandes ni botones en forma de cápsula — 2px, salvo las excepciones listadas en Layout.
 - Sin sombras en tarjetas, botones o secciones; sin brillos ni resplandores. Sombra solo en controles que flotan sobre fotos y en los productos recortados del carrusel.
-- Sin un color de fondo distinto por banner del carrusel: los tres van en Tinta Carbón (decidido 2026-10-04 tras comparar con un color por producto). El color lo ponen los empaques.
+- Sin un color de fondo distinto por banner del carrusel: los tres van en blanco (2026-10-04; se probaron un color por producto y tinta oscura). El color lo ponen los empaques y el botón lima.
 - Sin segundo color de acento: ni coral, ni morados, azules o degradados "de IA". Los colores de las marcas representadas no se usan como acento del sitio.
 - Sin lima como letra, ícono o borde sobre fondos claros (1.3:1).
 - Sin grises por debajo de #726E67 para texto, y sin grises fríos (azulados) mezclados con los cálidos.

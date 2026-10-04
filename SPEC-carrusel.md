@@ -36,7 +36,7 @@ reales, y empezar a medir cuál funciona.
 
 | # | Contenido | Lleva a | Estado |
 |---|---|---|---|
-| 1 | **10% de descuento en tu primera compra** con el código `APEX2026` + **envío gratis desde $30 en Caracas**, mostrando las **dos presentaciones de hidratación Skratch Labs**: sobres y bolsa de 440 g | Dos botones: `producto-skratch.html` (sobres, **principal**) y `producto-skratch-bolsa.html` (bolsa, secundario) | **Aprobado** |
+| 1 | **10% de descuento en tu primera compra** con el código `APEX2026` + **envío gratis desde $30 en Caracas**, mostrando **bolsas de hidratación de Going (300 g, Pitaya y Coco) y Skratch Labs (440 g, Fresa Limonada y Limón Lima)** | Dos botones: `producto-going-hidratante-tarro.html` ("Going · $25,99", **principal**) y `producto-skratch-bolsa.html` ("Skratch · $35,55") | **Aprobado** (cambiado 2026-10-04; antes sobres + bolsa Skratch) |
 | 2 | **Hidratante Going** — el producto más vendido (60% de la venta). Sobres desde $1,79, caja x24 a $1,61 c/u | `producto-going-hidratante.html` | **Aprobado** |
 | 3 | **Geles Going** — el producto más visto (54 vistas) y más agregado al carrito (38) de la tienda. Desde $3,44, arma tu caja surtida | `producto.html` | **Aprobado** |
 
@@ -66,14 +66,14 @@ Antes de programar te muestro una **maqueta de los 3 banners** (celular y escrit
 
 **Fotos:** recortes de las fotos existentes con fondo transparente, en `assets/banners/` (17–29 KB c/u).
 
-**Color (decidido 2026-10-04):** los tres banners en Tinta Carbón con texto blanco y **lima** (#D8F24C, como The Feed) en el detalle superior y el botón principal (texto tinta). La lima reemplazó al coral en toda la tienda el mismo día, tras probar blanco, ámbar y verde.
+**Color (decidido 2026-10-04):** banners en **fondo blanco** con texto tinta y botón principal **lima** (#D8F24C) con texto tinta. Se probaron un color por producto y tinta oscura (estuvo publicada unas horas) antes de volver a blanco. La lima reemplazó al coral en toda la tienda.
 
 ## Medición (nuevo)
 
 Agregar los eventos estándar de GA4 para promociones:
 - `view_promotion` cuando un banner se muestra (una vez por banner por visita).
-- `select_promotion` cuando alguien toca el banner o su botón. En el banner 1, el parámetro `creative_name` indica cuál botón (`bolsa` o `sobres`).
-- Parámetros: `promotion_id` (`bienvenida-skratch`, `hidratante-going`, `geles-going`), `promotion_name`, `creative_slot` (`hero-1`…`hero-3`).
+- `select_promotion` cuando alguien toca el banner o su botón. En el banner 1, el parámetro `creative_name` indica cuál botón (`going-bolsa` o `skratch-bolsa`; hasta el 4-oct-2026 eran `sobres` y `bolsa`).
+- Parámetros: `promotion_id` (`bienvenida-hidratacion` — hasta el 4-oct-2026 era `bienvenida-skratch` —, `hidratante-going`, `geles-going`), `promotion_name`, `creative_slot` (`hero-1`…`hero-3`).
 
 Así, en 2 semanas se podrá ver qué banner genera más clics (`promotion_clicks / promotion_views`), con el mismo conector de Windsor.ai que usa el reporte semanal.
 
