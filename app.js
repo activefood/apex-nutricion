@@ -913,11 +913,13 @@ function initBoxFlavorBuilder(){
     });
     const brand = brandEl ? brandEl.textContent.trim() : '';
     const namePrefix = titleEl ? (titleEl.dataset.titlePrefix || '') : '';
+    const mix = [];
 
     rows.forEach(function(row){
       const qty = parseInt(row.querySelector('output').textContent, 10) || 0;
       if(qty <= 0) return;
       const flavorName = row.dataset.boxFlavor;
+      mix.push(qty + ' ' + flavorName);
       const img = row.querySelector('img').src;
       const baseName = namePrefix ? (namePrefix + flavorName) : flavorName;
       addItemToCart({
@@ -934,6 +936,9 @@ function initBoxFlavorBuilder(){
 
     rows.forEach(function(row){ row.querySelector('output').textContent = '0'; });
     refresh();
+    // Cada sabor se agregó como línea aparte (y cada una anunció su nombre);
+    // este aviso reemplaza a esos y describe la caja completa.
+    announce('Caja de ' + target + ' agregada al carrito: ' + mix.join(', ') + '.');
 
     const label = addBtn.textContent;
     addBtn.textContent = 'Agregado ✓';
