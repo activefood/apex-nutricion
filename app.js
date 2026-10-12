@@ -72,6 +72,45 @@ const BAG_PROMO_LAST_DAY = '2026-11-08';
 function bagPromoActive(){
   return todayCaracas() <= BAG_PROMO_LAST_DAY;
 }
+/* Insignias "10% OFF" y precio de oferta (se tacha el original y se muestra el nuevo) en las
+   bolsas de hidratante, solo mientras la promo está activa. El carrito sigue recibiendo el
+   precio original: el 10% lo aplica el propio carrito (applyFamilyPricing + cartDiscount). */
+function initBagPromoBadges(){
+  const active = bagPromoActive();
+  document.querySelectorAll('[data-bag-promo]').forEach(function(el){ el.hidden = !active; });
+  if(!active) return;
+
+  document.querySelectorAll('.product-card').forEach(function(card){
+    if(!card.querySelector('[data-bag-promo]')) return;
+    const priceEl = card.querySelector('.product-price');
+    if(!priceEl || priceEl.dataset.originalUsd) return;
+    const original = parsePriceText(priceEl.textContent);
+    if(original == null) return;
+    priceEl.dataset.originalUsd = String(original);
+    priceEl.classList.add('on-sale');
+    let usdSpan = priceEl.querySelector('.product-price-usd');
+    if(!usdSpan){
+      priceEl.innerHTML = '';
+      usdSpan = document.createElement('span');
+      usdSpan.className = 'product-price-usd';
+      priceEl.appendChild(usdSpan);
+    }
+    usdSpan.innerHTML = '<span>' + formatPrice(original * (1 - BAG_PROMO_RATE)) + '</span><span class="was">' + formatPrice(original) + '</span>';
+  });
+
+  const row = document.querySelector('.pdp-price-row');
+  const pdpPrice = document.getElementById('pdp-price');
+  if(row && pdpPrice && row.querySelector('[data-bag-promo]') && !row.classList.contains('on-sale')){
+    const original = parsePriceText(pdpPrice.textContent);
+    if(original != null){
+      const sale = document.createElement('span');
+      sale.className = 'pdp-price-sale';
+      sale.textContent = formatPrice(original * (1 - BAG_PROMO_RATE));
+      row.classList.add('on-sale');
+      row.insertBefore(sale, pdpPrice);
+    }
+  }
+}
 function isBagHydrationItem(item){
   return /hidratante.*300 g|bolsa 440 g/i.test(item.name || '');
 }
@@ -183,7 +222,9 @@ function injectProductCardBsPrices(){
       usdSpan.textContent = text;
       el.appendChild(usdSpan);
     }
-    const usd = parsePriceText(usdSpan.textContent);
+    const usd = el.dataset.originalUsd
+      ? parseFloat(el.dataset.originalUsd) * (1 - BAG_PROMO_RATE)
+      : parsePriceText(usdSpan.textContent);
     const bsFormatted = formatBsNumber(usd);
     if(bsFormatted == null) return;
     let bsSpan = el.querySelector('.product-price-bs');
@@ -202,7 +243,9 @@ function injectPdpBsPrice(){
   const priceEl = document.getElementById('pdp-price');
   const bsEl = document.getElementById('pdp-price-bs');
   if(!priceEl || !bsEl) return;
-  const usd = parsePriceText(priceEl.textContent);
+  const row = priceEl.closest('.pdp-price-row');
+  const onSale = row && row.classList.contains('on-sale');
+  const usd = parsePriceText(priceEl.textContent) * (onSale ? 1 - BAG_PROMO_RATE : 1);
   const bsFormatted = formatBsNumber(usd);
   if(bsFormatted == null) return;
   bsEl.textContent = '≈ Bs ' + bsFormatted + ' · Tasa BCV: Bs ' + formatBsNumber(1);
@@ -400,7 +443,7 @@ function addCardToCart(card){
     brand: brandEl ? brandEl.textContent.trim() : '',
     photo: photoEl ? photoEl.src : '',
     variant: '',
-    unitPrice: parsePriceText(priceEl.textContent) || 0,
+    unitPrice: parseFloat(priceEl.dataset.originalUsd) || parsePriceText(priceEl.textContent) || 0,
     quantity: 1
   });
 }
@@ -2179,6 +2222,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initArticleFilter();
   initArticleToc();
   initCartPage();
+  initBagPromoBadges();
   initHeroCarousel();
   initReviewForm();
 
