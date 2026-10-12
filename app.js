@@ -707,6 +707,14 @@ function initCategoryFilters(){
 
   updateFacetCounts();
 
+  /* En Hidratación, mientras dure el 10% de las bolsas, esas tarjetas van primero. */
+  function promoBagFirst(){
+    return activeCategory === 'hidratacion' && bagPromoActive();
+  }
+  function isPromoBagCard(card){
+    return !!card.querySelector('[data-bag-promo]');
+  }
+
   function applySort(){
     const value = sortSelect.value;
     const sorted = cards.slice().sort(function(a, b){
@@ -718,7 +726,8 @@ function initCategoryFilters(){
         case 'sodium': return parseFloat(b.dataset.sodium) - parseFloat(a.dataset.sodium);
         case 'newest': return (b.dataset.new === 'true' ? 1 : 0) - (a.dataset.new === 'true' ? 1 : 0);
         default:
-          return (b.dataset.bestseller === 'true' ? 1 : 0) - (a.dataset.bestseller === 'true' ? 1 : 0)
+          return (promoBagFirst() ? (isPromoBagCard(b) ? 1 : 0) - (isPromoBagCard(a) ? 1 : 0) : 0)
+            || (b.dataset.bestseller === 'true' ? 1 : 0) - (a.dataset.bestseller === 'true' ? 1 : 0)
             || parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
       }
     });
@@ -764,6 +773,12 @@ function initCategoryFilters(){
     }
 
     interleaved.concat(rest).forEach(function(card){ grid.appendChild(card); });
+  }
+
+  if(promoBagFirst()){
+    const current = Array.from(grid.querySelectorAll('.product-card'));
+    current.filter(isPromoBagCard).concat(current.filter(function(c){ return !isPromoBagCard(c); }))
+      .forEach(function(card){ grid.appendChild(card); });
   }
 }
 
