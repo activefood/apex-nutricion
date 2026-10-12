@@ -60,7 +60,27 @@ function initImageCacheBust(){
 const WELCOME_COUPON_CODE = 'APEX2026';
 const WELCOME_COUPON_RATE = 0.10;
 const WELCOME_COUPON_STORAGE_KEY = 'apex_welcome_coupon_used';
-let appliedCoupon = null; // { code, rate } mientras dure la sesión del carrito, o null
+let appliedCoupon = null; // { code, rate, scope } mientras dure la sesión del carrito, o null
+
+/* Código de la Nike Run Caracas: 10% solo en hidratantes en bolsa (Going 300 g
+   y Skratch Labs 440 g), para cualquier cliente. No se combina con APEX2026:
+   solo hay un código aplicado a la vez. scope 'all' = todo el carrito. */
+const BAG_PROMO_CODE = 'NIKE2026';
+const BAG_PROMO_RATE = 0.10;
+
+function isBagHydrationItem(item){
+  return /hidratante.*300 g|bolsa 440 g/i.test(item.name || '');
+}
+function couponRateForItem(coupon, item){
+  if(!coupon) return 0;
+  if(coupon.scope === 'bag-hydration' && !isBagHydrationItem(item)) return 0;
+  return coupon.rate;
+}
+function cartDiscount(pricedCart, coupon){
+  return pricedCart.reduce(function(sum, item){
+    return sum + item.unitPrice * item.quantity * couponRateForItem(coupon, item);
+  }, 0);
+}
 
 function hasUsedWelcomeCoupon(){
   try { return localStorage.getItem(WELCOME_COUPON_STORAGE_KEY) === '1'; }
@@ -1380,7 +1400,11 @@ function initCartPage(){
     const subtotal = cartSubtotal(pricedCart);
     // El descuento no afecta el umbral de envío gratis — se calcula sobre
     // el subtotal real, no sobre el subtotal ya rebajado.
-    const discount = appliedCoupon ? subtotal * appliedCoupon.rate : 0;
+    if(appliedCoupon && appliedCoupon.scope === 'bag-hydration' && !cart.some(isBagHydrationItem)){
+      appliedCoupon = null;
+      showCouponNote('Quitamos ' + BAG_PROMO_CODE + ': ya no hay hidratantes en bolsa en tu carrito.', 'error');
+    }
+    const discount = cartDiscount(pricedCart, appliedCoupon);
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = "a coordinar" (MRW) | undefined = todavía no elige estado/zona
     let shipping;
@@ -1501,6 +1525,25 @@ function initCartPage(){
       const code = couponInput ? couponInput.value.trim() : '';
       if(!code) return;
 
+      const previousCoupon = appliedCoupon;
+      const replacedNote = function(newCode){
+        return previousCoupon && previousCoupon.code !== newCode
+          ? ' Se quitó ' + previousCoupon.code + ': los códigos no se combinan.'
+          : '';
+      };
+
+      if(code.toUpperCase() === BAG_PROMO_CODE){
+        if(!getCart().some(isBagHydrationItem)){
+          showCouponNote(BAG_PROMO_CODE + ' aplica solo a hidratantes en bolsa (Going 300 g y Skratch Labs 440 g). Agrega uno al carrito.', 'error');
+          return;
+        }
+        appliedCoupon = { code: BAG_PROMO_CODE, rate: BAG_PROMO_RATE, scope: 'bag-hydration' };
+        if(welcomeBannerEl) welcomeBannerEl.hidden = true;
+        showCouponNote('¡Código aplicado! 10% de descuento en tus hidratantes en bolsa.' + replacedNote(BAG_PROMO_CODE), 'ok');
+        render();
+        return;
+      }
+
       if(code.toUpperCase() !== WELCOME_COUPON_CODE){
         showCouponNote('Código no válido.', 'error');
         return;
@@ -1540,9 +1583,9 @@ function initCartPage(){
         .then(function(res){ return res.json(); })
         .then(function(data){
           if(data && data.ok && data.eligible){
-            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE };
+            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE, scope: 'all' };
             if(welcomeBannerEl) welcomeBannerEl.hidden = true;
-            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.', 'ok');
+            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + replacedNote(WELCOME_COUPON_CODE), 'ok');
           } else {
             appliedCoupon = null;
             showCouponNote('Código no válido.', 'error');
@@ -1647,16 +1690,15 @@ function initCheckoutButton(){
     if(deliveryCtx.type === 'pickup') shipping = 0;
     else if(deliveryCtx.isCaracas) shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_COST;
     else shipping = null; // MRW, a coordinar
-    const discount = appliedCoupon ? subtotal * appliedCoupon.rate : 0;
+    const discount = cartDiscount(pricedCart, appliedCoupon);
     const discountedSubtotal = subtotal - discount;
     const total = discountedSubtotal + (shipping || 0);
 
     // El descuento se reparte proporcionalmente en el precio unitario de
     // cada línea, para que el total que se registra en la hoja y en
     // Telegram sea exactamente lo que el cliente debe pagar.
-    const priceMultiplier = appliedCoupon ? (1 - appliedCoupon.rate) : 1;
     const items = pricedCart.map(function(item){
-      return { brand: item.brand, product: item.name, unitPrice: item.unitPrice * priceMultiplier, quantity: item.quantity };
+      return { brand: item.brand, product: item.name, unitPrice: item.unitPrice * (1 - couponRateForItem(appliedCoupon, item)), quantity: item.quantity };
     });
 
     const orderPayload = {
@@ -1726,7 +1768,7 @@ function initCheckoutButton(){
     window.location.href = waUrl;
 
     // El código de bienvenida ya se usó en este navegador — no se vuelve a ofrecer.
-    if(appliedCoupon) markWelcomeCouponUsed();
+    if(appliedCoupon && appliedCoupon.code === WELCOME_COUPON_CODE) markWelcomeCouponUsed();
 
     // Vaciar el carrito ya que el pedido quedó "enviado" hacia WhatsApp.
     saveCart([]);
