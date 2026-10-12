@@ -166,7 +166,7 @@
   <section class="hero-carousel">
     <h1 class="visually-hidden">Apex Nutrición — nutrición deportiva de Going, Probar, Skratch Labs, SaltStick y Honey Stinger en Venezuela</h1>
 
-    <div class="hero-slide hero-slide--promo hero-slide--nike active" data-promo-id="nike-run-caracas" data-promo-name="Nike Run Caracas 10K — 10% hidratación en bolsa" data-promo-slot="hero-1">
+    <div class="hero-slide hero-slide--promo hero-slide--nike active" data-promo-until="2026-11-08" data-promo-id="nike-run-caracas" data-promo-name="Nike Run Caracas 10K — 10% hidratación en bolsa" data-promo-slot="hero-1">
       <div class="container">
         <div class="promo-copy">
           <img class="promo-brandmark" src="assets/banners/nike-swoosh.webp" alt="Nike" width="77" height="28">
@@ -249,6 +249,22 @@
     </button>
     <div class="carousel-dots" role="group" aria-label="Diapositivas del héroe"></div>
   </section>
+  <!-- Banners con fecha: se quitan solos el día siguiente a data-promo-until (hora de Caracas), antes de que el carrusel arme sus puntos.
+       La fecha de la Carrera Nike debe coincidir con BAG_PROMO_LAST_DAY en app.js. -->
+  <script>
+    (function(){
+      var today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
+      var root = document.querySelector('.hero-carousel');
+      if(!root) return;
+      root.querySelectorAll('.hero-slide[data-promo-until]').forEach(function(slide){
+        if(today > slide.getAttribute('data-promo-until')) slide.remove();
+      });
+      if(!root.querySelector('.hero-slide.active')){
+        var first = root.querySelector('.hero-slide');
+        if(first) first.classList.add('active');
+      }
+    })();
+  </script>
 
   <!-- ============ Franja de categorías ============ -->
   <nav class="category-strip" aria-label="Categorías principales">
