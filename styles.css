@@ -669,6 +669,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .promo-copy{ max-width: 520px; }
 .promo-copy .eyebrow{ color: var(--accent-text); }
+.promo-brandmark{ height: 28px; width: auto; margin-bottom: var(--sp-3); }
 .promo-title{
   color: var(--ink);
   margin-top: var(--sp-3);
