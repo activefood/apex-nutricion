@@ -60,25 +60,28 @@ function initImageCacheBust(){
 const WELCOME_COUPON_CODE = 'APEX2026';
 const WELCOME_COUPON_RATE = 0.10;
 const WELCOME_COUPON_STORAGE_KEY = 'apex_welcome_coupon_used';
-let appliedCoupon = null; // { code, rate, scope } mientras dure la sesión del carrito, o null
+let appliedCoupon = null; // { code, rate } mientras dure la sesión del carrito, o null
 
-/* Código de la Nike Run Caracas: 10% solo en hidratantes en bolsa (Going 300 g
-   y Skratch Labs 440 g), para cualquier cliente. No se combina con APEX2026:
-   solo hay un código aplicado a la vez. scope 'all' = todo el carrito. */
-const BAG_PROMO_CODE = 'NIKE2026';
+/* Promo de la Carrera Nike: 10% automático en hidratantes en bolsa (Going 300 g
+   y Skratch Labs 440 g), sin código, hasta el día de la carrera (8-nov-2026,
+   hora de Caracas, inclusive). No se combina con APEX2026: si el cliente aplica
+   ese código, el 10% de bienvenida cubre todo el carrito y reemplaza a esta promo. */
 const BAG_PROMO_RATE = 0.10;
+const BAG_PROMO_LAST_DAY = '2026-11-08';
 
+function bagPromoActive(){
+  return todayCaracas() <= BAG_PROMO_LAST_DAY;
+}
 function isBagHydrationItem(item){
   return /hidratante.*300 g|bolsa 440 g/i.test(item.name || '');
 }
-function couponRateForItem(coupon, item){
-  if(!coupon) return 0;
-  if(coupon.scope === 'bag-hydration' && !isBagHydrationItem(item)) return 0;
-  return coupon.rate;
+function discountRateForItem(coupon, item){
+  if(coupon) return coupon.rate;
+  return bagPromoActive() && isBagHydrationItem(item) ? BAG_PROMO_RATE : 0;
 }
 function cartDiscount(pricedCart, coupon){
   return pricedCart.reduce(function(sum, item){
-    return sum + item.unitPrice * item.quantity * couponRateForItem(coupon, item);
+    return sum + item.unitPrice * item.quantity * discountRateForItem(coupon, item);
   }, 0);
 }
 
@@ -97,7 +100,7 @@ function initAnnounceBar(){
   const el = document.querySelector('.announce p');
   if(!el) return;
   if(!hasUsedWelcomeCoupon()){
-    el.innerHTML = '🎉 <strong>10% OFF</strong> en tu primera compra con el código <strong>APEX2026</strong> &nbsp;·&nbsp; Envío gratis desde <strong>$30</strong> en Caracas';
+    el.innerHTML = '🎉 <strong>10% OFF</strong> automático en tu primera compra &nbsp;·&nbsp; Envío gratis desde <strong>$30</strong> en Caracas';
   }
 }
 
@@ -1306,11 +1309,11 @@ function initCartPage(){
   const shippingNoteEl = document.getElementById('cart-shipping-note');
   const totalEl = document.getElementById('cart-total');
   const discountRowEl = document.getElementById('cart-discount-row');
+  const discountLabelEl = document.getElementById('cart-discount-label');
   const discountEl = document.getElementById('cart-discount');
   const discountBsEl = document.getElementById('cart-discount-bs');
   const welcomeBannerEl = document.getElementById('welcome-coupon-banner');
 
-  if(welcomeBannerEl) welcomeBannerEl.hidden = hasUsedWelcomeCoupon() || !!appliedCoupon;
 
   function render(){
     const cart = getCart();
@@ -1400,11 +1403,9 @@ function initCartPage(){
     const subtotal = cartSubtotal(pricedCart);
     // El descuento no afecta el umbral de envío gratis — se calcula sobre
     // el subtotal real, no sobre el subtotal ya rebajado.
-    if(appliedCoupon && appliedCoupon.scope === 'bag-hydration' && !cart.some(isBagHydrationItem)){
-      appliedCoupon = null;
-      showCouponNote('Quitamos ' + BAG_PROMO_CODE + ': ya no hay hidratantes en bolsa en tu carrito.', 'error');
-    }
     const discount = cartDiscount(pricedCart, appliedCoupon);
+    if(discountLabelEl) discountLabelEl.textContent = appliedCoupon ? 'Descuento (primera compra)' : 'Descuento (hidratantes en bolsa)';
+    if(welcomeBannerEl) welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = "a coordinar" (MRW) | undefined = todavía no elige estado/zona
     let shipping;
@@ -1525,25 +1526,6 @@ function initCartPage(){
       const code = couponInput ? couponInput.value.trim() : '';
       if(!code) return;
 
-      const previousCoupon = appliedCoupon;
-      const replacedNote = function(newCode){
-        return previousCoupon && previousCoupon.code !== newCode
-          ? ' Se quitó ' + previousCoupon.code + ': los códigos no se combinan.'
-          : '';
-      };
-
-      if(code.toUpperCase() === BAG_PROMO_CODE){
-        if(!getCart().some(isBagHydrationItem)){
-          showCouponNote(BAG_PROMO_CODE + ' aplica solo a hidratantes en bolsa (Going 300 g y Skratch Labs 440 g). Agrega uno al carrito.', 'error');
-          return;
-        }
-        appliedCoupon = { code: BAG_PROMO_CODE, rate: BAG_PROMO_RATE, scope: 'bag-hydration' };
-        if(welcomeBannerEl) welcomeBannerEl.hidden = true;
-        showCouponNote('¡Código aplicado! 10% de descuento en tus hidratantes en bolsa.' + replacedNote(BAG_PROMO_CODE), 'ok');
-        render();
-        return;
-      }
-
       if(code.toUpperCase() !== WELCOME_COUPON_CODE){
         showCouponNote('Código no válido.', 'error');
         return;
@@ -1583,9 +1565,9 @@ function initCartPage(){
         .then(function(res){ return res.json(); })
         .then(function(data){
           if(data && data.ok && data.eligible){
-            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE, scope: 'all' };
+            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE };
             if(welcomeBannerEl) welcomeBannerEl.hidden = true;
-            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + replacedNote(WELCOME_COUPON_CODE), 'ok');
+            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + (bagPromoActive() && getCart().some(isBagHydrationItem) ? ' Reemplaza el 10% de hidratantes en bolsa: no se combinan.' : ''), 'ok');
           } else {
             appliedCoupon = null;
             showCouponNote('Código no válido.', 'error');
@@ -1602,6 +1584,56 @@ function initCartPage(){
         });
     });
   }
+
+  /* Primera compra: el 10% se aplica solo, sin código, mientras este navegador
+     no haya completado un pedido. Se confirma contra los pedidos anteriores
+     (nombre + teléfono) en cuanto el cliente los escribe, o al pulsar Comprar.
+     Si el servicio no responde se deja el descuento: no castigamos a un cliente
+     nuevo por una falla nuestra. */
+  if(!hasUsedWelcomeCoupon() && !appliedCoupon){
+    appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE, auto: true, verified: false };
+  }
+
+  let welcomeCheck = null; // { key, promise }
+  function verifyAutoWelcome(name, phone){
+    const key = name + '|' + phone;
+    if(welcomeCheck && welcomeCheck.key === key) return welcomeCheck.promise;
+    const promise = fetch('/api/check-welcome-coupon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, phone: phone })
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(!appliedCoupon || !appliedCoupon.auto) return;
+        if(data && data.ok && data.eligible === false){
+          appliedCoupon = null;
+          showCouponNote('Ya registramos un pedido con estos datos: el 10% de primera compra no aplica.', 'error');
+        } else {
+          appliedCoupon.verified = true;
+        }
+        render();
+      })
+      .catch(function(){
+        if(appliedCoupon && appliedCoupon.auto) appliedCoupon.verified = true;
+      });
+    welcomeCheck = { key: key, promise: promise };
+    return promise;
+  }
+  window.__apexVerifyWelcome = verifyAutoWelcome;
+
+  function maybeVerifyWelcome(){
+    if(!(appliedCoupon && appliedCoupon.auto && !appliedCoupon.verified)) return;
+    const nameEl = document.getElementById('checkout-name');
+    const phoneEl = document.getElementById('checkout-phone');
+    const name = nameEl ? nameEl.value.trim() : '';
+    const phone = phoneEl ? phoneEl.value.trim() : '';
+    if(name && phone) verifyAutoWelcome(name, phone);
+  }
+  ['checkout-name', 'checkout-phone'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('change', maybeVerifyWelcome);
+  });
 
   initDeliveryType();
   initCheckoutButton();
@@ -1678,6 +1710,17 @@ function initCheckoutButton(){
     }
     if(errorEl) errorEl.hidden = true;
 
+    if(appliedCoupon && appliedCoupon.auto && !appliedCoupon.verified && window.__apexVerifyWelcome){
+      btn.disabled = true;
+      window.__apexVerifyWelcome(customerName, phone).then(function(){
+        btn.disabled = false;
+        placeOrder();
+      });
+      return;
+    }
+    placeOrder();
+
+    function placeOrder(){
     // Precio final por unidad ya con el descuento por volumen aplicado
     // (sumando sabores de la misma familia de producto) — esto es lo que
     // se cobra de verdad y lo que se registra en el pedido.
@@ -1698,7 +1741,7 @@ function initCheckoutButton(){
     // cada línea, para que el total que se registra en la hoja y en
     // Telegram sea exactamente lo que el cliente debe pagar.
     const items = pricedCart.map(function(item){
-      return { brand: item.brand, product: item.name, unitPrice: item.unitPrice * (1 - couponRateForItem(appliedCoupon, item)), quantity: item.quantity };
+      return { brand: item.brand, product: item.name, unitPrice: item.unitPrice * (1 - discountRateForItem(appliedCoupon, item)), quantity: item.quantity };
     });
 
     const orderPayload = {
@@ -1745,8 +1788,8 @@ function initCheckoutButton(){
       '\nTeléfono: 0414-2333620' +
       '\nC.I.: 9879375';
 
-    const discountLine = appliedCoupon
-      ? '\nDescuento (código ' + appliedCoupon.code + '): -' + formatPrice(discount) + bsSuffix(discount)
+    const discountLine = discount > 0
+      ? '\nDescuento (' + (appliedCoupon ? 'código ' + appliedCoupon.code : '10% hidratantes en bolsa') + '): -' + formatPrice(discount) + bsSuffix(discount)
       : '';
 
     const message = 'Hola, quiero hacer este pedido:\n\n' +
@@ -1768,10 +1811,11 @@ function initCheckoutButton(){
     window.location.href = waUrl;
 
     // El código de bienvenida ya se usó en este navegador — no se vuelve a ofrecer.
-    if(appliedCoupon && appliedCoupon.code === WELCOME_COUPON_CODE) markWelcomeCouponUsed();
+    if(appliedCoupon) markWelcomeCouponUsed();
 
     // Vaciar el carrito ya que el pedido quedó "enviado" hacia WhatsApp.
     saveCart([]);
+    }
   });
 }
 

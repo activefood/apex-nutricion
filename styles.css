@@ -670,7 +670,20 @@ button.pill:hover{ border-color: var(--ink); }
 .promo-copy{ max-width: 520px; }
 .promo-copy .eyebrow{ color: var(--accent-text); }
 .promo-brandmark{ height: 28px; width: auto; margin-bottom: var(--sp-3); }
-.promo-text .promo-code-chip--inline{ font-size: 13px; padding: 2px 7px; letter-spacing: .06em; white-space: nowrap; line-height: 1.3; }
+
+.promo-offer{
+  display: inline-block;
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4) var(--sp-3);
+  background: var(--accent);
+  color: var(--ink);
+  border-radius: var(--r-card);
+}
+.hero-slide--promo .promo-offer p{ margin: 0; color: var(--ink); }
+.promo-offer-kicker{ font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.promo-offer-big{ font-family: var(--font-head); font-size: 44px; line-height: 1.05; letter-spacing: .04em; }
+.promo-offer-note{ font-size: 13px; font-weight: 600; }
+.hero-slide--nike .promo-text{ margin-top: var(--sp-3); }
 
 /* Banner de la Carrera Nike: regla de 10 km abajo, con línea de meta a cuadros.
    Decorativa (aria-hidden); el contenido real está arriba. */
@@ -791,7 +804,14 @@ button.pill:hover{ border-color: var(--ink); }
   .promo-title{ font-size: 34px; }
   .promo-media{ height: 280px; }
   .promo-ruler-ticks{ padding: 0 72px; }
+  .promo-offer-big{ font-size: 30px; }
   .promo-ruler-label{ left: max(72px, calc((100% - 1280px) / 2 + 72px)); }
+}
+@media (min-width: 641px) and (max-width: 1024px){
+  .hero-slide--nike .promo-text{ display: none; }
+}
+@media (min-width: 641px) and (max-width: 800px){
+  .promo-offer-big{ font-size: 24px; }
 }
 @media (max-width: 640px){
   /* Celular: texto arriba, fotos abajo ocupando lo que sobra, mismo alto 3:4 en los 3 banners */
@@ -806,6 +826,8 @@ button.pill:hover{ border-color: var(--ink); }
     padding-bottom: var(--sp-4);
   }
   .hero-slide--nike .container{ padding-top: var(--sp-5); padding-bottom: calc(52px + var(--sp-4)); }
+  .promo-offer-big{ font-size: 30px; }
+  .promo-offer-note{ font-size: 12px; }
   .promo-ruler{ height: 52px; }
   .promo-ruler-ticks{ padding: 0 14px; font-size: 18px; letter-spacing: .02em; }
   .promo-ruler-ticks li::before{ top: -15px; }
