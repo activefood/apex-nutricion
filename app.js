@@ -1719,7 +1719,8 @@ function initCheckoutButton(){
       deliveryLine +
       paymentLine;
 
-    trackEvent('begin_checkout', { currency: 'USD', value: total, coupon: appliedCoupon ? appliedCoupon.code : undefined });
+    // transport_type:'beacon' porque la página se va a WhatsApp en la línea siguiente; sin esto GA4 perdía el evento.
+    trackEvent('begin_checkout', { currency: 'USD', value: total, coupon: appliedCoupon ? appliedCoupon.code : undefined, transport_type: 'beacon' });
 
     const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message);
     window.location.href = waUrl;
