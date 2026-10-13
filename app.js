@@ -314,7 +314,16 @@ function announce(text){
   setTimeout(function(){ liveRegion.textContent = text; }, 50);
 }
 
+/* Honey Stinger todavía no tiene inventario ("Próximamente"): no se puede agregar al carrito. */
+function isComingSoonItem(item){
+  return /honey stinger/i.test((item.brand || '') + ' ' + (item.name || ''));
+}
+
 function addItemToCart(item){
+  if(isComingSoonItem(item)){
+    announce(item.name + ' estará disponible próximamente.');
+    return;
+  }
   const cart = getCart();
   const existing = cart.find(function(c){ return c.name === item.name && c.brand === item.brand && c.variant === item.variant; });
   if(existing){
@@ -1371,6 +1380,18 @@ function initCartPage(){
   const discountEl = document.getElementById('cart-discount');
   const discountBsEl = document.getElementById('cart-discount-bs');
   const welcomeBannerEl = document.getElementById('welcome-coupon-banner');
+
+  // Quita del carrito guardado lo que todavía no tiene inventario (clientes con un carrito viejo).
+  const savedCart = getCart();
+  const availableCart = savedCart.filter(function(i){ return !isComingSoonItem(i); });
+  if(availableCart.length !== savedCart.length){
+    saveCart(availableCart);
+    const soonNote = document.getElementById('cart-soon-note');
+    if(soonNote){
+      soonNote.textContent = 'Quitamos Honey Stinger de tu carrito: todavía no tenemos inventario. Muy pronto estará disponible.';
+      soonNote.hidden = false;
+    }
+  }
 
 
   function render(){
