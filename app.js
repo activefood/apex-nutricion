@@ -62,26 +62,66 @@ const WELCOME_COUPON_RATE = 0.10;
 const WELCOME_COUPON_STORAGE_KEY = 'apex_welcome_coupon_used';
 let appliedCoupon = null; // { code, rate } mientras dure la sesión del carrito, o null
 
-/* Promo de la Carrera Nike: 10% automático en hidratantes en bolsa (Going 300 g
-   y Skratch Labs 440 g), sin código, hasta el día de la carrera (8-nov-2026,
-   hora de Caracas, inclusive). No se combina con APEX2026: si el cliente aplica
-   ese código, el 10% de bienvenida cubre todo el carrito y reemplaza a esta promo. */
-const BAG_PROMO_RATE = 0.10;
+/* Promos automáticas por producto (10%, sin código). No se combinan con el 10% de primera
+   compra / APEX2026: si el cliente tiene ese descuento, cubre todo el carrito y reemplaza a estas.
+   - Bolsas de hidratante (Going 300 g y Skratch Labs 440 g): hasta el día de la Carrera Nike
+     (8-nov-2026, hora de Caracas, inclusive).
+   - Barras de proteína Probar: hasta PROBAR_PROMO_LAST_DAY (misma fecha por defecto; cambiar aquí). */
+const PRODUCT_PROMO_RATE = 0.10;
 const BAG_PROMO_LAST_DAY = '2026-11-08';
+const PROBAR_PROMO_LAST_DAY = '2026-11-08';
+const PROMO_BADGE_SELECTOR = '[data-bag-promo],[data-probar-promo]';
+const PROMO_BADGE_SVG = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>10% OFF';
 
 function bagPromoActive(){
   return todayCaracas() <= BAG_PROMO_LAST_DAY;
 }
-/* Insignias "10% OFF" y precio de oferta (se tacha el original y se muestra el nuevo) en las
-   bolsas de hidratante, solo mientras la promo está activa. El carrito sigue recibiendo el
+function probarPromoActive(){
+  return todayCaracas() <= PROBAR_PROMO_LAST_DAY;
+}
+function isProbarBarName(name){
+  return /barra de prote[ií]na/i.test(name || '') && /probar/i.test(name || '');
+}
+function isProbarBarItem(item){
+  return /barra de prote[ií]na/i.test(item.name || '') && /probar/i.test((item.brand || '') + ' ' + (item.name || ''));
+}
+/* ¿Está vigente la promo a la que pertenece esta insignia? */
+function promoBadgeActive(el){
+  return el.hasAttribute('data-probar-promo') ? probarPromoActive() : bagPromoActive();
+}
+function createPromoBadge(inline){
+  const badge = document.createElement('span');
+  badge.className = 'tag tag--discount' + (inline ? ' tag--inline' : '');
+  badge.setAttribute('data-probar-promo', '');
+  badge.hidden = true;
+  badge.innerHTML = PROMO_BADGE_SVG;
+  return badge;
+}
+/* Las barras Probar aparecen en varias páginas (inicio, catálogo, marca, ficha, "también te puede
+   gustar"): en vez de repetir el HTML en cada una, la insignia se agrega aquí por nombre. */
+function addProbarPromoBadges(){
+  document.querySelectorAll('.product-card').forEach(function(card){
+    const nameEl = card.querySelector('.product-name');
+    const media = card.querySelector('.product-media');
+    if(!nameEl || !media || !isProbarBarName(nameEl.textContent) || card.querySelector(PROMO_BADGE_SELECTOR)) return;
+    media.insertBefore(createPromoBadge(false), media.firstChild);
+  });
+  const row = document.querySelector('.pdp-price-row');
+  const title = document.getElementById('pdp-main-title');
+  if(row && title && isProbarBarName(title.textContent) && !row.querySelector(PROMO_BADGE_SELECTOR)){
+    row.appendChild(createPromoBadge(true));
+  }
+}
+/* Insignias "10% OFF" y precio de oferta (se tacha el original y se muestra el nuevo) en los
+   productos en promo, solo mientras su promo está activa. El carrito sigue recibiendo el
    precio original: el 10% lo aplica el propio carrito (applyFamilyPricing + cartDiscount). */
 function initBagPromoBadges(){
-  const active = bagPromoActive();
-  document.querySelectorAll('[data-bag-promo]').forEach(function(el){ el.hidden = !active; });
-  if(!active) return;
+  addProbarPromoBadges();
+  document.querySelectorAll(PROMO_BADGE_SELECTOR).forEach(function(el){ el.hidden = !promoBadgeActive(el); });
 
   document.querySelectorAll('.product-card').forEach(function(card){
-    if(!card.querySelector('[data-bag-promo]')) return;
+    const badge = card.querySelector(PROMO_BADGE_SELECTOR);
+    if(!badge || !promoBadgeActive(badge)) return;
     const priceEl = card.querySelector('.product-price');
     if(!priceEl || priceEl.dataset.originalUsd) return;
     const original = parsePriceText(priceEl.textContent);
@@ -95,17 +135,18 @@ function initBagPromoBadges(){
       usdSpan.className = 'product-price-usd';
       priceEl.appendChild(usdSpan);
     }
-    usdSpan.innerHTML = '<span>' + formatPrice(original * (1 - BAG_PROMO_RATE)) + '</span><span class="was">' + formatPrice(original) + '</span>';
+    usdSpan.innerHTML = '<span>' + formatPrice(original * (1 - PRODUCT_PROMO_RATE)) + '</span><span class="was">' + formatPrice(original) + '</span>';
   });
 
   const row = document.querySelector('.pdp-price-row');
   const pdpPrice = document.getElementById('pdp-price');
-  if(row && pdpPrice && row.querySelector('[data-bag-promo]') && !row.classList.contains('on-sale')){
+  const rowBadge = row && row.querySelector(PROMO_BADGE_SELECTOR);
+  if(row && pdpPrice && rowBadge && promoBadgeActive(rowBadge) && !row.classList.contains('on-sale')){
     const original = parsePriceText(pdpPrice.textContent);
     if(original != null){
       const sale = document.createElement('span');
       sale.className = 'pdp-price-sale';
-      sale.textContent = formatPrice(original * (1 - BAG_PROMO_RATE));
+      sale.textContent = formatPrice(original * (1 - PRODUCT_PROMO_RATE));
       row.classList.add('on-sale');
       row.insertBefore(sale, pdpPrice);
     }
@@ -114,9 +155,19 @@ function initBagPromoBadges(){
 function isBagHydrationItem(item){
   return /hidratante.*300 g|bolsa 440 g/i.test(item.name || '');
 }
+function itemPromoActive(item){
+  return (bagPromoActive() && isBagHydrationItem(item)) || (probarPromoActive() && isProbarBarItem(item));
+}
 function discountRateForItem(coupon, item){
   if(coupon) return coupon.rate;
-  return bagPromoActive() && isBagHydrationItem(item) ? BAG_PROMO_RATE : 0;
+  return itemPromoActive(item) ? PRODUCT_PROMO_RATE : 0;
+}
+/* Nombre de las promos presentes en el carrito, para las etiquetas de descuento. */
+function promoLabelForCart(cart){
+  const names = [];
+  if(cart.some(function(i){ return bagPromoActive() && isBagHydrationItem(i); })) names.push('hidratantes en bolsa');
+  if(cart.some(function(i){ return probarPromoActive() && isProbarBarItem(i); })) names.push('barras Probar');
+  return names.join(' y ') || 'promoción';
 }
 function cartDiscount(pricedCart, coupon){
   return pricedCart.reduce(function(sum, item){
@@ -223,7 +274,7 @@ function injectProductCardBsPrices(){
       el.appendChild(usdSpan);
     }
     const usd = el.dataset.originalUsd
-      ? parseFloat(el.dataset.originalUsd) * (1 - BAG_PROMO_RATE)
+      ? parseFloat(el.dataset.originalUsd) * (1 - PRODUCT_PROMO_RATE)
       : parsePriceText(usdSpan.textContent);
     const bsFormatted = formatBsNumber(usd);
     if(bsFormatted == null) return;
@@ -245,7 +296,7 @@ function injectPdpBsPrice(){
   if(!priceEl || !bsEl) return;
   const row = priceEl.closest('.pdp-price-row');
   const onSale = row && row.classList.contains('on-sale');
-  const usd = parsePriceText(priceEl.textContent) * (onSale ? 1 - BAG_PROMO_RATE : 1);
+  const usd = parsePriceText(priceEl.textContent) * (onSale ? 1 - PRODUCT_PROMO_RATE : 1);
   const bsFormatted = formatBsNumber(usd);
   if(bsFormatted == null) return;
   bsEl.textContent = '≈ Bs ' + bsFormatted + ' · Tasa BCV: Bs ' + formatBsNumber(1);
@@ -1483,7 +1534,7 @@ function initCartPage(){
     // El descuento no afecta el umbral de envío gratis — se calcula sobre
     // el subtotal real, no sobre el subtotal ya rebajado.
     const discount = cartDiscount(pricedCart, appliedCoupon);
-    if(discountLabelEl) discountLabelEl.textContent = appliedCoupon ? 'Descuento (primera compra)' : 'Descuento (hidratantes en bolsa)';
+    if(discountLabelEl) discountLabelEl.textContent = appliedCoupon ? 'Descuento (primera compra)' : 'Descuento (' + promoLabelForCart(getCart()) + ')';
     if(welcomeBannerEl) welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = "a coordinar" (MRW) | undefined = todavía no elige estado/zona
@@ -1646,7 +1697,7 @@ function initCartPage(){
           if(data && data.ok && data.eligible){
             appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE };
             if(welcomeBannerEl) welcomeBannerEl.hidden = true;
-            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + (bagPromoActive() && getCart().some(isBagHydrationItem) ? ' Reemplaza el 10% de hidratantes en bolsa: no se combinan.' : ''), 'ok');
+            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + (getCart().some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : ''), 'ok');
           } else {
             appliedCoupon = null;
             showCouponNote('Código no válido.', 'error');
@@ -1868,7 +1919,7 @@ function initCheckoutButton(){
       '\nC.I.: 9879375';
 
     const discountLine = discount > 0
-      ? '\nDescuento (' + (appliedCoupon ? 'código ' + appliedCoupon.code : '10% hidratantes en bolsa') + '): -' + formatPrice(discount) + bsSuffix(discount)
+      ? '\nDescuento (' + (appliedCoupon ? 'código ' + appliedCoupon.code : '10% ' + promoLabelForCart(getCart())) + '): -' + formatPrice(discount) + bsSuffix(discount)
       : '';
 
     const message = 'Hola, quiero hacer este pedido:\n\n' +
