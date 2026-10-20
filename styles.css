@@ -2403,7 +2403,7 @@ button.pill:hover{ border-color: var(--ink); }
    Página de marca
    ========================================================================== */
 .brand-banner{
-  background: #5C584F;
+  background: var(--ink); /* negro de marca; antes #5C584F (gris-marrón), que marketing señaló como fuera de branding */
   color: #fff;
   padding: var(--sp-8) 0;
 }
