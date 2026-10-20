@@ -138,3 +138,5 @@ Nunca se usan como acento general del sitio.
 - `--spark` (#D8F24C, verde lima) está definido pero solo lo usa `.hero-copy`, que hoy no aparece en ninguna página.
 - `.hero-slide-media img` (esquinas de 18px, sombra `0 30px 60px`) es de un diseño anterior del carrusel y no se usa en ninguna página. No tomarlo como referencia.
 - Los inputs de búsqueda, checkout y cupón usan 13–13.5px; está ligado a la excepción del zoom en `CONSTRAINTS.md`.
+
+* **Barra de compra fija en celular** (`.pdp-buy-row`, ≤768 px): la fila cantidad + "Agregar al carrito" de la ficha se pega al borde inferior (sticky dentro de `.pdp-info`) mientras la ficha está a la vista y se suelta sola al terminar. Antes el botón quedaba ~1000 px abajo, fuera de la primera pantalla. Requiere que ningún ancestro (incluido `body`) sea contenedor de scroll: por eso `body` usa `overflow-x: clip`, no `hidden`. El botón de WhatsApp (`.wa-float`) pasa a solo ícono y sube 88 px para no taparla.

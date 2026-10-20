@@ -76,6 +76,7 @@ body{
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden; /* nada debe poder abrir scroll horizontal de la página; los carruseles internos (ej. flavor-slider) manejan su propio scroll y no se ven afectados */
+  overflow-x: clip;   /* igual, pero sin volver al body un contenedor de scroll: con 'hidden' ningún position:sticky de la página (barra de compra de la ficha) llegaba a pegarse */
 }
 img, svg{ display: block; max-width: 100%; }
 ul{ list-style: none; margin: 0; padding: 0; }
@@ -2230,6 +2231,27 @@ button.pill:hover{ border-color: var(--ink); }
   .pdp-grid{ grid-template-columns: 1fr; gap: var(--sp-6); }
 }
 
+/* Celular: el botón "Agregar al carrito" quedaba ~1000 px abajo (foto + título + precio +
+   sabores), fuera de la primera pantalla. La fila de compra se pega al borde inferior mientras
+   la ficha está a la vista (sticky dentro de .pdp-info: se suelta sola al terminar la ficha, así
+   no tapa el acordeón ni el pie). El botón de WhatsApp (más abajo) pasa a ícono y sube. */
+@media (max-width: 768px){
+  .pdp-price-row{ flex-wrap: wrap; }
+  .pdp-buy-row{
+    position: sticky;
+    bottom: 0;
+    z-index: 60;
+    margin-inline: -24px;
+    padding: 10px 24px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 16px rgba(20,18,15,.08);
+  }
+}
+@media (max-width: 480px){
+  .pdp-buy-row{ margin-inline: -16px; padding-inline: 16px; }
+}
+
 /* ---------- Acordeón ---------- */
 .accordion{ border-top: 1px solid var(--line); }
 .accordion-item{ border-bottom: 1px solid var(--line); }
@@ -3032,6 +3054,16 @@ button.pill:hover{ border-color: var(--ink); }
 .wa-float:focus-visible{ outline: 3px solid var(--accent-text); outline-offset: 2px; }
 @media (max-width: 480px){
   .wa-float{ padding: 12px 14px; font-size: 13px; }
+}
+/* Celular: ícono solo, sobre la barra de compra fija de la ficha. */
+@media (max-width: 768px){
+  .wa-float{
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    width: 48px; height: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+  .wa-float span{ display: none; }
 }
 
 /* ---------- Cifras alineadas (precios y cantidades no "bailan" al cambiar) ---------- */
