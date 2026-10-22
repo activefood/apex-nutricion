@@ -143,3 +143,5 @@ Nunca se usan como acento general del sitio.
 
 * **Portada de marca** (`.brand-banner`, páginas de marca): franja negra de marca (`--ink`), ya no gris-marrón `#5C584F` (marketing: fuera de branding). Los logos oscuros de Going, Skratch y SaltStick usan su variante blanca (`assets/logos/*-logo-blanco.webp`; `marcas.html` sigue con la oscura sobre fondo claro) y el de Honey Stinger va sin caja negra (`honey-stinger-logo-transp.webp`). Sin fotos de deportistas por marca: no queremos asociar cada marca a un solo deporte.
 
+* **Ofertas** (`ofertas.html` + sección "Ofertas" en el inicio): página con todos los productos en descuento y enlace "OFERTAS" en rojo (`--sale`) al final del menú. Cada tarjeta lleva `data-deals-group` (`bag` o `probar`) y `initOffersPage` (app.js) la muestra solo mientras su promo está vigente; si no queda ninguna, la página muestra "Por ahora no hay ofertas activas" y la sección del inicio se oculta. Al agregar una promo nueva: tarjetas con su grupo, fecha en app.js y el grupo en `initOffersPage`.
+

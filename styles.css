@@ -3141,3 +3141,14 @@ button.pill:hover{ border-color: var(--ink); }
   cursor: pointer;
 }
 .carousel-pause svg[hidden]{ display: none; }
+
+
+/* ---------- Ofertas (ofertas.html) ----------
+   Enlace del menú en rojo oferta (--sale) para que destaque sin competir con el lima. La página
+   agrupa los productos con descuento activo; cada grupo se oculta solo al vencer su promo. */
+.nav-item--sale > a{ color: var(--sale); font-weight: 800; }
+.nav-item--sale > a:hover{ color: var(--sale); }
+.mobile-plain--sale{ color: var(--sale); font-weight: 800; }
+.deals-note{ font-size: 13px; color: var(--ink-3); margin: var(--sp-6) 0 var(--sp-8); }
+.product-card[hidden]{ display: none; }
+[data-deals-section][hidden]{ display: none; }

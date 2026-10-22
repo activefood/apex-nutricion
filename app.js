@@ -152,6 +152,28 @@ function initBagPromoBadges(){
     }
   }
 }
+/* ---------- Ofertas (página ofertas.html y sección del inicio) ----------
+   Cada tarjeta ([data-deals-group]) se muestra solo mientras la promo de su grupo está vigente. En la
+   página, si ninguna lo está se muestra el aviso de "no hay ofertas"; en el inicio, la sección
+   ([data-deals-section]) se oculta completa. */
+function initOffersPage(){
+  const cards = document.querySelectorAll('[data-deals-group]');
+  if(!cards.length) return;
+  const active = { bag: bagPromoActive(), probar: probarPromoActive() };
+  let any = false;
+  cards.forEach(function(card){
+    const on = !!active[card.dataset.dealsGroup];
+    card.hidden = !on;
+    if(on) any = true;
+  });
+  document.querySelectorAll('[data-deals-section]').forEach(function(sec){ sec.hidden = !any; });
+  const emptyEl = document.getElementById('ofertas-empty');
+  if(emptyEl) emptyEl.hidden = any;
+  const grid = document.getElementById('ofertas-grid');
+  if(grid) grid.hidden = !any;
+  document.querySelectorAll('.deals-note').forEach(function(el){ el.hidden = !any; });
+}
+
 function isBagHydrationItem(item){
   return /hidratante.*300 g|bolsa 440 g/i.test(item.name || '');
 }
@@ -2310,6 +2332,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initArticleToc();
   initCartPage();
   initBagPromoBadges();
+  initOffersPage();
   initHeroCarousel();
   initReviewForm();
 

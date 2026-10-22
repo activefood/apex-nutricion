@@ -44,7 +44,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
-<link rel="stylesheet" href="styles.css?v=138">
+<link rel="stylesheet" href="styles.css?v=141">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -113,6 +113,9 @@
         <li class="nav-item">
           <a href="guias.html">GUÍAS</a>
         </li>
+        <li class="nav-item nav-item--sale">
+          <a href="ofertas.html">OFERTAS</a>
+        </li>
       </ul>
     </nav>
 
@@ -157,6 +160,7 @@
     </details>
     <a class="mobile-plain" href="marcas.html">MARCAS</a>
     <a class="mobile-plain" href="guias.html">GUÍAS</a>
+    <a class="mobile-plain mobile-plain--sale" href="ofertas.html">OFERTAS</a>
   </nav>
 </header>
 
@@ -310,6 +314,89 @@
           <h3>Las cinco marcas, un solo despacho</h3>
           <img class="promo-tile-logos" src="assets/marcas-logos-strip.webp" alt="Going, Probar, Skratch Labs, SaltStick y Honey Stinger" width="900" height="82">
         </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Ofertas ============ -->
+  <!-- Se muestra solo mientras alguna promo esté vigente (initOffersPage en app.js). -->
+  <section class="section section--alt" data-deals-section>
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2 class="h-28">Ofertas</h2>
+          <p class="lede">10% de descuento por tiempo limitado, hasta el 8 de noviembre. Se aplica solo al armar tu pedido, sin código.</p>
+        </div>
+        <a class="link-more" href="ofertas.html">Ver todas las ofertas →</a>
+      </div>
+      <div class="product-grid">
+
+        <div data-deals-group="bag" class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
+            <a class="product-card-box" href="producto-going-hidratante-tarro.html?flavor=Uva">
+        <div class="product-media">
+              <span class="tag tag--discount" data-bag-promo hidden><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>10% OFF</span>
+              <img class="product-photo" src="assets/going/hidratante-uva.webp" alt="Hidratante Uva — 300 g" width="1000" height="1000">
+            </div>
+        <div class="product-info">
+              <p class="product-brand">Going Nutrición</p>
+              <h3 class="product-name">Hidratante Uva — 300 g Going</h3>
+              <p class="product-stat">115 mg sodio · 7,5 g carbohidratos por porción</p>
+              <div class="product-bottom">
+                <span class="product-price">$25,99</span>
+              </div></div>
+      </a>
+      <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+        <div data-deals-group="bag" class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Fresa%20Limonada">
+        <div class="product-media">
+              <span class="tag tag--discount" data-bag-promo hidden><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>10% OFF</span>
+              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada.webp" alt="Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g" width="1000" height="1000" loading="lazy">
+            </div>
+        <div class="product-info">
+              <p class="product-brand">Skratch Labs</p>
+              <h3 class="product-name">Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g Skratch Labs</h3>
+              <p class="product-stat">400 mg sodio · 20 g carbohidratos por porción</p>
+              <div class="product-bottom">
+                <span class="product-price">$35,55</span>
+              </div></div>
+      </a>
+      <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+        <div data-deals-group="probar" class="product-card" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="32" data-sodium="390" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
+            <a class="product-card-box" href="producto-probar-barra.html?flavor=Peanut%20Butter%20Chocolate">
+        <div class="product-media">
+              <img class="product-photo" src="assets/probar/barra-peanut-butter-chocolate.webp" alt="Barra de Proteína Peanut Butter Chocolate" width="1000" height="1000" loading="lazy">
+            </div>
+        <div class="product-info">
+              <p class="product-brand">Probar</p>
+              <h3 class="product-name">Barra de Proteína Peanut Butter Chocolate Probar</h3>
+              <p class="product-stat">32 g carbohidratos · 20 g proteína</p>
+              <div class="product-bottom">
+                <span class="product-price">Desde $4,95</span>
+              </div></div>
+      </a>
+      <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+        <div data-deals-group="probar" class="product-card" data-brand="probar" data-format="barra" data-caffeine="0" data-carbs="33" data-sodium="400" data-sport="gimnasio running" data-price="4.95" data-rating="4.6" data-category="recuperacion">
+            <a class="product-card-box" href="producto-probar-barra.html?flavor=Cookie%20Dough">
+        <div class="product-media">
+              <img class="product-photo" src="assets/probar/barra-cookie-dough.webp" alt="Barra de Proteína Cookie Dough" width="1000" height="1000" loading="lazy">
+            </div>
+        <div class="product-info">
+              <p class="product-brand">Probar</p>
+              <h3 class="product-name">Barra de Proteína Cookie Dough Probar</h3>
+              <p class="product-stat">33 g carbohidratos · 20 g proteína</p>
+              <div class="product-bottom">
+                <span class="product-price">Desde $4,95</span>
+              </div></div>
+      </a>
+      <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
 
       </div>
     </div>
@@ -658,6 +745,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=94"></script>
+<script src="app.js?v=97"></script>
 </body>
 </html>
