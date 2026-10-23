@@ -392,9 +392,18 @@ function isComingSoonItem(item){
   return /honey stinger/i.test((item.brand || '') + ' ' + (item.name || ''));
 }
 
+/* Agotado por ahora (hay existencias en otros sabores/presentaciones): no se puede agregar. */
+function isOutOfStockItem(item){
+  return /prote[ií]na en polvo vainilla\s*—\s*600 g/i.test(item.name || '');
+}
+
 function addItemToCart(item){
   if(isComingSoonItem(item)){
     announce(item.name + ' estará disponible próximamente.');
+    return;
+  }
+  if(isOutOfStockItem(item)){
+    announce(item.name + ' está agotado por ahora.');
     return;
   }
   const cart = getCart();
@@ -877,6 +886,26 @@ function applyNutrition(el){
 }
 
 /* ---------- Selector de sabor de la ficha de producto (miniaturas + píldoras + foto principal) ---------- */
+/* Sabor agotado ([data-out-of-stock] en su tarjeta de sabor): la ficha muestra "Agotado" y deshabilita
+   "Agregar al carrito" mientras ese sabor esté elegido; al elegir otro sabor vuelve a la normalidad. */
+function applyPdpStock(opt){
+  const out = !!(opt && opt.hasAttribute('data-out-of-stock'));
+  const avail = document.getElementById('pdp-availability');
+  const availText = avail && avail.querySelector('[data-availability-text]');
+  const btn = document.querySelector('[data-add-to-cart-qty]');
+  if(avail && availText){
+    if(!availText.dataset.inStock) availText.dataset.inStock = availText.textContent;
+    availText.textContent = out ? 'Agotado por ahora' : availText.dataset.inStock;
+    avail.classList.toggle('pdp-availability--soon', out);
+  }
+  if(btn){
+    if(!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.disabled = out;
+    btn.textContent = out ? 'Agotado' : btn.dataset.label;
+    btn.classList.toggle('btn--soon', out);
+  }
+}
+
 function initPdpFlavorSelector(){
   const groups = Array.from(document.querySelectorAll('[data-flavor-group]'));
   if(groups.length === 0) return;
@@ -906,6 +935,7 @@ function initPdpFlavorSelector(){
     if(mainTitle) mainTitle.textContent = (mainTitle.dataset.titlePrefix || '') + name + brandSuffix;
     if(label) label.textContent = name;
     applyNutrition(matchedOpt);
+    applyPdpStock(matchedOpt);
     /* Muestra la galería de fotos extra solo del sabor activo, y la reinicia en la primera foto */
     document.querySelectorAll('[data-photo-gallery-for]').forEach(function(g){
       const show = g.dataset.photoGalleryFor === name;
@@ -1456,12 +1486,16 @@ function initCartPage(){
 
   // Quita del carrito guardado lo que todavía no tiene inventario (clientes con un carrito viejo).
   const savedCart = getCart();
-  const availableCart = savedCart.filter(function(i){ return !isComingSoonItem(i); });
+  const availableCart = savedCart.filter(function(i){ return !isComingSoonItem(i) && !isOutOfStockItem(i); });
   if(availableCart.length !== savedCart.length){
     saveCart(availableCart);
     const soonNote = document.getElementById('cart-soon-note');
     if(soonNote){
-      soonNote.textContent = 'Quitamos Honey Stinger de tu carrito: todavía no tenemos inventario. Muy pronto estará disponible.';
+      const notes = [];
+      if(savedCart.some(isComingSoonItem)) notes.push('Quitamos Honey Stinger de tu carrito: todavía no tenemos inventario. Muy pronto estará disponible.');
+      const outNames = savedCart.filter(isOutOfStockItem).map(function(i){ return i.name; });
+      if(outNames.length) notes.push('Quitamos de tu carrito lo que está agotado por ahora: ' + outNames.join(', ') + '.');
+      soonNote.textContent = notes.join(' ');
       soonNote.hidden = false;
     }
   }

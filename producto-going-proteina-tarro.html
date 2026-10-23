@@ -40,7 +40,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
-<link rel="stylesheet" href="styles.css?v=141">
+<link rel="stylesheet" href="styles.css?v=144">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -110,7 +110,7 @@
           <a href="guias.html">GUÍAS</a>
         </li>
         <li class="nav-item nav-item--sale">
-          <a href="ofertas.html">OFERTAS</a>
+          <a href="ofertas.html">HOT DEALS <span class="hot-emoji" aria-hidden="true">🔥</span></a>
         </li>
       </ul>
     </nav>
@@ -156,7 +156,7 @@
     </details>
     <a class="mobile-plain" href="marcas.html">MARCAS</a>
     <a class="mobile-plain" href="guias.html">GUÍAS</a>
-    <a class="mobile-plain mobile-plain--sale" href="ofertas.html">OFERTAS</a>
+    <a class="mobile-plain mobile-plain--sale" href="ofertas.html">HOT DEALS <span class="hot-emoji" aria-hidden="true">🔥</span></a>
   </nav>
 </header>
 
@@ -207,10 +207,10 @@
               <span class="flavor-card-name">Chocolate</span>
               <span class="flavor-card-price">$32,00</span>
             </button>
-            <button type="button" class="flavor-card pill" aria-pressed="false" data-flavor-name="Vainilla" data-flavor-img="assets/going/proteina-tarro-vainilla.webp">
+            <button type="button" class="flavor-card pill" aria-pressed="false" data-flavor-name="Vainilla" data-flavor-img="assets/going/proteina-tarro-vainilla.webp" data-out-of-stock>
               <img src="assets/going/proteina-tarro-vainilla.webp" alt="Vainilla" width="1000" height="1000">
               <span class="flavor-card-name">Vainilla</span>
-              <span class="flavor-card-price">$32,00</span>
+              <span class="flavor-card-price">Agotado</span>
             </button>
             </div>
             <button type="button" class="flavor-slider-arrow flavor-slider-next" aria-label="Siguiente sabor">
@@ -219,9 +219,9 @@
           </div>
         </div>
 
-        <p class="pdp-availability">
+        <p class="pdp-availability" id="pdp-availability">
           <span class="dot" aria-hidden="true"></span>
-          En stock · despacho en 24–48h
+          <span data-availability-text>En stock · despacho en 24–48h</span>
         </p>
 
         <div class="pdp-buy-row">
@@ -473,6 +473,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=97"></script>
+<script src="app.js?v=98"></script>
 </body>
 </html>

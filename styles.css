@@ -3152,3 +3152,18 @@ button.pill:hover{ border-color: var(--ink); }
 .deals-note{ font-size: 13px; color: var(--ink-3); margin: var(--sp-6) 0 var(--sp-8); }
 .product-card[hidden]{ display: none; }
 [data-deals-section][hidden]{ display: none; }
+.main-nav a, .main-nav .nav-trigger{ white-space: nowrap; }  /* "HOT DEALS 🔥" no debe partirse en dos líneas */
+.hot-emoji{ font-style: normal; margin-left: .15em; }
+
+/* Escritorio angosto (1025–1240 px): con "HOT DEALS 🔥" el menú ya no cabía junto al buscador. */
+@media (min-width: 1025px) and (max-width: 1240px){
+  .main-nav > ul{ gap: var(--sp-3); }
+  .nav-item > a, .nav-item > button.nav-trigger{ font-size: 12px; letter-spacing: 0; }
+  .search-form input{ width: 140px; }
+  .search-form input:focus{ width: 170px; }
+}
+@media (min-width: 1025px) and (max-width: 1100px){
+  .main-nav > ul{ gap: 10px; }
+  .search-form input{ width: 110px; }
+  .search-form input:focus{ width: 150px; }
+}
