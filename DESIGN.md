@@ -153,3 +153,5 @@ Nunca se usan como acento general del sitio.
 
 * **Diferenciador "5 marcas líderes. Un solo despacho."** (`.brands-band`, inicio, justo después de la franja de categorías y antes de los testimonios): banda negra de marca con una frase y los logos de las 5 marcas enlazados a su página (blancos donde el logo es oscuro). Honey Stinger lleva "Próximamente" mientras no haya inventario: quitar la etiqueta (`.brands-band-soon`) al reponerlo, junto con el resto de los avisos de Honey.
 
+* **Preguntas frecuentes** (inicio): 5 preguntas con título en positivo (beneficio primero) y solo datos reales del sitio: despacho/envíos (MRW y Zoom; sin plazos de entrega en esta respuesta, que sí están en el acordeón de envíos de cada ficha), pagos, 10% de primera compra, cómo se compra (el botón "Comprar" abre WhatsApp con el pedido) y retiro en tienda ("Pickup"). Si cambian los envíos, los pagos o el checkout, actualizar aquí también.
+
