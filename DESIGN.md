@@ -151,3 +151,5 @@ Nunca se usan como acento general del sitio.
 
 * **Prueba social arriba** (inicio): la sección de testimonios ("Lo que dicen quienes ya entrenan con nosotros", reales, vía Instagram) va justo debajo del héroe y la franja de categorías, antes de la grilla de promociones. En escritorio son 4 columnas; en ≤1024 px es una cinta que se desplaza sola (`.review-marquee`, 44 s por vuelta, tarjetas duplicadas con `review-dup` y `aria-hidden`), se pausa al tocarla y con movimiento reducido se desliza a mano. Solo testimonios reales: no inventar cifras de clientes ni calificaciones.
 
+* **Diferenciador "5 marcas líderes. Un solo despacho."** (`.brands-band`, inicio, justo después de la franja de categorías y antes de los testimonios): banda negra de marca con una frase y los logos de las 5 marcas enlazados a su página (blancos donde el logo es oscuro). Honey Stinger lleva "Próximamente" mientras no haya inventario: quitar la etiqueta (`.brands-band-soon`) al reponerlo, junto con el resto de los avisos de Honey.
+

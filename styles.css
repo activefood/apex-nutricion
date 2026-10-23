@@ -3257,3 +3257,31 @@ button.pill:hover{ border-color: var(--ink); }
   .review-marquee .review-grid{ animation: none; }
   .review-marquee .review-card.review-dup{ display: none; }
 }
+
+/* ---------- Diferenciador: 5 marcas, un solo despacho (inicio) ----------
+   Banda negra de marca con los logos de las 5 marcas (versiones blancas donde el logo es oscuro).
+   Honey Stinger lleva "Próximamente" mientras no haya inventario (ver DESIGN.md). */
+.brands-band{ background: var(--ink); color: #fff; padding: var(--sp-6) 0; }
+.brands-band .container{ display: flex; align-items: center; justify-content: space-between; gap: var(--sp-7); }
+.brands-band-copy{ max-width: 420px; flex: 0 1 420px; }
+.brands-band-title{ font-family: var(--font-head); font-size: 28px; line-height: 1.1; letter-spacing: .02em; font-weight: 400; margin: 0; color: #fff; }
+.brands-band-copy p{ margin: var(--sp-2) 0 0; font-size: 14px; color: rgba(255,255,255,.75); }
+.brands-band-logos{ list-style: none; margin: 0; padding: 0; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--sp-5) var(--sp-6); flex: 1 1 auto; }
+.brands-band-logos a{ display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.brands-band-logos img{ display: block; width: auto; height: 34px; opacity: .95; transition: opacity var(--ease); }
+.brands-band-logos a:hover img{ opacity: 1; }
+.brands-band-logos img.logo-probar{ height: 46px; }
+.brands-band-logos img.logo-saltstick{ height: 40px; }
+.brands-band-soon{ font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+@media (max-width: 1024px){
+  .brands-band .container{ flex-direction: column; align-items: flex-start; gap: var(--sp-5); }
+  .brands-band-copy{ max-width: none; flex: none; }
+  .brands-band-logos{ justify-content: flex-start; }
+}
+@media (max-width: 640px){
+  .brands-band-title{ font-size: 24px; }
+  .brands-band-logos{ gap: var(--sp-4) var(--sp-5); }
+  .brands-band-logos img{ height: 28px; }
+  .brands-band-logos img.logo-probar{ height: 38px; }
+  .brands-band-logos img.logo-saltstick{ height: 33px; }
+}
