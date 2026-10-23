@@ -3233,3 +3233,27 @@ button.pill:hover{ border-color: var(--ink); }
   .promo-media--foto .foto-atleta{ right: 50%; transform: translateX(50%); }
   .promo-media--foto .foto-gels{ right: 8%; height: 58%; }
 }
+
+/* ---------- Prueba social arriba (inicio) ----------
+   Los testimonios (reales, vía Instagram) van justo debajo del héroe. En celular son una cinta que se
+   desplaza sola: las 4 tarjetas van duplicadas (.review-dup) y la animación recorre justo la mitad;
+   se pausa al tocarla y con movimiento reducido se desliza a mano. Escritorio: 4 columnas, sin copias. */
+.review-card.review-dup{ display: none; }
+.section--reviews{ padding: var(--sp-7) 0 var(--sp-6); }
+@keyframes review-marquee{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
+@media (max-width: 1024px){
+  .section--reviews .container{ padding-left: 0; padding-right: 0; }
+  .section--reviews .section-head{ padding: 0 20px; }
+  .review-marquee{ overflow: hidden; }
+  .review-marquee .review-grid{ display: flex; width: max-content; gap: 0; animation: review-marquee 44s linear infinite; }
+  .review-marquee .review-card{ flex: 0 0 280px; margin-right: 16px; }
+  .review-marquee .review-card:first-child{ margin-left: 20px; }
+  .review-marquee .review-card.review-dup{ display: block; }
+  .review-marquee:hover .review-grid, .review-marquee:active .review-grid{ animation-play-state: paused; }
+}
+@media (max-width: 1024px) and (prefers-reduced-motion: reduce){
+  .review-marquee{ overflow-x: auto; scrollbar-width: none; }
+  .review-marquee::-webkit-scrollbar{ display: none; }
+  .review-marquee .review-grid{ animation: none; }
+  .review-marquee .review-card.review-dup{ display: none; }
+}
