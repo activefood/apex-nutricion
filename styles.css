@@ -284,8 +284,10 @@ button.pill:hover{ border-color: var(--ink); }
 .btn--soon, .btn--soon:disabled{ background: var(--paper-2); color: var(--ink-2); border: 1px solid var(--line); opacity: 1; cursor: not-allowed; }
 .pdp-availability.pdp-availability--soon .dot{ background: var(--ink-3); box-shadow: none; }
 .brand-soon{ margin-top: var(--sp-3); font-size: 15px; color: inherit; }
-.brand-soon .tag--inline{ margin-left: 0; margin-right: var(--sp-2); }
-.tag--inline{ position: static; margin-left: var(--sp-2); }
+/* Portada oscura de la marca: la píldora clara con el aviso al lado, sin quedar negro sobre negro */
+.brand-soon{ display: flex; align-items: flex-start; gap: var(--sp-3); }
+.brand-soon .tag--inline{ margin: 1px 0 0; flex-shrink: 0; padding: 4px 9px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.4); white-space: nowrap; }
+.tag--inline{ position: static; margin-left: var(--sp-2); display: inline-block; line-height: 1.2; vertical-align: middle; }
 
 
 /* ==========================================================================
@@ -506,6 +508,7 @@ button.pill:hover{ border-color: var(--ink); }
     background: var(--paper);
     z-index: 90;
     overflow-y: auto;
+    overscroll-behavior: contain;  /* el scroll del menú no arrastra la página de atrás */
     padding: var(--sp-5) 24px 96px;
     transform: translateX(-100%);
     transition: transform 200ms ease;
@@ -864,7 +867,10 @@ button.pill:hover{ border-color: var(--ink); }
     padding-top: var(--sp-5);
     padding-bottom: var(--sp-4);
   }
-  .hero-slide--nike .container{ padding-top: var(--sp-5); padding-bottom: calc(52px + var(--sp-4)); }
+  /* Nike en celular: sin la frase de apoyo (los botones ya dicen lo mismo) y un poco más alto, para que las bolsas
+     no queden aplastadas ni tapadas por los botones */
+  .hero-slide--nike .container{ padding-top: var(--sp-5); padding-bottom: calc(52px + var(--sp-4)); aspect-ratio: 5 / 7; max-height: 640px; }
+  .hero-slide--nike .promo-text{ display: none; }
   .promo-offer-big{ font-size: 30px; }
   .promo-offer-note{ font-size: 12px; }
   .promo-ruler{ height: 52px; }
@@ -1392,7 +1398,9 @@ button.pill:hover{ border-color: var(--ink); }
   filter: drop-shadow(0 16px 28px rgba(0,0,0,.4));
 }
 .brand-showcase-body{ padding: var(--sp-5) var(--sp-5) var(--sp-5); }
-.brand-showcase-body h3{ font-size: 19px; color: #fff; }
+.brand-showcase-body h3{ font-size: 19px; color: #fff; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+/* "Próximamente" junto al nombre: píldora clara sobre fondo oscuro; si no cabe en la línea baja entera, sin pisar el texto de abajo */
+.brand-showcase-body .tag--inline{ margin: 0; padding: 4px 9px; line-height: 1.2; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.4); white-space: nowrap; }
 .brand-showcase-body .origin{
   font-size: 11px;
   text-transform: uppercase;

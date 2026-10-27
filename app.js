@@ -620,11 +620,22 @@ function initMobileMenu(){
   const panel = document.querySelector('.mobile-nav');
   if(!toggle || !panel) return;
 
+  const header = document.querySelector('.site-header');
+  /* El panel arranca justo debajo del encabezado: con la barra de envío visible (arriba del todo) el encabezado
+     queda más abajo de 70px y el panel lo tapaba. */
+  function placePanel(){
+    if(header) panel.style.top = Math.max(header.getBoundingClientRect().bottom, 0) + 'px';
+  }
+
   toggle.addEventListener('click', function(){
     const isOpen = panel.classList.toggle('open');
     toggle.setAttribute('aria-expanded', String(isOpen));
-    document.body.style.overflow = isOpen ? 'hidden' : '';
+    /* Sin overflow:hidden en el body: en iPhone rompía el encabezado sticky y la hamburguesa desaparecía al hacer scroll */
+    if(isOpen) placePanel();
   });
+  window.addEventListener('scroll', function(){
+    if(panel.classList.contains('open')) placePanel();
+  }, { passive: true });
 }
 
 /* ---------- Boletín ---------- */

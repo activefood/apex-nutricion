@@ -152,5 +152,7 @@ No hay framework de pruebas en el repo; se verifica con:
 3. Skratch se **mantiene** en el banner 1 pese a sus ventas bajas: decisión de marca. La medición de promociones dirá en 2 semanas si el banner lo mueve.
 4. Banner 1 agrega **"Envío gratis desde $30 en Caracas"** (con "en Caracas", porque así funciona el carrito).
 
+**Nike en celular (≤640 px):** se oculta la frase de apoyo y el banner es un poco más alto (`aspect-ratio: 5/7`) para que las bolsas no queden aplastadas ni tapadas por los botones.
+
 **Titulares de las diapositivas:** deben caber en UNA línea (`.promo-title` tiene alto fijo para no mover la página al cargar la fuente): ~24 caracteres en escritorio y ~20 en celular. Hablan del beneficio; el nombre del producto va al inicio del texto de apoyo. **La Carrera Nike va siempre primera** mientras esté vigente (hasta el 8-nov); el carrusel arranca en la diapositiva con la clase `active`, que es la de Nike.
 
