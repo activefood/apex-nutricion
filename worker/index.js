@@ -21,6 +21,9 @@ export default {
     if (url.pathname === '/api/telegram-webhook') {
       return handleTelegramWebhook(request, env);
     }
+    if (url.pathname === '/api/calculadora') {
+      return handleCalculadora(request, env);
+    }
 
     // La raíz del dominio ("/") no se resuelve sola a index.html porque
     // html_handling está en "none" (para que los links internos con .html
@@ -28,19 +31,88 @@ export default {
     if (url.pathname === '/') {
       const indexUrl = new URL(request.url);
       indexUrl.pathname = '/index.html';
-      return env.ASSETS.fetch(new Request(indexUrl, request));
+      return marcarSitioPrueba(await env.ASSETS.fetch(new Request(indexUrl, request)), env);
     }
 
     // Todo lo demás: archivos estáticos del sitio (HTML, CSS, JS, imágenes).
-    return env.ASSETS.fetch(request);
+    return marcarSitioPrueba(await env.ASSETS.fetch(request), env);
   }
 };
+
+/* ---------- Sitio de prueba (prueba.apexnutricionve.com) ----------
+   Solo si el Worker tiene SITIO_PRUEBA (wrangler.prueba.jsonc): cada página
+   muestra una franja de aviso y el botón "Comprar" del carrito queda
+   desactivado, para que nadie mande un pedido real por WhatsApp desde la
+   prueba. En el sitio real (sin SITIO_PRUEBA) las páginas salen intactas. */
+const PRUEBA_FRANJA =
+  '<div role="note" style="background:#FBF3DD;color:#14120F;border-bottom:1px solid #E4DFD5;padding:10px 16px;font:600 13px/1.4 Inter,sans-serif;text-align:center">' +
+  'Sitio de prueba: no hagas pedidos aquí. Para comprar, entra a <a href="https://apexnutricionve.com" style="color:#14120F;text-decoration:underline">apexnutricionve.com</a>.</div>';
+
+async function marcarSitioPrueba(response, env) {
+  if (!env.SITIO_PRUEBA) return response;
+  const type = response.headers.get('Content-Type') || '';
+  if (!type.includes('text/html') || response.status !== 200) return response;
+  const html = (await response.text())
+    .replace('<body>', '<body>' + PRUEBA_FRANJA)
+    .replace('id="checkout-whatsapp">Comprar</button>', 'id="checkout-whatsapp" disabled>Pedidos desactivados (prueba)</button>');
+  const headers = new Headers(response.headers);
+  headers.delete('Content-Length');
+  headers.set('X-Robots-Tag', 'noindex');
+  return new Response(html, { status: response.status, headers: headers });
+}
 
 function json(body, status) {
   return new Response(JSON.stringify(body), {
     status: status || 200,
     headers: { 'Content-Type': 'application/json' }
   });
+}
+
+/* ---------- /api/calculadora ----------
+   Guarda las respuestas de la calculadora (calculadora.html) en la base D1
+   "CALC_DB", solo si el usuario marcó la casilla de consentimiento. No se
+   guarda nombre, correo ni teléfono: solo un identificador anónimo de la
+   visita y, si APEX se lo dio, un código de atleta (ej. ATL-03).
+   Si el Worker no tiene la base (el sitio principal hoy), responde 503 y la
+   calculadora sigue funcionando igual. La tabla se crea sola la primera vez. */
+const CALC_TIPOS = ['plan', 'kit', 'pack'];
+const CALC_MAX_BYTES = 16000;
+let calcTableReady = false;
+
+async function handleCalculadora(request, env) {
+  if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
+  if (!env.CALC_DB) return json({ ok: false, error: 'Storage not configured' }, 503);
+
+  const text = await request.text();
+  if (text.length > CALC_MAX_BYTES) return json({ ok: false, error: 'Payload too large' }, 413);
+  let p;
+  try { p = JSON.parse(text); } catch (err) { return json({ ok: false, error: 'Bad JSON' }, 400); }
+
+  const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
+  if (!p || p.consent !== true) return json({ ok: false, error: 'Consent required' }, 400);
+  if (typeof p.sesion !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(p.sesion)) return json({ ok: false, error: 'Invalid sesion' }, 400);
+  if (CALC_TIPOS.indexOf(p.tipo) === -1) return json({ ok: false, error: 'Invalid tipo' }, 400);
+  if (!isObj(p.respuestas) || !isObj(p.resultado)) return json({ ok: false, error: 'Invalid payload' }, 400);
+  const codigo = typeof p.codigo === 'string' && /^[A-Za-z0-9-]{1,20}$/.test(p.codigo) ? p.codigo.toUpperCase() : null;
+  const version = typeof p.version === 'string' ? p.version.slice(0, 40) : null;
+
+  try {
+    if (!calcTableReady) {
+      await env.CALC_DB.prepare(
+        'CREATE TABLE IF NOT EXISTS calculadora_respuestas (' +
+        'n INTEGER PRIMARY KEY AUTOINCREMENT, creado TEXT NOT NULL, sesion TEXT NOT NULL, tipo TEXT NOT NULL, ' +
+        'codigo_atleta TEXT, version TEXT, respuestas TEXT NOT NULL, resultado TEXT NOT NULL)'
+      ).run();
+      calcTableReady = true;
+    }
+    await env.CALC_DB.prepare(
+      'INSERT INTO calculadora_respuestas (creado, sesion, tipo, codigo_atleta, version, respuestas, resultado) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(new Date().toISOString(), p.sesion, p.tipo, codigo, version, JSON.stringify(p.respuestas), JSON.stringify(p.resultado)).run();
+  } catch (err) {
+    console.error('[calculadora] No se pudo guardar: ' + err);
+    return json({ ok: false, error: 'Storage error' }, 500);
+  }
+  return json({ ok: true });
 }
 
 /* ---------- /api/submit-order ---------- */

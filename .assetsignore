@@ -14,3 +14,5 @@ package-lock.json
 scripts
 CONSTRAINTS.md
 CLAUDE.md
+wrangler.prueba.jsonc
+calculadora/pruebas

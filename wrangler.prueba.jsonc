@@ -1,0 +1,33 @@
+// Sitio de prueba de la calculadora (prueba.apexnutricionve.com), protegido con
+// Cloudflare Access. Es un Worker aparte del sitio real ("apex-nutricion", en
+// wrangler.jsonc): mismo código, pero
+//   - sin APPS_SCRIPT_URL ni secretos de Telegram, así que un pedido de prueba
+//     no llega a la hoja VENTA ni al bot;
+//   - con la base D1 "apex-calculadora", donde /api/calculadora guarda las
+//     respuestas (solo con consentimiento).
+// Se publica desde la rama "calculadora" con:
+//   npx wrangler deploy -c wrangler.prueba.jsonc
+{
+  "name": "apex-calculadora-prueba",
+  "compatibility_date": "2026-09-11",
+  "main": "worker/index.js",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none"
+  },
+  // Franja "Sitio de prueba" y botón "Comprar" desactivado (marcarSitioPrueba en worker/index.js)
+  "vars": { "SITIO_PRUEBA": "1" },
+  "routes": [
+    { "pattern": "prueba.apexnutricionve.com", "custom_domain": true }
+  ],
+  "d1_databases": [
+    {
+      "binding": "CALC_DB",
+      "database_name": "apex-calculadora",
+      // "Database ID" de la base D1 apex-calculadora (creada el 2026-10-28)
+      "database_id": "2f86abbf-8cfb-46fc-ba2f-b2f246fbbf3b"
+    }
+  ]
+}

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="es-VE">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8QH40K8HJK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  // Tráfico del equipo: abrir cualquier página con ?interno=1 marca este
+  // navegador como interno (con ?interno=0 se desmarca), para poder
+  // excluirlo de los datos de clientes en GA4.
+  var apexGaConfig = {};
+  try {
+    if(/[?&]interno=1\b/.test(location.search)) localStorage.setItem('apex_interno', '1');
+    if(/[?&]interno=0\b/.test(location.search)) localStorage.removeItem('apex_interno');
+    if(localStorage.getItem('apex_interno') === '1') apexGaConfig.traffic_type = 'internal';
+  } catch(e){}
+  gtag('config', 'G-8QH40K8HJK', apexGaConfig);
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<style>img,svg{max-width:100%;display:block}html,body{overflow-x:hidden;margin:0}.mobile-nav{display:none}</style>
+<title>Calculadora de nutrición deportiva | Apex Nutrición</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Calcula cuánta energía, agua y sodio necesitas por hora en tu carrera, y arma tu kit con productos APEX.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Apex Nutrición">
+<meta property="og:locale" content="es_VE">
+<meta property="og:title" content="Calculadora de nutrición deportiva | Apex Nutrición">
+<meta property="og:description" content="Calcula cuánta energía, agua y sodio necesitas por hora en tu carrera, y arma tu kit con productos APEX.">
+<meta property="og:image" content="https://apexnutricionve.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon-32.png?v=3">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
+<link rel="stylesheet" href="styles.css?v=153">
+<link rel="stylesheet" href="calculadora/calculadora.css?v=2">
+</head>
+<body>
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+<!-- ============ Barra de anuncio ============ -->
+<div class="announce">
+  <p>Envío gratis desde <strong>$30</strong> en Caracas</p>
+</div>
+
+<!-- ============ Header ============ -->
+<header class="site-header">
+  <div class="container">
+
+    <button class="menu-toggle icon-btn" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-nav">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <a href="index.html" class="logo" aria-label="Apex Nutrición — Inicio">
+      <img class="logo-img" src="assets/logo-apex.webp?v=7" alt="Apex Nutrición" width="600" height="145">
+    </a>
+
+    <nav class="main-nav" aria-label="Navegación principal">
+      <ul>
+        <li class="nav-item has-mega">
+          <button class="nav-trigger" aria-haspopup="true">HIDRATACIÓN
+            <svg aria-hidden="true" class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="mega">
+            <div class="mega-group">
+              <ul>
+                <li><a href="categoria.html?cat=hidratacion&sub=polvo">Polvos</a></li>
+                <li><a href="categoria.html?cat=hidratacion&sub=masticable">Masticables</a></li>
+                <li><a href="categoria.html?cat=hidratacion&sub=capsula">Cápsulas</a></li>
+              </ul>
+            </div>
+          </div>
+        </li>
+
+        <li class="nav-item">
+          <a href="categoria.html?cat=proteina">PROTEÍNA</a>
+        </li>
+
+        <li class="nav-item">
+          <a href="categoria.html?cat=recuperacion">RECUPERACIÓN</a>
+        </li>
+
+        <li class="nav-item has-mega">
+          <button class="nav-trigger" aria-haspopup="true">GELES Y ENERGÍA
+            <svg aria-hidden="true" class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="mega">
+            <div class="mega-group">
+              <ul>
+                <li><a href="categoria.html?cat=geles-energia&sub=gel">Geles</a></li>
+                <li><a href="categoria.html?cat=geles-energia&sub=waffle">Waffles</a></li>
+                <li><a href="categoria.html?cat=geles-energia&sub=gomitas">Gomas</a></li>
+              </ul>
+            </div>
+          </div>
+        </li>
+
+        <li class="nav-item">
+          <a href="marcas.html">MARCAS</a>
+        </li>
+
+        <li class="nav-item">
+          <a href="guias.html">GUÍAS</a>
+        </li>
+        <li class="nav-item nav-item--sale">
+          <a href="ofertas.html">HOT DEALS <span class="hot-emoji" aria-hidden="true">🔥</span></a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <form class="search-form" role="search" action="busqueda.html">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <label for="search-input" class="visually-hidden">Buscar productos</label>
+        <input id="search-input" type="search" name="q" placeholder="Buscar geles, proteína…">
+      </form>
+      <a class="icon-btn cart-btn" href="carrito.html" aria-label="Carrito de compras">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.3"/><circle cx="18" cy="21" r="1.3"/><path d="M2.5 3h2.6l2.4 12.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6l1.5-8.2H6"/></svg>
+        <span class="cart-count" data-cart-count>0</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Menú móvil -->
+  <nav id="mobile-nav" class="mobile-nav" aria-label="Navegación móvil">
+    <form class="search-form" role="search" action="busqueda.html">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <label for="search-input-mobile" class="visually-hidden">Buscar productos</label>
+      <input id="search-input-mobile" type="search" name="q" placeholder="Buscar geles, proteína…">
+    </form>
+
+    <details>
+      <summary>HIDRATACIÓN <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
+      <div class="mobile-links">
+        <a href="categoria.html?cat=hidratacion&sub=polvo">Polvos</a>
+        <a href="categoria.html?cat=hidratacion&sub=masticable">Masticables</a>
+        <a href="categoria.html?cat=hidratacion&sub=capsula">Cápsulas</a>
+      </div>
+    </details>
+    <a class="mobile-plain" href="categoria.html?cat=proteina">PROTEÍNA</a>
+    <a class="mobile-plain" href="categoria.html?cat=recuperacion">RECUPERACIÓN</a>
+    <details>
+      <summary>GELES Y ENERGÍA <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
+      <div class="mobile-links">
+        <a href="categoria.html?cat=geles-energia&sub=gel">Geles</a>
+        <a href="categoria.html?cat=geles-energia&sub=waffle">Waffles</a>
+        <a href="categoria.html?cat=geles-energia&sub=gomitas">Gomas</a>
+      </div>
+    </details>
+    <a class="mobile-plain" href="marcas.html">MARCAS</a>
+    <a class="mobile-plain" href="guias.html">GUÍAS</a>
+    <a class="mobile-plain mobile-plain--sale" href="ofertas.html">HOT DEALS <span class="hot-emoji" aria-hidden="true">🔥</span></a>
+  </nav>
+</header>
+
+
+<main id="contenido">
+  <div class="container">
+
+    <!-- ============ Migas de pan ============ -->
+    <nav class="breadcrumbs" aria-label="Ruta de navegación">
+      <a href="index.html">Inicio</a>
+      <span class="sep">/</span>
+      <span class="current">Calculadora</span>
+    </nav>
+
+    <!-- ============ Encabezado ============ -->
+    <div class="cat-header">
+      <p class="eyebrow">Calculadora · versión de prueba</p>
+      <h1 class="h-36">Tu plan de energía, agua y sodio por hora</h1>
+      <p>Cuéntanos de tu evento y te decimos cuánto comer, beber y tomar de sodio cada hora, con productos APEX. Cada número tiene su fuente.</p>
+    </div>
+
+    <div class="calc-layout">
+      <form id="calc-form" class="calc-form" autocomplete="off" novalidate>
+
+        <!-- Exclusiones: si alguna aplica, no se calculan cifras -->
+        <fieldset class="calc-card">
+          <legend class="calc-card-title">Antes de empezar</legend>
+          <p class="calc-help">Marca si alguna de estas aplica a ti:</p>
+          <label class="calc-check"><input type="checkbox" name="excl" value="menor"> Tengo menos de 18 años</label>
+          <label class="calc-check"><input type="checkbox" name="excl" value="embarazo"> Estoy embarazada</label>
+          <label class="calc-check"><input type="checkbox" name="excl" value="hipertension"> Tengo hipertensión</label>
+          <label class="calc-check"><input type="checkbox" name="excl" value="renal"> Tengo una enfermedad renal o cardíaca</label>
+          <label class="calc-check"><input type="checkbox" name="excl" value="medica"> Un médico me indicó controlar el sodio o los líquidos</label>
+        </fieldset>
+
+        <fieldset class="calc-card">
+          <legend class="calc-card-title">Tu evento</legend>
+
+          <div class="calc-field">
+            <span class="calc-label" id="lbl-sport">Deporte</span>
+            <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-sport" data-pills="sport">
+              <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="carrera">Carrera</button>
+              <button type="button" class="pill" role="radio" aria-checked="false" data-value="ciclismo">Ciclismo</button>
+              <button type="button" class="pill" role="radio" aria-checked="false" data-value="triatlon">Triatlón</button>
+              <button type="button" class="pill" role="radio" aria-checked="false" data-value="otro">Otro</button>
+            </div>
+          </div>
+
+          <div class="calc-row">
+            <div class="calc-field">
+              <label for="calc-hh">Duración: horas</label>
+              <input type="number" id="calc-hh" inputmode="numeric" min="0" max="30" placeholder="4">
+            </div>
+            <div class="calc-field">
+              <label for="calc-mm">y minutos</label>
+              <input type="number" id="calc-mm" inputmode="numeric" min="0" max="59" placeholder="0">
+            </div>
+          </div>
+
+          <div class="calc-row">
+            <div class="calc-field">
+              <label for="calc-w">Tu peso (kg)</label>
+              <input type="number" id="calc-w" inputmode="decimal" min="35" max="150" step="0.1" placeholder="70">
+            </div>
+            <div class="calc-field">
+              <label for="calc-start">Hora de salida <span class="calc-opt">(opcional)</span></label>
+              <input type="time" id="calc-start">
+            </div>
+          </div>
+
+          <div class="calc-field">
+            <span class="calc-label" id="lbl-intens">Intensidad</span>
+            <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-intens" data-pills="intens">
+              <button type="button" class="pill" role="radio" aria-checked="false" data-value="baja">Baja</button>
+              <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="moderada">Moderada</button>
+              <button type="button" class="pill" role="radio" aria-checked="false" data-value="alta">Alta</button>
+            </div>
+          </div>
+
+          <div class="calc-field">
+            <span class="calc-label" id="lbl-clima">Clima</span>
+            <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-clima" data-pills="clima">
+              <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="caluroso">Caluroso</button>
+              <button type="button" class="pill" role="radio" aria-checked="false" data-value="fresco">Fresco (menos de 20 °C)</button>
+            </div>
+          </div>
+
+          <div class="calc-field" data-only-sport="carrera">
+            <label for="calc-dist">Distancia en km <span class="calc-opt">(opcional)</span></label>
+            <input type="number" id="calc-dist" inputmode="decimal" min="0" step="0.1" placeholder="Ej: 42.2">
+          </div>
+
+          <div class="calc-field">
+            <label for="calc-sweat">Cuánto sudas por hora, en litros <span class="calc-opt">(opcional)</span></label>
+            <input type="number" id="calc-sweat" inputmode="decimal" min="0" step="0.05" placeholder="Si no lo sabes, déjalo vacío">
+            <details class="calc-details">
+              <summary>Medir mi sudor</summary>
+              <p class="calc-help">Pésate sin ropa antes y después de entrenar. Anota lo que bebiste y si orinaste.</p>
+              <div class="calc-row">
+                <div class="calc-field"><label for="calc-s1">Peso antes (kg)</label><input type="number" id="calc-s1" inputmode="decimal" step="0.1"></div>
+                <div class="calc-field"><label for="calc-s2">Peso después (kg)</label><input type="number" id="calc-s2" inputmode="decimal" step="0.1"></div>
+              </div>
+              <div class="calc-row">
+                <div class="calc-field"><label for="calc-s3">Bebiste (L)</label><input type="number" id="calc-s3" inputmode="decimal" step="0.05" placeholder="0"></div>
+                <div class="calc-field"><label for="calc-s4">Orinaste (L)</label><input type="number" id="calc-s4" inputmode="decimal" step="0.05" placeholder="0"></div>
+              </div>
+              <div class="calc-field"><label for="calc-s5">Duración del entrenamiento (h)</label><input type="number" id="calc-s5" inputmode="decimal" step="0.25"></div>
+              <p class="calc-help" id="calc-sres" aria-live="polite">Completa los datos para ver tu tasa de sudor.</p>
+            </details>
+          </div>
+
+          <label class="calc-check"><input type="checkbox" id="calc-salty"> Me quedan marcas blancas de sal en la ropa o la piel</label>
+          <label class="calc-check"><input type="checkbox" id="calc-gut"> Estoy acostumbrado a comer mientras entreno</label>
+          <label class="calc-check"><input type="checkbox" id="calc-drinkTrained"> Entreno bebiendo más de 1 litro por hora sin molestias</label>
+          <label class="calc-check"><input type="checkbox" id="calc-caf"> Quiero cafeína</label>
+
+          <div class="calc-row">
+            <div class="calc-field">
+              <label for="calc-drink">Bebida</label>
+              <select id="calc-drink">
+                <option value="auto">Que la calculadora elija</option>
+                <option value="going_hidr">Going Hidratante</option>
+                <option value="skratch">Skratch Hydration</option>
+                <option value="agua">Solo agua</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label for="calc-gelPref">Formato de energía</label>
+              <select id="calc-gelPref">
+                <option value="hs_gel_fruta">Gel Honey Stinger</option>
+                <option value="hs_gel_gold">Gel Honey Stinger Gold</option>
+                <option value="going_gel">Gel Going Café (con cafeína)</option>
+                <option value="hs_gomitas">Gomitas Honey Stinger</option>
+                <option value="probar_bolt">PROBAR Bolt</option>
+                <option value="hs_waffle">Waffle Honey Stinger</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <details class="calc-card calc-pack-form" id="calc-pack-box">
+          <summary class="calc-card-title">Arma tu pack de entrenamiento <span class="calc-opt">(opcional)</span></summary>
+          <div class="calc-row">
+            <div class="calc-field">
+              <label for="calc-days">Días de entrenamiento por semana</label>
+              <input type="number" id="calc-days" inputmode="numeric" min="0" max="7" placeholder="5">
+            </div>
+            <div class="calc-field">
+              <label for="calc-nh">Sesión normal (horas)</label>
+              <input type="number" id="calc-nh" inputmode="decimal" min="0" max="6" step="0.25" placeholder="1">
+            </div>
+          </div>
+          <label class="calc-check"><input type="checkbox" id="calc-haslong"> Hago una sesión larga a la semana</label>
+          <div class="calc-field" id="calc-long-field" hidden>
+            <label for="calc-lh">Sesión larga (horas)</label>
+            <input type="number" id="calc-lh" inputmode="decimal" min="0" max="12" step="0.25" placeholder="2.5">
+          </div>
+          <label class="calc-check" id="calc-gutblock-field" hidden><input type="checkbox" id="calc-gutblock"> Quiero practicar comer en mis entrenamientos: dos semanas con la meta de carbohidrato de la carrera</label>
+        </details>
+
+        <!-- Guardar datos: solo con consentimiento (ver /api/calculadora en worker/index.js) -->
+        <div class="calc-card">
+          <label class="calc-check" style="margin-top:0"><input type="checkbox" id="calc-consent"> Acepto que APEX guarde mis respuestas y mi plan para mejorar la calculadora. No se guarda mi nombre ni mi teléfono.</label>
+          <details class="calc-details">
+            <summary>Aviso de privacidad</summary>
+            <p class="calc-help">Si marcas la casilla, guardamos las respuestas de este formulario (deporte, duración, peso, sudor y preferencias), el plan que te dimos, el kit o pack que agregues al carrito, la fecha y un número al azar que identifica esta visita. No guardamos tu nombre, correo, teléfono ni dirección. Usamos estos datos solo para revisar y mejorar las recomendaciones de la calculadora, y no los compartimos con nadie fuera de APEX. Si no marcas la casilla, no guardamos nada.</p>
+          </details>
+          <div class="calc-field" id="calc-code-field" hidden>
+            <label for="calc-code">Código de atleta <span class="calc-opt">(opcional, solo si APEX te dio uno)</span></label>
+            <input type="text" id="calc-code" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="Ej: ATL-03" pattern="[A-Za-z0-9-]{1,20}">
+            <p class="calc-help">Solo letras, números y guiones. No escribas tu nombre ni tu teléfono. Si usas un código, puedes pedirnos por WhatsApp que borremos tus datos.</p>
+          </div>
+        </div>
+
+        <p class="checkout-error" id="calc-error" hidden></p>
+        <button type="submit" class="btn btn--primary btn--block">Calcular mi plan</button>
+      </form>
+
+      <div id="calc-out" class="calc-out" aria-live="polite">
+        <div class="calc-card calc-empty">
+          <p>Completa la duración y tu peso para ver tu plan por hora.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+
+<!-- ============ Footer ============ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col footer-about">
+        <a href="index.html" class="logo"><img class="logo-img" src="assets/logo-apex.webp?v=7" alt="Apex Nutrición" width="600" height="145" loading="lazy"></a>
+        <p>Tienda venezolana especializada en nutrición deportiva. Reunimos el portafolio de Going Nutrición, Probar, Skratch Labs, SaltStick y Honey Stinger bajo un solo techo, con despacho local.</p>
+      </div>
+      <div class="footer-col">
+        <h2>Comprar</h2>
+        <ul>
+          <li><a href="categoria.html?cat=hidratacion">Hidratación</a></li>
+          <li><a href="categoria.html?cat=proteina">Proteína</a></li>
+          <li><a href="categoria.html?cat=recuperacion">Recuperación</a></li>
+          <li><a href="categoria.html?cat=geles-energia">Geles y energía</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>Marcas</h2>
+        <ul>
+          <li><a href="marca.html">Going Nutrición</a></li>
+          <li><a href="marca-probar.html">Probar</a></li>
+          <li><a href="marca-skratch.html">Skratch Labs</a></li>
+          <li><a href="marca-saltstick.html">SaltStick</a></li>
+          <li><a href="marca-honey.html">Honey Stinger</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-legal">
+      <p>Atención al cliente: <a href="tel:+584143695233">+58 414 3695233</a></p>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-social">
+        <a href="https://instagram.com/apexnutricionve" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@apex.nutricin" target="_blank" rel="noopener" aria-label="TikTok">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 4c.5 2.4 2.2 4 4.5 4.3"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="app.js?v=99"></script>
+<script src="calculadora/productos.js?v=1"></script>
+<script src="calculadora/motor.js?v=2"></script>
+<script src="calculadora/ui.js?v=2"></script>
+</body>
+</html>

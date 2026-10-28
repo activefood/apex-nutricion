@@ -1,0 +1,140 @@
+/* ==========================================================================
+   Calculadora APEX — estilos propios de calculadora.html
+   Usa los tokens de styles.css y sigue DESIGN.md: tinta sobre blanco, bordes
+   de 1px, esquinas de 2px, sin sombras, lima solo como fondo.
+   ========================================================================== */
+
+.calc-layout{
+  display: grid;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+  margin-bottom: var(--sp-9);
+}
+@media (max-width: 1024px){
+  .calc-layout{ grid-template-columns: 1fr; margin-bottom: var(--sp-8); }
+}
+
+/* ---------- Tarjetas ---------- */
+.calc-card{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+  margin: 0 0 var(--sp-4);
+  min-width: 0;
+}
+.calc-card-title{
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 0;
+}
+fieldset.calc-card > .calc-card-title{ float: left; width: 100%; margin-bottom: var(--sp-3); }
+fieldset.calc-card > .calc-card-title + *{ clear: both; }
+details.calc-card > summary{ cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 24px; }
+details.calc-card > summary::-webkit-details-marker{ display: none; }
+details.calc-card > summary::after{ content: '+'; font-size: 20px; font-weight: 400; }
+details.calc-card[open] > summary{ margin-bottom: var(--sp-3); }
+details.calc-card[open] > summary::after{ content: '−'; }
+
+/* ---------- Campos ---------- */
+.calc-field{ margin-top: var(--sp-3); min-width: 0; }
+.calc-field label, .calc-label{
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.calc-opt{ font-weight: 500; color: var(--ink-3); }
+.calc-field input, .calc-field select{
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  padding: 0 var(--sp-3);
+  font-size: 14px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.calc-field input:focus-visible, .calc-field select:focus-visible{ outline: 2px solid var(--accent-text); outline-offset: 2px; border-color: var(--ink); }
+.calc-field input[aria-invalid="true"]{ border-color: var(--sale); }
+.calc-row{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); align-items: end; }
+.calc-row > .calc-field{ margin-top: var(--sp-3); }
+.calc-pills .pill{ min-height: 44px; }
+@media (max-width: 768px){
+  .calc-pills .pill{ height: 44px; }
+}
+.calc-check{
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  margin-top: var(--sp-3);
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.4;
+  cursor: pointer;
+}
+.calc-check input{ width: 20px; height: 20px; flex: none; margin: 0; accent-color: var(--ink); }
+.calc-help{ font-size: 13px; color: var(--ink-3); margin-top: var(--sp-2); }
+.calc-details{ margin-top: var(--sp-2); }
+.calc-details summary{ cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; min-height: 32px; display: flex; align-items: center; }
+.calc-form > .btn{ margin-top: var(--sp-2); }
+.calc-form .checkout-error{ margin: 0 0 var(--sp-3); }
+
+/* ---------- Resultado ---------- */
+.calc-out{ min-width: 0; }
+.calc-empty p{ margin: 0; }
+.calc-goals{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+@media (max-width: 640px){ .calc-goals{ grid-template-columns: 1fr; } }
+.calc-goal{ border: 1px solid var(--line); border-radius: var(--r-card); padding: var(--sp-4); background: var(--paper); }
+.calc-num{ font-family: var(--font-head); font-size: 40px; letter-spacing: .03em; line-height: 1; color: var(--ink); margin: var(--sp-2) 0 var(--sp-1); font-variant-numeric: tabular-nums; }
+.calc-num small{ font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--ink-3); letter-spacing: 0; margin-left: 4px; }
+.calc-sub{ font-size: 13px; color: var(--ink-2); margin: 0; }
+.calc-why{ margin-top: var(--sp-2); }
+.calc-why summary{ cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; min-height: 32px; display: inline-flex; align-items: center; }
+.calc-why p{ font-size: 13px; margin-top: var(--sp-1); }
+
+.calc-section-title{ font-size: 18px; font-weight: 700; margin: 0 0 var(--sp-3); }
+.calc-table-wrap{ overflow-x: auto; }
+.calc-table{ width: 100%; border-collapse: collapse; font-size: 14px; }
+.calc-table th, .calc-table td{ text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.calc-table th{ font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
+.calc-table .n{ text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.calc-table tfoot td{ font-weight: 700; color: var(--ink); border-bottom: 0; }
+.calc-table select{ height: 36px; border: 1px solid var(--line); border-radius: var(--r-control); padding: 0 8px; font-size: 13px; background: var(--paper); margin-top: 6px; max-width: 100%; }
+.calc-prod{ display: flex; gap: 8px; align-items: center; font-weight: 600; color: var(--ink); }
+.calc-dot{ width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.calc-dot--going{ background: var(--brand-going); }
+.calc-dot--skratch{ background: var(--brand-skratch); }
+.calc-dot--hs{ background: var(--brand-honey); }
+.calc-dot--probar{ background: var(--brand-probar); }
+.calc-dot--ss{ background: var(--brand-salt); }
+.calc-soon{ display: inline-block; margin-left: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--ink); color: #fff; border-radius: var(--r-pill); vertical-align: middle; }
+.calc-stat{ font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
+
+.calc-timeline{ list-style: none; margin: var(--sp-3) 0 0; padding: 0; columns: 2 240px; column-gap: var(--sp-5); }
+.calc-timeline li{ break-inside: avoid; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px; color: var(--ink-2); display: flex; gap: var(--sp-3); }
+.calc-timeline b{ font-family: var(--font-mono); font-size: 13px; color: var(--ink); min-width: 3.2em; font-variant-numeric: tabular-nums; }
+
+.calc-notice{ border: 1px solid var(--line); border-left: 4px solid var(--warn); background: var(--warn-sf); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-card); margin: var(--sp-3) 0 0; font-size: 14px; color: var(--ink); }
+.calc-notice p{ color: var(--ink); margin: 0; }
+.calc-notice ul{ margin: var(--sp-2) 0 0; padding-left: 18px; }
+.calc-notice li{ margin: 4px 0; color: var(--ink-2); }
+.calc-notice--stop{ border-left-color: var(--sale); background: var(--sale-sf); }
+.calc-notice--info{ border-left-color: var(--ink); background: var(--paper-2); }
+
+.calc-actions{ display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; margin-top: var(--sp-4); }
+.calc-added{ font-size: 13px; color: var(--ok); font-weight: 600; margin: 0; }
+.calc-added a{ color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.calc-linkbtn{ background: none; border: 0; padding: 0; font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 32px; }
+
+@media (max-width: 480px){
+  .calc-card{ padding: var(--sp-4); }
+  .calc-table{ font-size: 13px; }
+  .calc-table th, .calc-table td{ padding: 8px 6px; }
+}
+@media (max-width: 560px){
+  .calc-col-week{ display: none; }   /* en celular el pack muestra solo el mes, para que quepa el precio */
+}
