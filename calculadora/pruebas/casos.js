@@ -56,6 +56,12 @@ t('8. Pack mensual: 4 × 1 h + tirada de 2.5 h', function(){
     m.month.going_hidr + ' sobres → ' + combo('going_hidr') + '; ' + m.month.hs_gel_fruta + ' geles → ' + combo('hs_gel_fruta') + '; total $' + m.total.toFixed(2)];
 });
 
+t('8b. Kit de la semana: 4 × 1 h + tirada de 2.5 h, unidades justas', function(){
+  const w = E.weekPack(Object.assign({}, base, { min: 240 }), { days: 5, normalMin: 60, hasLong: true, longMin: 150, gutBlock: false });
+  const ok = w.units.going_hidr === 7 && w.units.hs_gel_fruta === 5 && !w.units.ss_chews && Math.abs(w.total - 34.26) < 0.005;
+  return [ok, 'compras: ' + w.units.going_hidr + ' sobres y ' + w.units.hs_gel_fruta + ' geles; total $' + w.total.toFixed(2) + ' (7 sobres ya pagan precio de caja x6)'];
+});
+
 t('9. Triatleta 90.7 kg, 2.8 L/h de sudor, 5 h: 1.0 L/h y ~9.9 %; entrena bebiendo: 1.25 L/h y ~8.5 %', function(){
   const i = Object.assign({}, base, { sport: 'triatlon', w: 90.7, min: 300, sweat: 2.8, salty: false });
   const a = E.plan(i), b = E.plan(Object.assign({}, i, { drinkTrained: true }));

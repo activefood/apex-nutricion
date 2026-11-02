@@ -1,8 +1,9 @@
 /* ==========================================================================
    Calculadora APEX — interfaz de calculadora.html
    Lee el formulario, llama al motor (motor.js) y pinta el resultado. El kit
-   y el pack se agregan con addItemToCart de app.js, así el carrito aplica
-   sus descuentos por caja y el pedido sale por el WhatsApp de siempre.
+   del evento y el kit de la semana se agregan con addItemToCart de app.js,
+   así el carrito aplica sus descuentos por caja y el pedido sale por el
+   WhatsApp de siempre. El botón del carrito vive en una barra fija abajo.
    ========================================================================== */
 (function(){
   const M = window.CalcMotor;
@@ -10,18 +11,23 @@
   const $ = function(id){ return document.getElementById(id); };
   const form = $('calc-form');
   if(!form) return;
+  const packForm = $('calc-pack-form');
+  const DESCUENTO = typeof CALC_DESCUENTO_PACK !== 'undefined' ? CALC_DESCUENTO_PACK : 0;
 
   let started = false;          // después del primer "Calcular", el plan se actualiza solo
-  const flavors = {};           // sabor elegido por producto en el kit y el pack
+  let packStarted = false;      // igual para el kit de la semana
+  const flavors = {};           // sabor elegido por producto en el kit y el kit de la semana
 
   const NUM = function(x, d){ return Number(x).toLocaleString('es-VE', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); };
   const usd = function(x){ return typeof formatPrice === 'function' ? formatPrice(x) : '$' + NUM(x, 2); };
   const hours = function(min){ return (min / 60).toLocaleString('es-VE', { maximumFractionDigits: 2 }); };
   const hm = function(m){ m = Math.round(m); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); };
   const dot = function(k){ return '<span class="calc-dot calc-dot--' + P[k].brand + '" aria-hidden="true"></span>'; };
+  const mini = function(k, size){ return P[k].mini ? '<img src="' + P[k].mini + '" alt="" width="' + size + '" height="' + size + '" loading="lazy">' : dot(k); };
   const isSoon = function(k){ return typeof isComingSoonItem === 'function' && isComingSoonItem({ brand: P[k].tienda.marca, name: P[k].name }); };
   const soonTag = function(k){ return isSoon(k) ? ' <span class="calc-soon">Próximamente</span>' : ''; };
   const num = function(id){ const v = parseFloat(($(id).value || '').replace(',', '.')); return isNaN(v) ? 0 : v; };
+  const radio = function(name){ const el = form.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; };
 
   /* ---------- Píldoras de una sola opción (deporte, intensidad, clima) ---------- */
   const pillValue = {};
@@ -44,7 +50,7 @@
       sport: pillValue.sport, min: num('calc-hh') * 60 + num('calc-mm'), w: num('calc-w'),
       intens: pillValue.intens, clima: pillValue.clima, sweat: num('calc-sweat'), dist: pillValue.sport === 'carrera' ? num('calc-dist') : 0,
       salty: $('calc-salty').checked, gut: $('calc-gut').checked, drinkTrained: $('calc-drinkTrained').checked, caf: $('calc-caf').checked,
-      drink: $('calc-drink').value, gelPref: $('calc-gelPref').value
+      drink: radio('drink') || 'auto', gelPref: radio('gelPref') || 'hs_gel_fruta'
     };
   }
   function readTr(){
@@ -67,7 +73,7 @@
      Va a /api/calculadora (worker/index.js), que lo guarda en la base D1.
      Sin nombre ni teléfono: un identificador al azar por visita y, si lo hay,
      el código de atleta. Si falla, la calculadora sigue igual. */
-  const VERSION = 'calc-2026-10-28';
+  const VERSION = 'calc-2026-11-02';
   const sesion = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10);
   function codigoAtleta(){
     const v = ($('calc-code').value || '').trim();
@@ -75,7 +81,7 @@
   }
   function guardar(tipo, resultado){
     if(!$('calc-consent').checked) return;
-    const respuestas = Object.assign({}, readInp(), { entrenamiento: readTr(), horaSalida: $('calc-start').value || null });
+    const respuestas = Object.assign({}, readInp(), { entrenamiento: packStarted ? readTr() : null });
     try {
       fetch('/api/calculadora', {
         method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
@@ -109,7 +115,7 @@
   /* ---------- Resultado ---------- */
   function why(text){ return '<details class="calc-why"><summary>¿Por qué?</summary><p>' + text + '</p></details>'; }
 
-  function goalsHtml(pl, inp){
+  function goalsHtml(pl){
     let carb;
     if(pl.ct.band === '<45') carb = '<div class="calc-num">0<small>g/h</small></div><p class="calc-sub">En menos de 45 minutos no hace falta.</p>';
     else if(pl.ct.band === 'opc') carb = '<div class="calc-num">Opcional</div><p class="calc-sub">Enjuaga la boca con bebida deportiva o toma 1 ' + P[pl.opcional].serv + ' de ' + P[pl.opcional].name + '.</p>';
@@ -120,9 +126,59 @@
       : '<div class="calc-num">—</div><p class="calc-sub">No necesitas sodio extra: alcanza con el de tus productos.</p>';
     return '<div class="calc-goals">' +
       '<div class="calc-goal"><p class="eyebrow">Energía</p>' + carb + why(pl.porque.carb) + '</div>' +
-      '<div class="calc-goal"><p class="eyebrow">Agua</p>' + water + why(pl.porque.agua) + '</div>' +
+      '<div class="calc-goal"><p class="eyebrow">Líquido</p>' + water + why(pl.porque.agua) + '</div>' +
       '<div class="calc-goal"><p class="eyebrow">Sodio</p>' + na + why(pl.porque.sodio) + '</div>' +
       '</div>';
+  }
+
+  function evText(e){
+    return e.drink
+      ? P[e.k].name + ': empieza ' + (e.n > 1 ? e.n + ' botellas' : 'la botella') + ' de esta hora (' + P[e.k].serv + ') y bebe según tu sed'
+      : P[e.k].name + ' (' + P[e.k].serv + ')';
+  }
+  function groupByTime(ev){
+    const out = [];
+    ev.forEach(function(e){ const last = out[out.length - 1]; if(last && last.t === e.t) last.ev.push(e); else out.push({ t: e.t, ev: [e] }); });
+    return out;
+  }
+
+  /* Línea de tiempo como dibujo: una "hora tipo" (todas las horas se repiten),
+     con las fotos de lo que toca en cada minuto. Debajo, lo que cambia (la
+     cafeína al final y la última hora si no es completa) y el detalle
+     minuto a minuto, plegado. */
+  function timelineHtml(pl, kit, inp){
+    const ev = M.schedule(pl, kit, inp.min);
+    if(!ev.length) return '';
+    const len = Math.min(60, inp.min);
+    const first = groupByTime(ev.filter(function(e){ return e.t < 60; }).map(function(e){
+      return e.k === 'hs_gel_cafe' ? Object.assign({}, e, { k: 'hs_gel_fruta' }) : e;   // la hora tipo, sin cafeína
+    }));
+    let html = '<h3 class="calc-section-title calc-tl-title">' + (inp.min > 60 ? 'Tu hora, minuto a minuto' : 'Tu evento, minuto a minuto') + '</h3>' +
+      '<div class="calc-tl" role="img" aria-label="' + first.map(function(g){ return 'Minuto ' + Math.round(g.t) + ': ' + g.ev.map(function(e){ return P[e.k].name; }).join(' y '); }).join('. ') + '">' +
+      '<div class="calc-tl-track" aria-hidden="true"></div>' +
+      first.map(function(g){
+        const pct = Math.max(4, Math.min(96, g.t / len * 100));
+        return '<div class="calc-tl-mark" style="left:' + pct + '%"><div class="calc-tl-pics">' + g.ev.map(function(e){ return mini(e.k, 40); }).join('') + '</div>' +
+          '<span class="calc-tl-dot" aria-hidden="true"></span><span class="calc-tl-min">' + Math.round(g.t) + '′</span></div>';
+      }).join('') +
+      '<span class="calc-tl-end" aria-hidden="true">' + Math.round(len) + '′</span></div>';
+    html += '<ul class="calc-tl-legend">' + first.map(function(g){ return '<li><b>' + Math.round(g.t) + '′</b> ' + g.ev.map(evText).join(' + ') + '</li>'; }).join('') + '</ul>';
+
+    const notes = [];
+    if(inp.min > 60) notes.push('Repite esta hora durante todo el evento (' + hours(inp.min) + ' h).');
+    const caf = ev.filter(function(e){ return e.k === 'hs_gel_cafe'; });
+    if(caf.length) notes.push('Desde ' + hm(caf[0].t) + ', los geles son ' + P.hs_gel_cafe.name + '.');
+    const rest = inp.min % 60;
+    if(inp.min > 60 && rest > 0){
+      const lastH = ev.filter(function(e){ return e.t >= inp.min - rest - 1e-9 && !e.drink; });
+      notes.push('En los últimos ' + Math.round(rest) + ' minutos: ' + (lastH.length ? lastH.map(function(e){ return P[e.k].name; }).join(', ') : 'solo bebida') + '.');
+    }
+    if(notes.length) html += '<p class="calc-help">' + notes.join(' ') + '</p>';
+    if(inp.min > 60){
+      html += '<details class="calc-details"><summary>Ver todo el evento</summary><ul class="calc-timeline">' +
+        groupByTime(ev).map(function(g){ return '<li><b>' + hm(g.t) + '</b><span>' + g.ev.map(evText).join(' + ') + '</span></li>'; }).join('') + '</ul></details>';
+    }
+    return html;
   }
 
   function planHtml(pl, kit, inp){
@@ -131,7 +187,7 @@
     if(keys.length){
       html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th>Cantidad</th><th class="n">Energía</th><th class="n">Sodio</th></tr></thead><tbody>' +
         keys.map(function(k){ const p = P[k], n = pl.items[k];
-          return '<tr><td><span class="calc-prod">' + dot(k) + p.name + '</span>' + soonTag(k) + '</td><td>' + NUM(n) + ' × ' + p.serv + '</td><td class="n">' + NUM(n * p.carb) + ' g</td><td class="n">' + NUM(n * p.na) + ' mg</td></tr>';
+          return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + '</td><td>' + NUM(n) + ' × ' + p.serv + '</td><td class="n">' + NUM(n * p.carb) + ' g</td><td class="n">' + NUM(n * p.na) + ' mg</td></tr>';
         }).join('') +
         '</tbody><tfoot><tr><td>Total</td><td></td><td class="n">' + NUM(pl.carbs) + ' g</td><td class="n">' + NUM(pl.naSum) + ' mg</td></tr></tfoot></table></div>';
     } else html += '<p>Con este evento basta con agua.</p>';
@@ -140,21 +196,7 @@
     if(pl.alternativaBebida) html += '<p class="calc-help">¿Prefieres Skratch Hydration? <button type="button" class="calc-linkbtn" data-set-drink="skratch">Usar Skratch en vez de Going</button></p>';
     pl.notas.forEach(function(n){ html += '<p class="calc-help">' + n + '</p>'; });
     if(pl.medirSudor) html += '<p class="calc-help">Usamos una tasa de sudor de ' + NUM(pl.S, 1) + ' L/h. Mide tu sudor para un cálculo exacto.</p>';
-
-    const ev = M.schedule(pl, kit, inp.min);
-    if(ev.length){
-      const byTime = [];
-      ev.forEach(function(e){
-        const txt = e.drink
-          ? P[e.k].name + ': empieza ' + (e.n > 1 ? e.n + ' botellas' : 'la botella') + ' de esta hora (' + P[e.k].serv + ') y bebe según tu sed'
-          : P[e.k].name + ' (' + P[e.k].serv + ')';
-        const last = byTime[byTime.length - 1];
-        if(last && last.t === e.t) last.txt.push(txt); else byTime.push({ t: e.t, txt: [txt] });
-      });
-      html += '<h3 class="calc-section-title" style="margin-top:24px">Línea de tiempo</h3><ul class="calc-timeline">' +
-        byTime.map(function(x){ return '<li><b>' + hm(x.t) + '</b><span>' + x.txt.join(' + ') + '</span></li>'; }).join('') + '</ul>';
-    }
-
+    html += timelineHtml(pl, kit, inp);
     if(pl.avisoAgua){
       html += '<div class="calc-notice"><p><strong>Sudas más de lo que el estómago suele tolerar beber.</strong> No recomendamos más de ' +
         (inp.drinkTrained ? '1,25' : '1') + ' L por hora' + (inp.drinkTrained ? '' : ' (1,25 L si entrenas bebiendo más de 1 L por hora)') +
@@ -176,83 +218,113 @@
     return keys.some(isSoon) ? '<p class="calc-help">Honey Stinger llega pronto: por ahora esos productos no se agregan al carrito. El resto sí.</p>' : '';
   }
 
-  function kitHtml(kit, pk, inp){
+  function kitHtml(kit, pk){
     const keys = Object.keys(kit.serv);
     if(!keys.length) return '';
     let html = '<section class="calc-card"><h2 class="calc-section-title">Tu kit para el evento</h2><div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
       keys.map(function(k){ const p = P[k];
-        return '<tr><td><span class="calc-prod">' + dot(k) + p.name + '</span>' + soonTag(k) + flavorSelect(k, 'kit') + '</td><td class="n">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
+        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorSelect(k, 'kit') + '</td><td class="n">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
       }).join('') +
       '</tbody><tfoot><tr><td>Total</td><td></td><td></td><td class="n">' + usd(pk.total) + '</td></tr></tfoot></table></div>';
     html += '<p class="calc-help">' + (pk.fijadoPorApex ? 'Precio del kit fijado por APEX.' : 'Precio con el descuento por caja del sitio.') + ' El 10% de primera compra y las promociones se aplican en el carrito.</p>';
-    if(kit.caf > 0){
-      html += '<p class="calc-help">' + kit.porque + ' La cafeína va en la segunda mitad del evento. ' + nightWarning(inp) + '</p>';
-    }
+    if(kit.caf > 0) html += '<p class="calc-help">' + kit.porque + ' La cafeína va en la segunda mitad del evento. Si terminas de noche, puede afectar tu sueño.</p>';
     if(kit.cafNote) html += '<p class="calc-help">' + kit.cafNote + '</p>';
-    html += soonNote(keys);
-    html += '<div class="calc-actions"><button type="button" class="btn btn--primary" data-add="kit">Agregar kit al carrito</button><p class="calc-added" data-added="kit" role="status"></p></div>';
-    return html + '</section>';
+    return html + soonNote(keys) + '</section>';
   }
 
-  function nightWarning(inp){
-    const start = $('calc-start').value;
-    if(!start) return 'Si terminas de noche, la cafeína puede afectar tu sueño.';
-    const parts = start.split(':'); const end = (parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10) + inp.min) % 1440;
-    return (end >= 18 * 60 || end < 5 * 60) ? 'Tu evento termina de noche: la cafeína puede afectar tu sueño.' : '';
-  }
-
-  function packHtml(m, tr){
-    const keys = Object.keys(m.month);
-    let html = '<section class="calc-card"><h2 class="calc-section-title">Tu pack de entrenamiento para un mes</h2>';
+  function weekHtml(w, tr){
+    const keys = Object.keys(w.units);
+    let html = '<section class="calc-card"><h2 class="calc-section-title">Tu kit de la semana</h2>';
     if(!keys.length) return html + '<p>Con tus sesiones actuales no necesitas productos: basta con agua.</p></section>';
-    html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n calc-col-week">Por semana</th><th class="n">Por mes</th><th>Pack</th><th class="n">Precio</th></tr></thead><tbody>' +
-      keys.map(function(k){ const p = P[k], c = m.compra[k];
-        const combo = c.combo.map(function(x){ return x[0] === 1 ? NUM(x[1]) + ' sueltos' : x[1] + ' caja' + (x[1] > 1 ? 's' : '') + ' x' + x[0]; }).join(' + ');
-        return '<tr><td><span class="calc-prod">' + dot(k) + p.name + '</span>' + soonTag(k) + flavorSelect(k, 'pack') + '</td><td class="n calc-col-week">' + NUM(m.week[k] || 0) + '</td><td class="n">' + NUM(m.month[k]) + '</td><td>' + combo + (c.leftover ? ' (sobran ' + c.leftover + ')' : '') + '</td><td class="n">' + usd(m.lineas[k]) + '</td></tr>';
+    html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
+      keys.map(function(k){ const p = P[k];
+        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorSelect(k, 'week') + '</td><td class="n">' + NUM(w.week[k]) + '</td><td>' + NUM(w.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(w.lineas[k]) + '</td></tr>';
       }).join('') +
-      '</tbody><tfoot><tr><td>Total</td><td class="calc-col-week"></td><td></td><td></td><td class="n">' + usd(m.total) + '</td></tr></tfoot></table></div>';
-    html += '<p class="calc-help">“Por semana” y “Por mes” son porciones. Calculado con las mismas reglas: ' + m.nNormal + ' sesiones de ' + hours(tr.normalMin) + ' h' +
-      (tr.hasLong ? ' y 1 sesión larga de ' + hours(tr.longMin) + ' h' : '') + ' por semana, durante 4 semanas.' +
-      (m.gutExtra ? ' Incluye dos semanas de práctica comiendo en las sesiones de 60 minutos o más.' : '') +
-      (m.fijadoPorApex ? ' Precio del pack fijado por APEX.' : '') + '</p>';
-    html += soonNote(keys);
-    html += '<div class="calc-actions"><button type="button" class="btn btn--primary" data-add="pack">Agregar pack al carrito</button><p class="calc-added" data-added="pack" role="status"></p></div>';
-    return html + '</section>';
+      '</tbody><tfoot><tr><td>Total</td><td></td><td></td><td class="n">' + usd(w.total) + '</td></tr></tfoot></table></div>';
+    html += '<p class="calc-help">Calculado con las mismas reglas del plan: ' + w.nNormal + ' sesion' + (w.nNormal === 1 ? '' : 'es') + ' de ' + hours(tr.normalMin) + ' h' +
+      (tr.hasLong ? ' y 1 sesión larga de ' + hours(tr.longMin) + ' h' : '') + '.' +
+      (w.gutBlock ? ' Es una semana de práctica: en las sesiones de 1 h o más comes lo mismo que en la carrera.' : '') +
+      (w.fijadoPorApex ? ' Precio fijado por APEX.' : ' Si sumas 6 o más de un producto, el carrito aplica el precio por caja.') + '</p>';
+    return html + soonNote(keys) + '</section>';
   }
 
   function noticesHtml(inp){
     return '<div class="calc-notice calc-notice--info"><p><strong>Antes de usarlo en competencia</strong></p><ul>' +
       '<li>Prueba este plan en tus entrenamientos antes de competir.</li>' +
-      '<li>Empieza a beber desde temprano: si te deshidratas, tu estómago vacía más lento lo que tomes (Neufer 1989).</li>' +
+      '<li>Empieza a hidratarte desde temprano: si te deshidratas, tu estómago vacía más lento lo que tomes (Neufer 1989).</li>' +
       (inp.intens === 'alta' ? '<li>A intensidad alta el estómago vacía más lento: puede que no toleres todo el líquido del plan (Maughan y Rehrer 1994).</li>' : '') +
       '<li>No bebas de más para “evitar calambres”: no sirve para eso y puede ser peligroso.</li>' +
       '<li>Si tienes dolor de cabeza, vómito, confusión o hinchazón con aumento de peso durante el ejercicio, deja de beber y busca atención médica.</li>' +
       '<li>Esta calculadora orienta: no reemplaza a un nutricionista ni a un médico.</li></ul></div>';
   }
 
+  /* ---------- Banner del kit de la semana ----------
+     Solo promete un descuento si APEX lo fijó (CALC_DESCUENTO_PACK en productos.js). */
+  function promo(){
+    if(DESCUENTO > 0){
+      const pct = Math.round(DESCUENTO * 100) + '%';
+      $('calc-promo-eyebrow').textContent = pct + ' de descuento';
+      $('calc-pack-title').textContent = 'Obtén ' + pct + ' armando tu kit de la semana';
+    }
+  }
+
+  /* ---------- Barra fija con el botón del carrito ---------- */
+  function bar(){
+    const b = $('calc-bar');
+    const on = !!(current && Object.keys(current.kit).length);
+    b.hidden = !on;
+    document.body.classList.toggle('calc-bar-on', on);
+    if(!on) return;
+    const hasWeek = !!(current.week && Object.keys(current.week).length);
+    $('calc-bar-label').textContent = hasWeek ? 'Kit del evento · kit de la semana' : 'Tu kit para el evento';
+    $('calc-bar-total').textContent = usd(current.kitTotal) + (hasWeek ? ' · ' + usd(current.weekTotal) : '');
+    b.querySelector('[data-add="pack"]').hidden = !hasWeek;
+  }
+
   let current = null;   // último resultado, para los botones de agregar
   function render(){
     const out = $('calc-out');
+    $('calc-bar-msg').textContent = '';
     if(exclusions()){
       current = null;
       out.innerHTML = '<div class="calc-notice calc-notice--stop"><p><strong>No te damos cifras.</strong> Con alguna de esas condiciones, tu plan de líquidos y sodio debe definirlo un médico o un nutricionista deportivo. Lleva esta información a tu consulta.</p></div>';
+      $('calc-pack').hidden = true; $('calc-notices').innerHTML = ''; bar();
       return;
     }
     const inp = readInp();
-    if(!validate(inp)){ current = null; return; }
+    if(!validate(inp)){ current = null; $('calc-pack').hidden = true; bar(); return; }
     const pl = M.plan(inp); const kit = M.kitFromPlan(pl, inp); const pk = M.precioKit(kit);
-    const tr = readTr();
-    const m = (tr.days > 0 && tr.normalMin > 0) ? M.monthPack(inp, tr) : null;
-    current = { kit: pk.units, pack: m ? Object.keys(m.compra).reduce(function(o, k){ o[k] = m.compra[k].units; return o; }, {}) : null };
+    current = { kit: pk.units, kitTotal: pk.total, week: null, weekTotal: 0 };
     // Lo que se guarda del plan (si hay consentimiento)
     current.resumen = {
       carbMeta: pl.ct.g, carbPlan: pl.carbs, aguaLh: pl.V, aguaMin: pl.floor, sudorLh: pl.S, sudorFuente: pl.sweatSrc,
       sodioMeta: pl.naT != null ? Math.round(pl.naT) : null, sodioPlan: pl.naSum, porHora: pl.items,
       perdidaPct: pl.avisoAgua ? Math.round(pl.avisoAgua.perdida * 10) / 10 : null,
-      kitPorciones: kit.serv, cafeinaMg: kit.caf, kitPrecio: Math.round(pk.total * 100) / 100,
-      packMes: m ? m.month : null, packPrecio: m ? Math.round(m.total * 100) / 100 : null
+      kitPorciones: kit.serv, cafeinaMg: kit.caf, kitPrecio: Math.round(pk.total * 100) / 100
     };
-    out.innerHTML = goalsHtml(pl, inp) + planHtml(pl, kit, inp) + kitHtml(kit, pk, inp) + (m ? packHtml(m, tr) : '') + noticesHtml(inp);
+    out.innerHTML = goalsHtml(pl) + planHtml(pl, kit, inp) + kitHtml(kit, pk);
+    $('calc-pack').hidden = false;
+    renderWeek(inp);
+    $('calc-notices').innerHTML = noticesHtml(inp);
+    bar();
+  }
+
+  function renderWeek(inp){
+    const out = $('calc-pack-out');
+    if(!packStarted){ out.innerHTML = ''; return; }
+    const tr = readTr(); const err = $('calc-pack-error');
+    ['calc-days', 'calc-nh'].forEach(function(id){ $(id).removeAttribute('aria-invalid'); });
+    let field = null;
+    if(!(tr.days > 0)) field = $('calc-days'); else if(!(tr.normalMin > 0)) field = $('calc-nh');
+    if(field){
+      field.setAttribute('aria-invalid', 'true'); err.textContent = field.id === 'calc-days' ? 'Escribe cuántos días entrenas por semana.' : 'Escribe cuánto dura tu sesión normal.';
+      err.hidden = false; out.innerHTML = ''; current.week = null; return;
+    }
+    err.hidden = true;
+    const w = M.weekPack(inp, tr);
+    current.week = w.units; current.weekTotal = w.total;
+    current.resumen.semana = w.week; current.resumen.semanaPrecio = Math.round(w.total * 100) / 100;
+    out.innerHTML = weekHtml(w, tr);
   }
 
   /* ---------- Agregar al carrito (addItemToCart de app.js) ---------- */
@@ -271,20 +343,22 @@
       });
       added++;
     });
-    const msg = document.querySelector('[data-added="' + which + '"]');
-    if(msg) msg.innerHTML = (added ? 'Agregado al carrito ✓ <a href="carrito.html">Ver carrito</a>' : 'No se agregó nada.') +
+    $('calc-bar-msg').innerHTML = (added ? (which === 'kit' ? 'Kit agregado ✓' : 'Kit de la semana agregado ✓') + ' <a href="carrito.html">Ver carrito</a>' : 'No se agregó nada.') +
       (skipped ? ' Honey Stinger quedó fuera por ahora.' : '');
     if(typeof trackEvent === 'function') trackEvent('calculadora_agregar', { tipo: which });
-    if(added) guardar(which, Object.assign({}, current.resumen, { unidadesAgregadas: units, sabores: flavors, honeyFuera: skipped > 0 }));
+    if(added) guardar(which === 'kit' ? 'kit' : 'pack', Object.assign({}, current.resumen, { unidadesAgregadas: units, sabores: flavors, honeyFuera: skipped > 0 }));
   }
 
-  $('calc-out').addEventListener('click', function(e){
+  document.addEventListener('click', function(e){
     const add = e.target.closest('[data-add]');
-    if(add && current && current[add.dataset.add]) addToCart(current[add.dataset.add], add.dataset.add);
+    if(add && current){
+      const units = add.dataset.add === 'kit' ? current.kit : current.week;
+      if(units) addToCart(units, add.dataset.add);
+    }
     const drink = e.target.closest('[data-set-drink]');
-    if(drink){ $('calc-drink').value = drink.dataset.setDrink; onChange(); }
+    if(drink){ const r = form.querySelector('input[name="drink"][value="' + drink.dataset.setDrink + '"]'); if(r){ r.checked = true; onChange(); } }
   });
-  $('calc-out').addEventListener('change', function(e){
+  document.addEventListener('change', function(e){
     const sel = e.target.closest('[data-flavor]');
     if(sel){ flavors[sel.dataset.flavor] = sel.value; document.querySelectorAll('[data-flavor="' + sel.dataset.flavor + '"]').forEach(function(o){ o.value = sel.value; }); }
   });
@@ -305,5 +379,18 @@
     if(current) guardar('plan', current.resumen);
     if(window.matchMedia('(max-width: 1024px)').matches) $('calc-out').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   });
+
+  packForm.addEventListener('input', function(){ syncFields(); if(packStarted && current){ renderWeek(readInp()); bar(); } });
+  packForm.addEventListener('change', function(){ syncFields(); if(packStarted && current){ renderWeek(readInp()); bar(); } });
+  packForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    packStarted = true;
+    if(!current) return;
+    renderWeek(readInp()); bar();
+    if(current.week){ guardar('plan', current.resumen); $('calc-pack-out').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' }); }
+    else { const bad = packForm.querySelector('[aria-invalid="true"]'); if(bad) bad.focus(); }
+  });
+
+  promo();
   syncFields();
 })();

@@ -17,6 +17,7 @@
      vol            litros por porción (solo bebidas)
      perSell        porciones que trae cada unidad que se vende
      boxes          precio total de cada caja (unidades que se venden, no porciones)
+     mini           foto chica (192 px) para los selectores y la línea de tiempo
      tienda         cómo se llama el producto en el carrito del sitio (ver addItemToCart en app.js)
    ========================================================================== */
 
@@ -27,9 +28,14 @@
 const CALC_PRECIO_KIT = null;
 const CALC_PRECIO_PACK = null;
 
+/* ---------- Descuento por armar el kit de la semana (lo fija APEX) ----------
+   0 = todavía sin descuento: el banner invita a armar el kit, sin prometer
+   un porcentaje. Para activarlo, escribe la tasa (por ejemplo 0.10 = 10%). */
+const CALC_DESCUENTO_PACK = 0;
+
 const CALC_PRODUCTOS = {
   going_hidr: {
-    name: 'Going Hidratante', brand: 'going',
+    name: 'Going Hidratante', brand: 'going', mini: 'assets/calculadora/going-hidratante.webp',
     carb: 7, na: 351, caf: 0, fru: false, role: 'drink', vol: 0.75,
     serv: 'sobre en 750 mL', sell: 'sobre', perSell: 1,
     price: 1.79, boxes: { 6: 10.08, 12: 19.80, 24: 38.64 },
@@ -37,7 +43,7 @@ const CALC_PRODUCTOS = {
     tienda: { pagina: '/producto-going-hidratante.html', marca: 'Going Nutrición', titulo: 'Hidratante {sabor} Going', sabores: ['Uva', 'Coco', 'Pitaya'], foto: 'assets/going/hidratante-sobre-uva.webp' }
   },
   skratch: {
-    name: 'Skratch Hydration', brand: 'skratch',
+    name: 'Skratch Hydration', brand: 'skratch', mini: 'assets/calculadora/skratch.webp',
     carb: 20, na: 390, caf: 0, fru: true, role: 'drink', vol: 0.473,
     serv: 'sobre en 473 mL', sell: 'sobre', perSell: 1,
     price: 3.45, boxes: { 6: 19.44, 12: 38.04, 24: 74.64 },
@@ -45,7 +51,7 @@ const CALC_PRODUCTOS = {
     tienda: { pagina: '/producto-skratch.html', marca: 'Skratch Labs', titulo: 'Sport Hydration Drink Mix {sabor} Skratch Labs', sabores: ['Limón Lima', 'Fresa Limonada'], foto: 'assets/skratch/hidratacion-fresa-limonada-sticks.webp' }
   },
   going_gel: {
-    name: 'Going Gel Café', brand: 'going',
+    name: 'Going Gel Café', brand: 'going', mini: 'assets/calculadora/going-gel-cafe.webp',
     carb: 19, na: 35, caf: 12.5, fru: false, role: 'carb',
     serv: 'gel', sell: 'gel', perSell: 1,
     price: 3.44, boxes: null,
@@ -54,35 +60,35 @@ const CALC_PRODUCTOS = {
     tienda: { pagina: '/producto-going-gel-cafe.html', marca: 'Going Nutrición', titulo: 'Gel Energético {sabor} Going', sabores: ['Café'], foto: 'assets/going/gel-cafe-colombia.webp' }
   },
   hs_gel_fruta: {
-    name: 'Honey Stinger Gel', brand: 'hs',
+    name: 'Honey Stinger Gel', brand: 'hs', mini: 'assets/calculadora/hs-gel-fruit-smoothie.webp',
     carb: 24, na: 50, caf: 0, fru: true, role: 'carb',
     serv: 'gel', sell: 'gel', perSell: 1,
     price: 4.50, boxes: { 6: 25.38, 12: 49.68, 24: 97.20 },
     tienda: { pagina: '/producto-honey-gel.html', marca: 'Honey Stinger', titulo: 'Gel Energético Orgánico {sabor} Honey Stinger', sabores: ['Fruit Smoothie', 'Acai Pomegranate'], foto: 'assets/honey/gel-acai-pomegranate.webp' }
   },
   hs_gel_gold: {
-    name: 'Honey Stinger Gel Gold', brand: 'hs',
+    name: 'Honey Stinger Gel Gold', brand: 'hs', mini: 'assets/calculadora/hs-gel-gold.webp',
     carb: 24, na: 45, caf: 0, fru: true, role: 'carb',
     serv: 'gel', sell: 'gel', perSell: 1,
     price: 4.50, boxes: { 6: 25.38, 12: 49.68, 24: 97.20 },
-    tienda: { pagina: '/producto-honey-gel.html', marca: 'Honey Stinger', titulo: 'Gel Energético Orgánico {sabor} Honey Stinger', sabores: ['Gold'], foto: 'assets/honey/gel-acai-pomegranate.webp' }
+    tienda: { pagina: '/producto-honey-gel.html', marca: 'Honey Stinger', titulo: 'Gel Energético Orgánico {sabor} Honey Stinger', sabores: ['Gold'], foto: 'assets/honey/gel-gold.webp' }
   },
   hs_gel_cafe: {
-    name: 'Honey Stinger Gel Strawberry Kiwi (cafeína)', brand: 'hs',
+    name: 'Honey Stinger Gel Strawberry Kiwi (cafeína)', brand: 'hs', mini: 'assets/calculadora/hs-gel-strawberry-kiwi.webp',
     carb: 24, na: 50, caf: 32, fru: true, role: 'carb',
     serv: 'gel', sell: 'gel', perSell: 1,
     price: 4.50, boxes: { 6: 25.38, 12: 49.68, 24: 97.20 },
-    tienda: { pagina: '/producto-honey-gel.html', marca: 'Honey Stinger', titulo: 'Gel Energético Orgánico {sabor} Honey Stinger', sabores: ['Strawberry Kiwi'], foto: 'assets/honey/gel-acai-pomegranate.webp' }
+    tienda: { pagina: '/producto-honey-gel.html', marca: 'Honey Stinger', titulo: 'Gel Energético Orgánico {sabor} Honey Stinger', sabores: ['Strawberry Kiwi'], foto: 'assets/honey/gel-strawberry-kiwi.webp' }
   },
   hs_gomitas: {
-    name: 'Honey Stinger Gomitas', brand: 'hs',
+    name: 'Honey Stinger Gomitas', brand: 'hs', mini: 'assets/calculadora/hs-gomitas.webp',
     carb: 39, na: 60, caf: 0, fru: true, role: 'carb',
     serv: 'bolsa', sell: 'bolsa', perSell: 1,
     price: 5.99, boxes: { 6: 33.78, 12: 66.13, 24: 129.38 },
     tienda: { pagina: '/producto-honey-gomitas.html', marca: 'Honey Stinger', titulo: 'Gomitas Energéticas Orgánicas {sabor} Honey Stinger', sabores: ['Fruit Smoothie', 'Citrus Splash'], foto: 'assets/honey/gomitas-citrus-splash.webp' }
   },
   probar_bolt: {
-    name: 'PROBAR Bolt', brand: 'probar',
+    name: 'PROBAR Bolt', brand: 'probar', mini: 'assets/calculadora/probar-bolt.webp',
     carb: 23, na: 75, caf: 0, fru: true, role: 'carb',
     serv: 'media bolsa', sell: 'bolsa', perSell: 2,
     price: 4.29, boxes: { 6: 24.18, 12: 47.40, 24: 92.64 },
@@ -90,7 +96,7 @@ const CALC_PRODUCTOS = {
     tienda: { pagina: '/producto-probar-gomas.html', marca: 'Probar', titulo: 'Gomas Energéticas Bolt {sabor} Probar', sabores: ['Fresa', 'Naranja'], foto: 'assets/probar/gomitas-bolt-fresa.webp' }
   },
   hs_waffle: {
-    name: 'Honey Stinger Waffle', brand: 'hs',
+    name: 'Honey Stinger Waffle', brand: 'hs', mini: 'assets/calculadora/hs-waffle.webp',
     carb: 19, na: 70, caf: 0, fru: true, role: 'carb', soloIntensidad: ['baja', 'moderada'],
     serv: 'waffle', sell: 'waffle', perSell: 1,
     price: 3.65, boxes: { 6: 20.59, 12: 40.30, 24: 78.84 },
@@ -105,14 +111,14 @@ const CALC_PRODUCTOS = {
     tienda: { pagina: '/producto-going-barra.html', marca: 'Going Nutrición', titulo: 'Barra Endurance {sabor} Going', sabores: ['Chocolate'], foto: 'assets/going/barra-chocolate-mani.webp' }
   },
   ss_caps: {
-    name: 'SaltStick Cápsulas', brand: 'ss',
+    name: 'SaltStick Cápsulas', brand: 'ss', mini: 'assets/calculadora/ss-capsulas.webp',
     carb: 0, na: 215, caf: 0, fru: null, role: 'na',
     serv: 'cápsula', sell: 'empaque de 4', perSell: 4,
     price: 4.99, boxes: { 6: 28.14, 12: 55.08, 24: 107.76 },
     tienda: { pagina: '/producto-saltstick-capsulas.html', marca: 'SaltStick', titulo: 'Cápsulas de Electrolitos SaltStick', sabores: [], foto: 'assets/saltstick/capsulas-electrolitos.webp' }
   },
   ss_chews: {
-    name: 'SaltStick FastChews', brand: 'ss',
+    name: 'SaltStick FastChews', brand: 'ss', mini: 'assets/calculadora/ss-fastchews.webp',
     carb: 2, na: 100, caf: 0, fru: null, role: 'na',
     serv: '2 tabletas', sell: 'sobre de 10', perSell: 5,
     price: 5.99, boxes: { 6: 33.78, 12: 66.12, 24: 129.36 },
@@ -120,4 +126,4 @@ const CALC_PRODUCTOS = {
   }
 };
 
-if(typeof module !== 'undefined') module.exports = { CALC_PRODUCTOS, CALC_PRECIO_KIT, CALC_PRECIO_PACK };
+if(typeof module !== 'undefined') module.exports = { CALC_PRODUCTOS, CALC_PRECIO_KIT, CALC_PRECIO_PACK, CALC_DESCUENTO_PACK };

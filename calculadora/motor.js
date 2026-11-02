@@ -289,6 +289,32 @@
     };
   }
 
+  /* ---------- Kit de la semana (pedido del dueño, 2026-11-02) ----------
+     Las mismas Reglas 1 a 5 que el pack mensual, pero para una semana: se
+     compran las unidades justas (sin sobrante) y el carrito aplica el precio
+     por caja solo si la suma llega a 6, 12 o 24. Si el bloque intestinal está
+     activo, las sesiones normales de 60 min o más usan la meta de la carrera. */
+  function weekPack(inp, tr){
+    const normalMin = tr.normalMin, longMin = tr.hasLong ? tr.longMin : 0;
+    const nNormal = Math.max(0, tr.days - (tr.hasLong ? 1 : 0));
+    const train = Object.assign({}, inp, { caf: false });
+    const week = {}; const addS = function(o, f){ for(const k in o) week[k] = (week[k] || 0) + o[k] * f; };
+    let gutBlock = false;
+    let pn = null;
+    if(normalMin > 0){
+      const raceT = carbTarget(inp.min, inp.intens, false).g;
+      gutBlock = !!(tr.gutBlock && !inp.gut && normalMin >= 60 && raceT > 0);
+      pn = plan(Object.assign({}, inp, { min: normalMin }), gutBlock ? { carbOverride: raceT } : {});
+      addS(kitFromPlan(pn, train).serv, nNormal);
+    }
+    let pl = null;
+    if(tr.hasLong && longMin > 0){ pl = plan(Object.assign({}, inp, { min: longMin })); addS(kitFromPlan(pl, train).serv, 1); }
+    const units = {}; for(const k in week) units[k] = sellUnits(k, week[k]);
+    const pr = precioTienda(units);
+    return { week: week, units: units, gutBlock: gutBlock, pn: pn, pl: pl, nNormal: nNormal,
+      lineas: pr.lineas, total: config.pack != null ? config.pack : pr.total, fijadoPorApex: config.pack != null };
+  }
+
   /* ---------- Regla 5.5: línea de tiempo ----------
      Tomas cada 20 min si hay 3 o más unidades en la hora, si no cada 30 min.
      Si hay más unidades que tomas, en una toma van juntas (ej. gel + FastChews).
@@ -320,6 +346,6 @@
   }
 
   const api = { P: P, carbTarget: carbTarget, plan: plan, kitFromPlan: kitFromPlan, sellUnits: sellUnits, boxCombo: boxCombo,
-    monthPack: monthPack, precioTienda: precioTienda, precioKit: precioKit, schedule: schedule, CAF_TOPE_MG_KG: CAF_TOPE_MG_KG };
+    monthPack: monthPack, weekPack: weekPack, precioTienda: precioTienda, precioKit: precioKit, schedule: schedule, CAF_TOPE_MG_KG: CAF_TOPE_MG_KG };
   if(typeof module !== 'undefined') module.exports = api; else root.CalcMotor = api;
 })(this);
