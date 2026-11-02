@@ -42,7 +42,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
 <link rel="stylesheet" href="styles.css?v=153">
-<link rel="stylesheet" href="calculadora/calculadora.css?v=5">
+<link rel="stylesheet" href="calculadora/calculadora.css?v=11">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -269,10 +269,14 @@
             </details>
           </div>
 
-          <label class="calc-check"><input type="checkbox" id="calc-salty"> Me quedan marcas blancas de sal en la ropa o la piel</label>
-          <label class="calc-check"><input type="checkbox" id="calc-gut"> Estoy acostumbrado a comer mientras entreno</label>
-          <label class="calc-check"><input type="checkbox" id="calc-drinkTrained"> Entreno bebiendo más de 1 litro por hora sin molestias</label>
-          <label class="calc-check"><input type="checkbox" id="calc-caf"> Quiero cafeína</label>
+          <!-- Casillas sobre el atleta: bloque aparte, para que no parezcan parte de "Medir mi sudor" -->
+          <fieldset class="calc-field calc-group">
+            <legend class="calc-label">Marca lo que aplique a ti</legend>
+            <label class="calc-check"><input type="checkbox" id="calc-salty"> Me quedan marcas blancas de sal en la ropa o la piel</label>
+            <label class="calc-check"><input type="checkbox" id="calc-gut"> Estoy acostumbrado a comer mientras entreno</label>
+            <label class="calc-check"><input type="checkbox" id="calc-drinkTrained"> Entreno bebiendo más de 1 litro por hora sin molestias</label>
+            <label class="calc-check"><input type="checkbox" id="calc-caf"> Quiero cafeína</label>
+          </fieldset>
 
           <fieldset class="calc-field calc-choice">
             <legend class="calc-label">Bebida</legend>
@@ -299,15 +303,6 @@
         <!-- Guardar datos: solo con consentimiento (ver /api/calculadora en worker/index.js) -->
         <div class="calc-card">
           <label class="calc-check" style="margin-top:0"><input type="checkbox" id="calc-consent"> Acepto que APEX guarde mis respuestas y mi plan para mejorar la calculadora. No se guarda mi nombre ni mi teléfono.</label>
-          <details class="calc-details">
-            <summary>Aviso de privacidad</summary>
-            <p class="calc-help">Si marcas la casilla, guardamos las respuestas de este formulario (deporte, duración, peso, sudor y preferencias), el plan que te dimos, el kit o pack que agregues al carrito, la fecha y un número al azar que identifica esta visita. No guardamos tu nombre, correo, teléfono ni dirección. Usamos estos datos solo para revisar y mejorar las recomendaciones de la calculadora, y no los compartimos con nadie fuera de APEX. Si no marcas la casilla, no guardamos nada.</p>
-          </details>
-          <div class="calc-field" id="calc-code-field" hidden>
-            <label for="calc-code">Código de atleta <span class="calc-opt">(opcional, solo si APEX te dio uno)</span></label>
-            <input type="text" id="calc-code" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="Ej: ATL-03" pattern="[A-Za-z0-9-]{1,20}">
-            <p class="calc-help">Solo letras, números y guiones. No escribas tu nombre ni tu teléfono. Si usas un código, puedes pedirnos por WhatsApp que borremos tus datos.</p>
-          </div>
         </div>
 
         <p class="checkout-error" id="calc-error" hidden></p>
@@ -422,8 +417,8 @@
 
 
 <script src="app.js?v=99"></script>
-<script src="calculadora/productos.js?v=2"></script>
+<script src="calculadora/productos.js?v=3"></script>
 <script src="calculadora/motor.js?v=3"></script>
-<script src="calculadora/ui.js?v=5"></script>
+<script src="calculadora/ui.js?v=10"></script>
 </body>
 </html>

@@ -160,22 +160,30 @@ fieldset.calc-choice > legend{ padding: 0; }
 .calc-option:has(input:focus-visible){ outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .calc-prod img{ width: 32px; height: 32px; object-fit: contain; flex: none; }
 
-/* ---------- Línea de tiempo como dibujo (una hora tipo) ---------- */
-.calc-tl-title{ margin-top: var(--sp-5); }
-.calc-tl{ position: relative; height: 112px; margin: var(--sp-2) 20px 0; }
-.calc-tl-track{ position: absolute; left: 0; right: 0; top: 70px; height: 4px; background: var(--ink); border-radius: 2px; }
-.calc-tl-track::before, .calc-tl-track::after{ content: ''; position: absolute; top: -4px; width: 2px; height: 12px; background: var(--ink); }
-.calc-tl-track::before{ left: 0; } .calc-tl-track::after{ right: 0; }
-.calc-tl-mark{ position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
-.calc-tl-pics{ display: flex; gap: 2px; height: 56px; align-items: flex-end; }
-.calc-tl-pics img{ width: 40px; height: 40px; object-fit: contain; }
-.calc-tl-dot{ width: 12px; height: 12px; margin-top: 8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--ink); }
-.calc-tl-min{ margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
-.calc-tl-end{ position: absolute; right: -8px; top: 86px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); }
-.calc-tl-legend{ list-style: none; margin: var(--sp-3) 0 0; padding: 0; font-size: 13.5px; color: var(--ink-2); }
-.calc-tl-legend li{ padding: 3px 0; }
-.calc-tl-legend b{ font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); display: inline-block; min-width: 3em; }
-@media (max-width: 480px){ .calc-tl-pics img{ width: 32px; height: 32px; } .calc-tl{ margin: var(--sp-2) 14px 0; } }
+/* ---------- Línea de tiempo: la hora tipo como pasos ----------
+   Cada toma es una columna: minuto (en lima, sobre una línea de tinta que
+   une las tomas), foto con ×N si son varias unidades y nombre corto. */
+.calc-tl{ margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--line); }
+.calc-tl .calc-section-title{ margin-bottom: 2px; }
+.calc-tl-sub{ font-size: 13px; color: var(--ink-3); margin: 0; }
+.calc-steps{ position: relative; list-style: none; margin: var(--sp-4) 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--sp-2); }
+.calc-steps::before{ content: ''; position: absolute; top: 11px; height: 2px; background: var(--ink); left: calc(50% / var(--n)); right: calc(50% / var(--n)); }
+.calc-step{ position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+.calc-step-min{ position: relative; z-index: 1; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--ink); background: var(--accent); border: 1.5px solid var(--ink); border-radius: var(--r-pill); padding: 1px 8px; line-height: 18px; }
+.calc-step-pics{ display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; min-height: 76px; margin-top: var(--sp-2); padding: var(--sp-2) 4px; background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--r-card); }
+.calc-step-pic{ position: relative; display: inline-flex; }
+.calc-step-pic img{ width: 48px; height: 48px; object-fit: contain; }
+.calc-step-x{ position: absolute; right: -8px; bottom: -6px; min-width: 22px; padding: 1px 4px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; line-height: 16px; color: #fff; background: var(--ink); border-radius: var(--r-pill); }
+.calc-step-name{ margin-top: 6px; font-size: 12.5px; font-weight: 600; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
+.calc-tl-notes{ list-style: none; margin: var(--sp-4) 0 0; padding: 0; font-size: 13.5px; color: var(--ink-2); }
+.calc-tl-notes li{ padding: 2px 0; }
+.calc-tl-notes b{ color: var(--ink); font-weight: 700; }
+@media (max-width: 480px){
+  .calc-steps{ gap: 6px; }
+  .calc-step-pics{ min-height: 64px; }
+  .calc-step-pic img{ width: 38px; height: 38px; }
+  .calc-step-name{ font-size: 11.5px; }
+}
 
 /* ---------- Kit de la semana (aparece después del plan) ---------- */
 .calc-results{ min-width: 0; }
@@ -219,3 +227,20 @@ body.calc-bar-on .wa-float{ bottom: calc(92px + env(safe-area-inset-bottom, 0px)
 .calc-stop{ margin: 0 0 var(--sp-5); font-size: 15px; }
 .calc-stop:focus{ outline: none; }
 .calc-stop:focus-visible{ outline: 2px solid var(--accent-text); outline-offset: 2px; }
+/* .btn usa display:inline-flex, que le gana al atributo hidden: sin esto "Agregar kit de la semana" se veía antes de armarlo */
+.calc-bar-btns .btn[hidden]{ display: none; }
+/* En celular el kit muestra Producto · Compras · Precio: las porciones ya están en "Compras" */
+@media (max-width: 480px){ .calc-col-porc{ display: none; } }
+@media (max-width: 400px){
+  .calc-table th, .calc-table td{ padding: 8px 4px; }
+  .calc-table th{ letter-spacing: .04em; }
+}
+
+/* Bloque "Marca lo que aplique a ti": separado de "Medir mi sudor" con una línea */
+fieldset.calc-group{ border: 0; border-top: 1px solid var(--line); margin: var(--sp-5) 0 0; padding: var(--sp-4) 0 0; min-width: 0; }
+fieldset.calc-group > legend{ float: left; width: 100%; padding: 0; margin-bottom: 2px; }
+fieldset.calc-group > legend + .calc-check{ clear: both; }
+fieldset.calc-group .calc-check{ margin-bottom: 0; font-size: 14px; font-weight: 400; color: var(--ink); }
+.calc-field .calc-check{ display: flex; margin-bottom: 0; }
+/* Siempre 3 tarjetas por fila: en celular no queda una sola abajo */
+.calc-options{ grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -18,6 +18,7 @@
      perSell        porciones que trae cada unidad que se vende
      boxes          precio total de cada caja (unidades que se venden, no porciones)
      mini           foto chica (192 px) para los selectores y la línea de tiempo
+     tienda.fotos   por sabor: [foto para el carrito, foto chica]; si no hay, se usan foto y mini
      tienda         cómo se llama el producto en el carrito del sitio (ver addItemToCart en app.js)
    ========================================================================== */
 
@@ -40,7 +41,8 @@ const CALC_PRODUCTOS = {
     serv: 'sobre en 750 mL', sell: 'sobre', perSell: 1,
     price: 1.79, boxes: { 6: 10.08, 12: 19.80, 24: 38.64 },
     // 1 sobre de 10 g en 750 mL = 351 mg de sodio (confirmado por el fabricante; el sobre dice 115 mg en 250 mL)
-    tienda: { pagina: '/producto-going-hidratante.html', marca: 'Going Nutrición', titulo: 'Hidratante {sabor} Going', sabores: ['Uva', 'Coco', 'Pitaya'], foto: 'assets/going/hidratante-sobre-uva.webp' }
+    tienda: { pagina: '/producto-going-hidratante.html', marca: 'Going Nutrición', titulo: 'Hidratante {sabor} Going', sabores: ['Uva', 'Coco', 'Pitaya'], foto: 'assets/going/hidratante-sobre-uva.webp',
+              fotos: { 'Uva': ['assets/going/hidratante-sobre-uva.webp', 'assets/calculadora/going-hidr-uva.webp'], 'Coco': ['assets/going/hidratante-sobre-coco.webp', 'assets/calculadora/going-hidr-coco.webp'], 'Pitaya': ['assets/going/hidratante-sobre-pitaya.webp', 'assets/calculadora/going-hidr-pitaya.webp'] } }
   },
   skratch: {
     name: 'Skratch Hydration', brand: 'skratch', mini: 'assets/calculadora/skratch.webp',
@@ -48,7 +50,8 @@ const CALC_PRODUCTOS = {
     serv: 'sobre en 473 mL', sell: 'sobre', perSell: 1,
     price: 3.45, boxes: { 6: 19.44, 12: 38.04, 24: 74.64 },
     // 390 mg: promedio de 380 y 400 entre sabores
-    tienda: { pagina: '/producto-skratch.html', marca: 'Skratch Labs', titulo: 'Sport Hydration Drink Mix {sabor} Skratch Labs', sabores: ['Limón Lima', 'Fresa Limonada'], foto: 'assets/skratch/hidratacion-fresa-limonada-sticks.webp' }
+    tienda: { pagina: '/producto-skratch.html', marca: 'Skratch Labs', titulo: 'Sport Hydration Drink Mix {sabor} Skratch Labs', sabores: ['Limón Lima', 'Fresa Limonada'], foto: 'assets/skratch/hidratacion-fresa-limonada-sticks.webp',
+              fotos: { 'Limón Lima': ['assets/skratch/hidratacion-limon-lima-sticks.webp', 'assets/calculadora/skratch-limon-lima.webp'], 'Fresa Limonada': ['assets/skratch/hidratacion-fresa-limonada-sticks.webp', 'assets/calculadora/skratch-fresa-limonada.webp'] } }
   },
   going_gel: {
     name: 'Going Gel Café', brand: 'going', mini: 'assets/calculadora/going-gel-cafe.webp',
@@ -64,7 +67,8 @@ const CALC_PRODUCTOS = {
     carb: 24, na: 50, caf: 0, fru: true, role: 'carb',
     serv: 'gel', sell: 'gel', perSell: 1,
     price: 4.50, boxes: { 6: 25.38, 12: 49.68, 24: 97.20 },
-    tienda: { pagina: '/producto-honey-gel.html', marca: 'Honey Stinger', titulo: 'Gel Energético Orgánico {sabor} Honey Stinger', sabores: ['Fruit Smoothie', 'Acai Pomegranate'], foto: 'assets/honey/gel-acai-pomegranate.webp' }
+    tienda: { pagina: '/producto-honey-gel.html', marca: 'Honey Stinger', titulo: 'Gel Energético Orgánico {sabor} Honey Stinger', sabores: ['Fruit Smoothie', 'Acai Pomegranate'], foto: 'assets/honey/gel-acai-pomegranate.webp',
+              fotos: { 'Fruit Smoothie': ['assets/honey/gel-fruit-smoothie.webp', 'assets/calculadora/hs-gel-fruta-fruit-smoothie.webp'], 'Acai Pomegranate': ['assets/honey/gel-acai-pomegranate.webp', 'assets/calculadora/hs-gel-fruta-acai-pomegranate.webp'] } }
   },
   hs_gel_gold: {
     name: 'Honey Stinger Gel Gold', brand: 'hs', mini: 'assets/calculadora/hs-gel-gold.webp',
@@ -85,7 +89,8 @@ const CALC_PRODUCTOS = {
     carb: 39, na: 60, caf: 0, fru: true, role: 'carb',
     serv: 'bolsa', sell: 'bolsa', perSell: 1,
     price: 5.99, boxes: { 6: 33.78, 12: 66.13, 24: 129.38 },
-    tienda: { pagina: '/producto-honey-gomitas.html', marca: 'Honey Stinger', titulo: 'Gomitas Energéticas Orgánicas {sabor} Honey Stinger', sabores: ['Fruit Smoothie', 'Citrus Splash'], foto: 'assets/honey/gomitas-citrus-splash.webp' }
+    tienda: { pagina: '/producto-honey-gomitas.html', marca: 'Honey Stinger', titulo: 'Gomitas Energéticas Orgánicas {sabor} Honey Stinger', sabores: ['Fruit Smoothie', 'Citrus Splash'], foto: 'assets/honey/gomitas-citrus-splash.webp',
+              fotos: { 'Fruit Smoothie': ['assets/honey/gomitas-fruit-smoothie.webp', 'assets/calculadora/hs-gomitas-fruit-smoothie.webp'], 'Citrus Splash': ['assets/honey/gomitas-citrus-splash.webp', 'assets/calculadora/hs-gomitas-citrus-splash.webp'] } }
   },
   probar_bolt: {
     name: 'PROBAR Bolt', brand: 'probar', mini: 'assets/calculadora/probar-bolt.webp',
@@ -93,7 +98,8 @@ const CALC_PRODUCTOS = {
     serv: 'media bolsa', sell: 'bolsa', perSell: 2,
     price: 4.29, boxes: { 6: 24.18, 12: 47.40, 24: 92.64 },
     // tiene fructosa: jarabe de tapioca + azúcar de caña
-    tienda: { pagina: '/producto-probar-gomas.html', marca: 'Probar', titulo: 'Gomas Energéticas Bolt {sabor} Probar', sabores: ['Fresa', 'Naranja'], foto: 'assets/probar/gomitas-bolt-fresa.webp' }
+    tienda: { pagina: '/producto-probar-gomas.html', marca: 'Probar', titulo: 'Gomas Energéticas Bolt {sabor} Probar', sabores: ['Fresa', 'Naranja'], foto: 'assets/probar/gomitas-bolt-fresa.webp',
+              fotos: { 'Fresa': ['assets/probar/gomitas-bolt-fresa.webp', 'assets/calculadora/probar-bolt-fresa.webp'], 'Naranja': ['assets/probar/gomitas-bolt-naranja.webp', 'assets/calculadora/probar-bolt-naranja.webp'] } }
   },
   hs_waffle: {
     name: 'Honey Stinger Waffle', brand: 'hs', mini: 'assets/calculadora/hs-waffle.webp',
@@ -101,7 +107,8 @@ const CALC_PRODUCTOS = {
     serv: 'waffle', sell: 'waffle', perSell: 1,
     price: 3.65, boxes: { 6: 20.59, 12: 40.30, 24: 78.84 },
     // 19 g y 70 mg: promedio de los tres sabores
-    tienda: { pagina: '/producto-honey-waffle.html', marca: 'Honey Stinger', titulo: 'Waffle Energético Orgánico {sabor} Honey Stinger', sabores: ['Miel', 'Vainilla', 'Chocolate'], foto: 'assets/honey/waffle-miel.webp' }
+    tienda: { pagina: '/producto-honey-waffle.html', marca: 'Honey Stinger', titulo: 'Waffle Energético Orgánico {sabor} Honey Stinger', sabores: ['Miel', 'Vainilla', 'Chocolate'], foto: 'assets/honey/waffle-miel.webp',
+              fotos: { 'Miel': ['assets/honey/waffle-miel.webp', 'assets/calculadora/hs-waffle-miel.webp'], 'Vainilla': ['assets/honey/waffle-vainilla.webp', 'assets/calculadora/hs-waffle-vainilla.webp'], 'Chocolate': ['assets/honey/waffle-chocolate.webp', 'assets/calculadora/hs-waffle-chocolate.webp'] } }
   },
   going_barra: {
     name: 'Going Barra Endurance', brand: 'going',
@@ -122,7 +129,8 @@ const CALC_PRODUCTOS = {
     carb: 2, na: 100, caf: 0, fru: null, role: 'na',
     serv: '2 tabletas', sell: 'sobre de 10', perSell: 5,
     price: 5.99, boxes: { 6: 33.78, 12: 66.12, 24: 129.36 },
-    tienda: { pagina: '/producto-saltstick.html', marca: 'SaltStick', titulo: 'Masticables FastChews {sabor} SaltStick', sabores: ['Naranja', 'Frutos Rojos', 'Limonada Rosada', 'Limón Lima'], foto: 'assets/saltstick/fastchews-packet-tartorange.webp' }
+    tienda: { pagina: '/producto-saltstick.html', marca: 'SaltStick', titulo: 'Masticables FastChews {sabor} SaltStick', sabores: ['Naranja', 'Frutos Rojos', 'Limonada Rosada', 'Limón Lima'], foto: 'assets/saltstick/fastchews-packet-tartorange.webp',
+              fotos: { 'Naranja': ['assets/saltstick/fastchews-packet-tartorange.webp', 'assets/calculadora/ss-chews-naranja.webp'], 'Frutos Rojos': ['assets/saltstick/fastchews-packet-mixedberry.webp', 'assets/calculadora/ss-chews-frutos-rojos.webp'], 'Limonada Rosada': ['assets/saltstick/fastchews-packet-pinklemonade.webp', 'assets/calculadora/ss-chews-limonada-rosada.webp'], 'Limón Lima': ['assets/saltstick/fastchews-packet-lemonlime.webp', 'assets/calculadora/ss-chews-limon-lima.webp'] } }
   }
 };
 

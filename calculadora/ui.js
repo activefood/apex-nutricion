@@ -23,7 +23,9 @@
   const hours = function(min){ return (min / 60).toLocaleString('es-VE', { maximumFractionDigits: 2 }); };
   const hm = function(m){ m = Math.round(m); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); };
   const dot = function(k){ return '<span class="calc-dot calc-dot--' + P[k].brand + '" aria-hidden="true"></span>'; };
-  const mini = function(k, size){ return P[k].mini ? '<img src="' + P[k].mini + '" alt="" width="' + size + '" height="' + size + '" loading="lazy">' : dot(k); };
+  // Foto del sabor elegido (tienda.fotos en productos.js): [foto para el carrito, foto chica]
+  const fotoSabor = function(k){ const f = P[k].tienda.fotos, sab = flavors[k] || P[k].tienda.sabores[0]; return f && f[sab] ? f[sab] : [P[k].tienda.foto, P[k].mini]; };
+  const mini = function(k, size){ const src = fotoSabor(k)[1]; return src ? '<img src="' + src + '" alt="" width="' + size + '" height="' + size + '" loading="lazy" data-mini="' + k + '">' : dot(k); };
   const isSoon = function(k){ return typeof isComingSoonItem === 'function' && isComingSoonItem({ brand: P[k].tienda.marca, name: P[k].name }); };
   const soonTag = function(k){ return isSoon(k) ? ' <span class="calc-soon">Próximamente</span>' : ''; };
   const num = function(id){ const v = parseFloat(($(id).value || '').replace(',', '.')); return isNaN(v) ? 0 : v; };
@@ -66,26 +68,21 @@
     $('calc-long-field').hidden = !$('calc-haslong').checked;
     // Bloque de entrenamiento intestinal: solo si la carrera dura más de 2.5 h y no entrena comiendo
     $('calc-gutblock-field').hidden = !(inp.min > 150 && !inp.gut);
-    $('calc-code-field').hidden = !$('calc-consent').checked;
   }
 
   /* ---------- Guardar datos (Etapa 5): solo con consentimiento ----------
      Va a /api/calculadora (worker/index.js), que lo guarda en la base D1.
-     Sin nombre ni teléfono: un identificador al azar por visita y, si lo hay,
-     el código de atleta. Si falla, la calculadora sigue igual. */
+     Sin nombre ni teléfono: solo un identificador al azar por visita (el campo
+     de código de atleta se quitó el 2026-11-02). Si falla, la calculadora sigue igual. */
   const VERSION = 'calc-2026-11-02';
   const sesion = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10);
-  function codigoAtleta(){
-    const v = ($('calc-code').value || '').trim();
-    return /^[A-Za-z0-9-]{1,20}$/.test(v) ? v.toUpperCase() : null;
-  }
   function guardar(tipo, resultado){
     if(!$('calc-consent').checked) return;
     const respuestas = Object.assign({}, readInp(), { entrenamiento: packStarted ? readTr() : null });
     try {
       fetch('/api/calculadora', {
         method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consent: true, sesion: sesion, tipo: tipo, codigo: codigoAtleta(), version: VERSION, respuestas: respuestas, resultado: resultado })
+        body: JSON.stringify({ consent: true, sesion: sesion, tipo: tipo, version: VERSION, respuestas: respuestas, resultado: resultado })
       }).catch(function(){});
     } catch(e){ /* sin conexión o navegador viejo: no es crítico */ }
   }
@@ -131,54 +128,62 @@
       '</div>';
   }
 
-  function evText(e){
-    return e.drink
-      ? P[e.k].name + ': empieza ' + (e.n > 1 ? e.n + ' botellas' : 'la botella') + ' de esta hora (' + P[e.k].serv + ') y bebe según tu sed'
-      : P[e.k].name + ' (' + P[e.k].serv + ')';
-  }
+  // Nombre corto para los pasos de la línea de tiempo
+  const CORTO = { going_hidr: 'Hidratante', skratch: 'Skratch', going_gel: 'Gel Café', hs_gel_fruta: 'Gel', hs_gel_gold: 'Gel Gold',
+    hs_gel_cafe: 'Gel con cafeína', hs_gomitas: 'Gomitas', probar_bolt: 'Bolt', hs_waffle: 'Waffle', ss_chews: 'FastChews', ss_caps: 'Cápsula de sal' };
+
   function groupByTime(ev){
     const out = [];
     ev.forEach(function(e){ const last = out[out.length - 1]; if(last && last.t === e.t) last.ev.push(e); else out.push({ t: e.t, ev: [e] }); });
     return out;
   }
+  // Junta las unidades iguales de una misma toma: 2 waffles = { k: 'hs_waffle', n: 2 }
+  function sumar(evs){
+    const out = [];
+    evs.forEach(function(e){ const f = out.find(function(x){ return x.k === e.k; }); if(f) f.n += e.n; else out.push({ k: e.k, n: e.n, drink: e.drink }); });
+    return out;
+  }
+  function texto(x){
+    if(x.drink) return (x.n > 1 ? x.n + ' botellas' : '1 botella') + ' de ' + P[x.k].name + ' (' + P[x.k].serv + '), a sorbos según tu sed';
+    return (x.n > 1 ? x.n + ' × ' : '') + P[x.k].name + ' (' + P[x.k].serv + ')';
+  }
 
-  /* Línea de tiempo como dibujo: una "hora tipo" (todas las horas se repiten),
-     con las fotos de lo que toca en cada minuto. Debajo, lo que cambia (la
-     cafeína al final y la última hora si no es completa) y el detalle
-     minuto a minuto, plegado. */
+  /* Línea de tiempo: una "hora tipo" (todas las horas se repiten) dibujada
+     como pasos: minuto, foto (con ×N si son varias unidades) y nombre corto.
+     Debajo, solo lo que cambia: la cafeína al final y la última hora si no es
+     completa. El detalle de todo el evento queda plegado. */
   function timelineHtml(pl, kit, inp){
     const ev = M.schedule(pl, kit, inp.min);
     if(!ev.length) return '';
-    const len = Math.min(60, inp.min);
-    const first = groupByTime(ev.filter(function(e){ return e.t < 60; }).map(function(e){
+    const pasos = groupByTime(ev.filter(function(e){ return e.t < 60; }).map(function(e){
       return e.k === 'hs_gel_cafe' ? Object.assign({}, e, { k: 'hs_gel_fruta' }) : e;   // la hora tipo, sin cafeína
-    }));
-    let html = '<h3 class="calc-section-title calc-tl-title">' + (inp.min > 60 ? 'Tu hora, minuto a minuto' : 'Tu evento, minuto a minuto') + '</h3>' +
-      '<div class="calc-tl" role="img" aria-label="' + first.map(function(g){ return 'Minuto ' + Math.round(g.t) + ': ' + g.ev.map(function(e){ return P[e.k].name; }).join(' y '); }).join('. ') + '">' +
-      '<div class="calc-tl-track" aria-hidden="true"></div>' +
-      first.map(function(g){
-        const pct = Math.max(4, Math.min(96, g.t / len * 100));
-        return '<div class="calc-tl-mark" style="left:' + pct + '%"><div class="calc-tl-pics">' + g.ev.map(function(e){ return mini(e.k, 40); }).join('') + '</div>' +
-          '<span class="calc-tl-dot" aria-hidden="true"></span><span class="calc-tl-min">' + Math.round(g.t) + '′</span></div>';
-      }).join('') +
-      '<span class="calc-tl-end" aria-hidden="true">' + Math.round(len) + '′</span></div>';
-    html += '<ul class="calc-tl-legend">' + first.map(function(g){ return '<li><b>' + Math.round(g.t) + '′</b> ' + g.ev.map(evText).join(' + ') + '</li>'; }).join('') + '</ul>';
+    })).map(function(g){ return { t: g.t, items: sumar(g.ev) }; });
 
-    const notes = [];
-    if(inp.min > 60) notes.push('Repite esta hora durante todo el evento (' + hours(inp.min) + ' h).');
+    let html = '<div class="calc-tl"><h3 class="calc-section-title">' + (inp.min > 60 ? 'Tu hora tipo' : 'Tu evento, paso a paso') + '</h3>' +
+      (inp.min > 60 ? '<p class="calc-tl-sub">Repite esta hora durante todo el evento (' + hours(inp.min) + ' h).</p>' : '') +
+      '<ol class="calc-steps" style="--n:' + pasos.length + '">' +
+      pasos.map(function(g){
+        const nombre = g.items.map(function(x){ return CORTO[x.k] || P[x.k].name; }).join(' + ');
+        const detalle = g.items.map(texto).join(' + ');
+        return '<li class="calc-step"><span class="calc-step-min">' + Math.round(g.t) + '′</span>' +
+          '<span class="calc-step-pics" aria-hidden="true">' + g.items.map(function(x){
+            return '<span class="calc-step-pic">' + mini(x.k, 48) + (x.n > 1 ? '<span class="calc-step-x">×' + x.n + '</span>' : '') + '</span>';
+          }).join('') + '</span>' +
+          '<span class="calc-step-name">' + nombre + '</span><span class="visually-hidden">: ' + detalle + '</span></li>';
+      }).join('') + '</ol>';
+
+    const notas = [];
     const caf = ev.filter(function(e){ return e.k === 'hs_gel_cafe'; });
-    if(caf.length) notes.push('Desde ' + hm(caf[0].t) + ', los geles son ' + P.hs_gel_cafe.name + '.');
+    if(caf.length) notas.push('<b>Desde ' + hm(caf[0].t) + ':</b> los geles son ' + P.hs_gel_cafe.name + '.');
     const rest = inp.min % 60;
     if(inp.min > 60 && rest > 0){
-      const lastH = ev.filter(function(e){ return e.t >= inp.min - rest - 1e-9 && !e.drink; });
-      notes.push('En los últimos ' + Math.round(rest) + ' minutos: ' + (lastH.length ? lastH.map(function(e){ return P[e.k].name; }).join(', ') : 'solo bebida') + '.');
+      const ultima = sumar(ev.filter(function(e){ return e.t >= inp.min - rest - 1e-9 && !e.drink; }));
+      notas.push('<b>Últimos ' + Math.round(rest) + ' min:</b> ' + (ultima.length ? ultima.map(function(x){ return (x.n > 1 ? x.n + ' × ' : '') + (CORTO[x.k] || P[x.k].name); }).join(' + ') : 'solo bebida') + '.');
     }
-    if(notes.length) html += '<p class="calc-help">' + notes.join(' ') + '</p>';
-    if(inp.min > 60){
-      html += '<details class="calc-details"><summary>Ver todo el evento</summary><ul class="calc-timeline">' +
-        groupByTime(ev).map(function(g){ return '<li><b>' + hm(g.t) + '</b><span>' + g.ev.map(evText).join(' + ') + '</span></li>'; }).join('') + '</ul></details>';
-    }
-    return html;
+    if(notas.length) html += '<ul class="calc-tl-notes">' + notas.map(function(n){ return '<li>' + n + '</li>'; }).join('') + '</ul>';
+    html += '<details class="calc-details"><summary>' + (inp.min > 60 ? 'Ver todo el evento' : 'Ver detalle') + '</summary><ul class="calc-timeline">' +
+      groupByTime(ev).map(function(g){ return '<li><b>' + hm(g.t) + '</b><span>' + sumar(g.ev).map(texto).join(' + ') + '</span></li>'; }).join('') + '</ul></details>';
+    return html + '</div>';
   }
 
   function planHtml(pl, kit, inp){
@@ -221,11 +226,11 @@
   function kitHtml(kit, pk){
     const keys = Object.keys(kit.serv);
     if(!keys.length) return '';
-    let html = '<section class="calc-card"><h2 class="calc-section-title">Tu kit para el evento</h2><div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
+    let html = '<section class="calc-card"><h2 class="calc-section-title">Tu kit para el evento</h2><div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n calc-col-porc">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
       keys.map(function(k){ const p = P[k];
-        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorSelect(k, 'kit') + '</td><td class="n">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
+        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + flavorSelect(k, 'kit') + soonTag(k) + '</td><td class="n calc-col-porc">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
       }).join('') +
-      '</tbody><tfoot><tr><td>Total</td><td></td><td></td><td class="n">' + usd(pk.total) + '</td></tr></tfoot></table></div>';
+      '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(pk.total) + '</td></tr></tfoot></table></div>';
     html += '<p class="calc-help">' + (pk.fijadoPorApex ? 'Precio del kit fijado por APEX.' : 'Precio con el descuento por caja del sitio.') + ' El 10% de primera compra y las promociones se aplican en el carrito.</p>';
     if(kit.caf > 0) html += '<p class="calc-help">' + kit.porque + ' La cafeína va en la segunda mitad del evento. Si terminas de noche, puede afectar tu sueño.</p>';
     if(kit.cafNote) html += '<p class="calc-help">' + kit.cafNote + '</p>';
@@ -236,11 +241,11 @@
     const keys = Object.keys(w.units);
     let html = '<section class="calc-card"><h2 class="calc-section-title">Tu kit de la semana</h2>';
     if(!keys.length) return html + '<p>Con tus sesiones actuales no necesitas productos: basta con agua.</p></section>';
-    html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
+    html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n calc-col-porc">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
       keys.map(function(k){ const p = P[k];
-        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorSelect(k, 'week') + '</td><td class="n">' + NUM(w.week[k]) + '</td><td>' + NUM(w.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(w.lineas[k]) + '</td></tr>';
+        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + flavorSelect(k, 'week') + soonTag(k) + '</td><td class="n calc-col-porc">' + NUM(w.week[k]) + '</td><td>' + NUM(w.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(w.lineas[k]) + '</td></tr>';
       }).join('') +
-      '</tbody><tfoot><tr><td>Total</td><td></td><td></td><td class="n">' + usd(w.total) + '</td></tr></tfoot></table></div>';
+      '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(w.total) + '</td></tr></tfoot></table></div>';
     html += '<p class="calc-help">Calculado con las mismas reglas del plan: ' + w.nNormal + ' sesion' + (w.nNormal === 1 ? '' : 'es') + ' de ' + hours(tr.normalMin) + ' h' +
       (tr.hasLong ? ' y 1 sesión larga de ' + hours(tr.longMin) + ' h' : '') + '.' +
       (w.gutBlock ? ' Es una semana de práctica: en las sesiones de 1 h o más comes lo mismo que en la carrera.' : '') +
@@ -253,7 +258,7 @@
       '<li>Prueba este plan en tus entrenamientos antes de competir.</li>' +
       '<li>Empieza a hidratarte desde temprano: si te deshidratas, tu estómago vacía más lento lo que tomes (Neufer 1989).</li>' +
       (inp.intens === 'alta' ? '<li>A intensidad alta el estómago vacía más lento: puede que no toleres todo el líquido del plan (Maughan y Rehrer 1994).</li>' : '') +
-      '<li>No bebas de más para “evitar calambres”: no sirve para eso y puede ser peligroso.</li>' +
+      '<li>No tomes ni consumas de más para “evitar calambres”: no sirve para eso y puede ser peligroso.</li>' +
       '<li>Si tienes dolor de cabeza, vómito, confusión o hinchazón con aumento de peso durante el ejercicio, deja de beber y busca atención médica.</li>' +
       '<li>Esta calculadora orienta: no reemplaza a un nutricionista ni a un médico.</li></ul></div>';
   }
@@ -339,7 +344,7 @@
       const name = p.tienda.titulo.replace('{sabor}', flavors[k] || p.tienda.sabores[0] || '').replace(/\s+/g, ' ').trim();
       const tiers = p.boxes ? [{ units: 1, unitPrice: p.price }].concat([6, 12, 24].map(function(n){ return { units: n, unitPrice: p.boxes[n] / n }; })) : null;
       addItemToCart({
-        name: name, brand: p.tienda.marca, photo: p.tienda.foto,
+        name: name, brand: p.tienda.marca, photo: fotoSabor(k)[0],
         variant: tiers ? q + ' unidad' + (q === 1 ? '' : 'es') : '',
         unitPrice: p.price, quantity: q,
         family: tiers ? p.tienda.pagina : null, tiers: tiers
@@ -363,7 +368,13 @@
   });
   document.addEventListener('change', function(e){
     const sel = e.target.closest('[data-flavor]');
-    if(sel){ flavors[sel.dataset.flavor] = sel.value; document.querySelectorAll('[data-flavor="' + sel.dataset.flavor + '"]').forEach(function(o){ o.value = sel.value; }); }
+    if(sel){
+      const k = sel.dataset.flavor;
+      flavors[k] = sel.value;
+      document.querySelectorAll('[data-flavor="' + k + '"]').forEach(function(o){ o.value = sel.value; });
+      // la foto sigue al sabor en el plan, la línea de tiempo y los kits
+      document.querySelectorAll('img[data-mini="' + k + '"]').forEach(function(img){ img.src = fotoSabor(k)[1]; });
+    }
   });
 
   function onChange(){
