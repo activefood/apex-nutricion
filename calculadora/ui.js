@@ -126,7 +126,7 @@
       : '<div class="calc-num">—</div><p class="calc-sub">No necesitas sodio extra: alcanza con el de tus productos.</p>';
     return '<div class="calc-goals">' +
       '<div class="calc-goal"><p class="eyebrow">Energía</p>' + carb + why(pl.porque.carb) + '</div>' +
-      '<div class="calc-goal"><p class="eyebrow">Líquido</p>' + water + why(pl.porque.agua) + '</div>' +
+      '<div class="calc-goal"><p class="eyebrow">Hidratación</p>' + water + why(pl.porque.agua) + '</div>' +
       '<div class="calc-goal"><p class="eyebrow">Sodio</p>' + na + why(pl.porque.sodio) + '</div>' +
       '</div>';
   }
@@ -285,9 +285,12 @@
   function render(){
     const out = $('calc-out');
     $('calc-bar-msg').textContent = '';
-    if(exclusions()){
+    const stop = exclusions();
+    $('calc-stop').hidden = !stop;
+    if(stop){
+      // Sin cifras: el aviso va arriba de todo (#calc-stop) y no se muestra ningún plan
       current = null;
-      out.innerHTML = '<div class="calc-notice calc-notice--stop"><p><strong>No te damos cifras.</strong> Con alguna de esas condiciones, tu plan de líquidos y sodio debe definirlo un médico o un nutricionista deportivo. Lleva esta información a tu consulta.</p></div>';
+      out.innerHTML = '';
       $('calc-pack').hidden = true; $('calc-notices').innerHTML = ''; bar();
       return;
     }
@@ -375,6 +378,14 @@
   form.addEventListener('submit', function(e){
     e.preventDefault();
     started = true; syncFields(); render();
+    if(exclusions()){
+      // Llevar al atleta arriba, al aviso de "No te damos cifras"
+      const stop = $('calc-stop');
+      // Salto directo (sin animación): en algunos celulares el scroll suave se cortaba a mitad de camino
+      stop.focus({ preventScroll: true });
+      window.scrollTo(0, Math.max(0, stop.getBoundingClientRect().top + window.scrollY - 120));
+      return;
+    }
     if(!$('calc-error').hidden){ const bad = form.querySelector('[aria-invalid="true"]'); if(bad) bad.focus(); return; }
     if(current) guardar('plan', current.resumen);
     if(window.matchMedia('(max-width: 1024px)').matches) $('calc-out').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });

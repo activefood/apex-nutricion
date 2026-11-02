@@ -214,3 +214,8 @@ body.calc-bar-on .wa-float{ bottom: calc(92px + env(safe-area-inset-bottom, 0px)
 /* Las tarjetas de opción están dentro de .calc-field: sin esto heredan el estilo de las etiquetas de texto */
 .calc-field .calc-option{ display: flex; margin-bottom: 0; font-size: inherit; }
 .calc-field .calc-option-name, .calc-field .calc-option-sub{ display: block; }
+
+/* Aviso de "No te damos cifras": arriba, antes del formulario */
+.calc-stop{ margin: 0 0 var(--sp-5); font-size: 15px; }
+.calc-stop:focus{ outline: none; }
+.calc-stop:focus-visible{ outline: 2px solid var(--accent-text); outline-offset: 2px; }
