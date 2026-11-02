@@ -177,7 +177,7 @@
     <div class="cat-header">
       <p class="eyebrow">Calculadora · versión de prueba</p>
       <h1 class="h-36">Tu plan de energía, agua y sodio por hora</h1>
-      <p>Cuéntanos de tu evento deportivo y te decimos cuánto comer, beber y tomar de sodio cada hora, con productos APEX.</p>
+      <p>Cuéntanos de tu evento deportivo y te decimos cuánto comer, cuánto tomar y cuánto sodio consumir cada hora, con productos APEX.</p>
     </div>
 
     <!-- Si marca alguna condición de "Antes de empezar", al calcular se muestra solo esto, arriba -->
@@ -255,13 +255,13 @@
             <input type="number" id="calc-sweat" inputmode="decimal" min="0" step="0.05" placeholder="Si no lo sabes, déjalo vacío">
             <details class="calc-details">
               <summary>Medir mi sudor</summary>
-              <p class="calc-help">Pésate sin ropa antes y después de entrenar. Anota lo que bebiste y si orinaste.</p>
+              <p class="calc-help">Pésate sin ropa antes y después de entrenar. Anota lo que tomaste y si orinaste.</p>
               <div class="calc-row">
                 <div class="calc-field"><label for="calc-s1">Peso antes (kg)</label><input type="number" id="calc-s1" inputmode="decimal" step="0.1"></div>
                 <div class="calc-field"><label for="calc-s2">Peso después (kg)</label><input type="number" id="calc-s2" inputmode="decimal" step="0.1"></div>
               </div>
               <div class="calc-row">
-                <div class="calc-field"><label for="calc-s3">Bebiste (L)</label><input type="number" id="calc-s3" inputmode="decimal" step="0.05" placeholder="0"></div>
+                <div class="calc-field"><label for="calc-s3">Tomaste (L)</label><input type="number" id="calc-s3" inputmode="decimal" step="0.05" placeholder="0"></div>
                 <div class="calc-field"><label for="calc-s4">Orinaste (L)</label><input type="number" id="calc-s4" inputmode="decimal" step="0.05" placeholder="0"></div>
               </div>
               <div class="calc-field"><label for="calc-s5">Duración del entrenamiento (h)</label><input type="number" id="calc-s5" inputmode="decimal" step="0.25"></div>
@@ -274,7 +274,7 @@
             <legend class="calc-label">Marca lo que aplique a ti</legend>
             <label class="calc-check"><input type="checkbox" id="calc-salty"> Me quedan marcas blancas de sal en la ropa o la piel</label>
             <label class="calc-check"><input type="checkbox" id="calc-gut"> Estoy acostumbrado a comer mientras entreno</label>
-            <label class="calc-check"><input type="checkbox" id="calc-drinkTrained"> Entreno bebiendo más de 1 litro por hora sin molestias</label>
+            <label class="calc-check"><input type="checkbox" id="calc-drinkTrained"> Entreno tomando más de 1 litro por hora sin molestias</label>
             <label class="calc-check"><input type="checkbox" id="calc-caf"> Quiero cafeína</label>
           </fieldset>
 
@@ -429,7 +429,7 @@
 
 <script src="app.js?v=99"></script>
 <script src="calculadora/productos.js?v=3"></script>
-<script src="calculadora/motor.js?v=3"></script>
-<script src="calculadora/ui.js?v=13"></script>
+<script src="calculadora/motor.js?v=4"></script>
+<script src="calculadora/ui.js?v=15"></script>
 </body>
 </html>

@@ -118,7 +118,7 @@
     if(pl.ct.band === '<45') carb = '<div class="calc-num">0<small>g/h</small></div><p class="calc-sub">En menos de 45 minutos no hace falta.</p>';
     else if(pl.ct.band === 'opc') carb = '<div class="calc-num">Opcional</div><p class="calc-sub">Enjuaga la boca con bebida deportiva o toma 1 ' + P[pl.opcional].serv + ' de ' + P[pl.opcional].name + '.</p>';
     else carb = '<div class="calc-num">' + NUM(pl.ct.g) + '<small>g/h</small></div><p class="calc-sub">Tu plan aporta ' + NUM(pl.carbs) + ' g por hora.</p>';
-    const water = '<div class="calc-num">' + NUM(pl.V, 2) + '<small>L/h</small></div><p class="calc-sub">Rango: ' + NUM(pl.floor, 2) + ' a ' + NUM(Math.min(pl.S, pl.VCAP), 2) + ' L/h. Bebe según tu sed dentro de este rango.</p>';
+    const water = '<div class="calc-num">' + NUM(pl.V, 2) + '<small>L/h</small></div><p class="calc-sub">Rango: ' + NUM(pl.floor, 2) + ' a ' + NUM(Math.min(pl.S, pl.VCAP), 2) + ' L/h. Toma según tu sed dentro de este rango.</p>';
     const na = pl.naT != null
       ? '<div class="calc-num">' + NUM(Math.round(pl.naT / 10) * 10) + '<small>mg/h</small></div><p class="calc-sub">Tu plan aporta ' + NUM(pl.naSum) + ' mg por hora.</p>'
       : '<div class="calc-num">—</div><p class="calc-sub">No necesitas sodio extra: alcanza con el de tus productos.</p>';
@@ -197,16 +197,16 @@
         }).join('') +
         '</tbody><tfoot><tr><td>Total</td><td></td><td class="n">' + NUM(pl.carbs) + ' g</td><td class="n">' + NUM(pl.naSum) + ' mg</td></tr></tfoot></table></div>';
     } else html += '<p>Con este evento basta con agua.</p>';
-    if(pl.drink === 'agua') html += '<p class="calc-help">Bebe ' + NUM(pl.V, 2) + ' L de agua por hora.</p>';
-    else if(pl.waterExtra > 0.04) html += '<p class="calc-help">Además, bebe ' + NUM(pl.waterExtra, 2) + ' L de agua sola por hora.</p>';
+    if(pl.drink === 'agua') html += '<p class="calc-help">Toma ' + NUM(pl.V, 2) + ' L de agua por hora.</p>';
+    else if(pl.waterExtra > 0.04) html += '<p class="calc-help">Además, toma ' + NUM(pl.waterExtra, 2) + ' L de agua sola por hora.</p>';
     if(pl.alternativaBebida) html += '<p class="calc-help">¿Prefieres Skratch Hydration? <button type="button" class="calc-linkbtn" data-set-drink="skratch">Usar Skratch en vez de Going</button></p>';
     pl.notas.forEach(function(n){ html += '<p class="calc-help">' + n + '</p>'; });
     if(pl.medirSudor) html += '<p class="calc-help">Usamos una tasa de sudor de ' + NUM(pl.S, 1) + ' L/h. Mide tu sudor para un cálculo exacto.</p>';
     html += timelineHtml(pl, kit, inp);
     if(pl.avisoAgua){
-      html += '<div class="calc-notice"><p><strong>Sudas más de lo que el estómago suele tolerar beber.</strong> No recomendamos más de ' +
-        (inp.drinkTrained ? '1,25' : '1') + ' L por hora' + (inp.drinkTrained ? '' : ' (1,25 L si entrenas bebiendo más de 1 L por hora)') +
-        '. Con este plan podrías perder cerca de ' + NUM(pl.avisoAgua.perdida, 1) + ' % de tu peso. Mide tu sudor en un entrenamiento, practica beber más de forma gradual y consulta a un profesional antes de una carrera larga.</p></div>';
+      html += '<div class="calc-notice"><p><strong>Sudas más líquido del que el estómago suele tolerar.</strong> No recomendamos más de ' +
+        (inp.drinkTrained ? '1,25' : '1') + ' L por hora' + (inp.drinkTrained ? '' : ' (1,25 L si entrenas tomando más de 1 L por hora)') +
+        '. Con este plan podrías perder cerca de ' + NUM(pl.avisoAgua.perdida, 1) + ' % de tu peso. Mide tu sudor en un entrenamiento, practica tomar más líquido de forma gradual y consulta a un profesional antes de una carrera larga.</p></div>';
     }
     return html + '</section>';
   }
@@ -270,7 +270,7 @@
       '<li>Empieza a hidratarte desde temprano: si te deshidratas, tu estómago vacía más lento lo que tomes (Neufer 1989).</li>' +
       (inp.intens === 'alta' ? '<li>A intensidad alta el estómago vacía más lento: puede que no toleres todo el líquido del plan (Maughan y Rehrer 1994).</li>' : '') +
       '<li>No tomes ni consumas de más para “evitar calambres”: no sirve para eso y puede ser peligroso.</li>' +
-      '<li>Si tienes dolor de cabeza, vómito, confusión o hinchazón con aumento de peso durante el ejercicio, deja de beber y busca atención médica.</li>' +
+      '<li>Si tienes dolor de cabeza, vómito, confusión o hinchazón con aumento de peso durante el ejercicio, deja de tomar líquidos y busca atención médica.</li>' +
       '<li>Esta calculadora orienta: no reemplaza a un nutricionista ni a un médico.</li></ul></div>';
   }
 

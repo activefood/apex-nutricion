@@ -94,7 +94,7 @@
     else { S = inp.clima === 'caluroso' ? 0.8 : 0.6; sweatSrc = 'estimada (sin medición; mide tu sudor para un cálculo exacto)'; }
     const medirSudor = !(inp.sweat > 0) && inp.sport !== 'carrera';
     const floor = Math.max(0, S - 0.02 * inp.w / h);
-    // Tope de líquido: ~1.05 L/h tolerado 3 h con calor (Ryan 1989); 1.25 solo si entrena bebiendo (Rehrer 2001; Neufer 1989)
+    // Tope de líquido: ~1.05 L/h tolerado 3 h con calor (Ryan 1989); 1.25 solo si entrena tomando (Rehrer 2001; Neufer 1989)
     const VCAP = inp.drinkTrained ? 1.25 : 1.0;
     const capHit = S > VCAP; const Seff = Math.min(S, VCAP); const floorEff = Math.min(floor, VCAP);
     const mid = (floorEff + Seff) / 2; let V = null;
@@ -182,7 +182,7 @@
     const porque = {
       carb: ct.why + (carbs > 60 ? ' Por encima de 60 g/h, el exceso viene de productos con fructosa (Jeukendrup 2014).' : ''),
       agua: 'Tu tasa de sudor es de unos ' + dec(S, 2) + ' L/h, ' + sweatSrc + '. El mínimo evita perder más del 2 % de tu peso (Sawka 2007). ' +
-        'El máximo es lo que sudas: beber más que eso puede causar hiponatremia (Hew-Butler 2015). Además, no recomendamos más de ' +
+        'El máximo es lo que sudas: tomar más que eso puede causar hiponatremia (Hew-Butler 2015). Además, no recomendamos más de ' +
         (inp.drinkTrained ? '1,25' : '1') + ' L por hora: es lo que el estómago suele vaciar durante el ejercicio (Ryan 1989; Neufer 1989).',
       sodio: naT != null
         ? 'Te damos sodio porque ' + trig.join(', ') + ' (ACSM 2016). La cantidad sale de tu agua por hora con una concentración de ' + conc +
