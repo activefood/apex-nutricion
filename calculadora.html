@@ -42,7 +42,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
 <link rel="stylesheet" href="styles.css?v=153">
-<link rel="stylesheet" href="calculadora/calculadora.css?v=11">
+<link rel="stylesheet" href="calculadora/calculadora.css?v=15">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -321,27 +321,44 @@
           <div class="calc-promo">
             <p class="eyebrow" id="calc-promo-eyebrow">Kit de la semana</p>
             <h2 class="h-22" id="calc-pack-title">Arma tu kit de la semana</h2>
-            <p id="calc-promo-text">Calcula lo que usas en tus entrenamientos y llévalo todo en un solo pedido.</p>
+            <p id="calc-promo-text">Lleva en un solo pedido lo que usas en tus entrenamientos de la semana.</p>
           </div>
-          <form class="calc-card" id="calc-pack-form" novalidate>
-            <div class="calc-row">
-              <div class="calc-field">
-                <label for="calc-days">Días de entrenamiento por semana</label>
-                <input type="number" id="calc-days" inputmode="numeric" min="1" max="7" placeholder="5">
-              </div>
-              <div class="calc-field">
-                <label for="calc-nh">Sesión normal (horas)</label>
-                <input type="number" id="calc-nh" inputmode="decimal" min="0" max="6" step="0.25" placeholder="1">
+          <!-- Sin campos de texto: botones de un toque con valores ya elegidos; el kit se arma solo -->
+          <button type="button" class="btn calc-btn-accent btn--block" id="calc-week-start">Armar mi kit de la semana</button>
+          <form class="calc-card" id="calc-pack-form" novalidate hidden>
+            <div class="calc-field">
+              <span class="calc-label" id="lbl-days">Días que entrenas por semana</span>
+              <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-days" data-pills="days">
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="1">1</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="2">2</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="3">3</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="4">4</button>
+                <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="5">5</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="6">6</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="7">7</button>
               </div>
             </div>
-            <label class="calc-check"><input type="checkbox" id="calc-haslong"> Hago una sesión larga a la semana</label>
-            <div class="calc-field" id="calc-long-field" hidden>
-              <label for="calc-lh">Sesión larga (horas)</label>
-              <input type="number" id="calc-lh" inputmode="decimal" min="0" max="12" step="0.25" placeholder="2.5">
+            <div class="calc-field">
+              <span class="calc-label" id="lbl-nmin">Tu sesión normal dura</span>
+              <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-nmin" data-pills="nmin">
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="30">30 min</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="45">45 min</button>
+                <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="60">1 h</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="90">1 h 30</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="120">2 h</button>
+              </div>
+            </div>
+            <div class="calc-field">
+              <span class="calc-label" id="lbl-lmin">Sesión larga a la semana</span>
+              <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-lmin" data-pills="lmin">
+                <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="0">No hago</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="120">2 h</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="150">2 h 30</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="180">3 h</button>
+                <button type="button" class="pill" role="radio" aria-checked="false" data-value="240">4 h</button>
+              </div>
             </div>
             <label class="calc-check" id="calc-gutblock-field" hidden><input type="checkbox" id="calc-gutblock"> Quiero practicar comer: esta semana, mis sesiones de 1 hora o más usan la meta de carbohidrato de la carrera</label>
-            <p class="checkout-error" id="calc-pack-error" hidden></p>
-            <button type="submit" class="btn calc-btn-accent btn--block">Armar mi kit de la semana</button>
           </form>
           <div id="calc-pack-out" aria-live="polite"></div>
         </section>
@@ -355,15 +372,9 @@
   <!-- Barra fija abajo: el botón del carrito siempre a la vista -->
   <div class="calc-bar" id="calc-bar" hidden>
     <div class="container calc-bar-in">
-      <div class="calc-bar-info">
-        <span class="calc-bar-label" id="calc-bar-label">Tu kit para el evento</span>
-        <strong class="calc-bar-total" id="calc-bar-total"></strong>
-        <span class="calc-added" id="calc-bar-msg" role="status"></span>
-      </div>
-      <div class="calc-bar-btns">
-        <button type="button" class="btn btn--ghost" data-add="pack" hidden><span class="calc-bar-long">Agregar kit de la semana</span><span class="calc-bar-short">+ Kit de la semana</span></button>
-        <button type="button" class="btn btn--primary" data-add="kit"><span class="calc-bar-long">Agregar kit al carrito</span><span class="calc-bar-short">+ Kit del evento</span></button>
-      </div>
+      <span class="calc-added" id="calc-bar-msg" role="status"></span>
+      <!-- Un solo botón: compra el kit del evento, o el de la semana si la persona lo armó -->
+      <button type="button" class="btn btn--primary btn--block calc-bar-btn" data-add="auto"><span id="calc-bar-name">Agregar kit del evento</span><span class="calc-bar-price" id="calc-bar-price"></span></button>
     </div>
   </div>
 </main>
@@ -419,6 +430,6 @@
 <script src="app.js?v=99"></script>
 <script src="calculadora/productos.js?v=3"></script>
 <script src="calculadora/motor.js?v=3"></script>
-<script src="calculadora/ui.js?v=10"></script>
+<script src="calculadora/ui.js?v=13"></script>
 </body>
 </html>

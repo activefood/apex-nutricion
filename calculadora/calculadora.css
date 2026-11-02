@@ -244,3 +244,44 @@ fieldset.calc-group .calc-check{ margin-bottom: 0; font-size: 14px; font-weight:
 .calc-field .calc-check{ display: flex; margin-bottom: 0; }
 /* Siempre 3 tarjetas por fila: en celular no queda una sola abajo */
 .calc-options{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ---------- "¿Qué sabores quieres?" (uno o varios) ---------- */
+.calc-flavors{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--sp-2); }
+.calc-flavors-q{ flex-basis: 100%; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.calc-flavor{ min-height: 36px; padding: 0 12px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-pill); cursor: pointer; transition: border-color var(--ease), background var(--ease), color var(--ease); }
+.calc-flavor:hover{ border-color: var(--ink); }
+.calc-flavor.is-on{ background: var(--ink); border-color: var(--ink); color: #fff; }
+.calc-flavor.is-on::before{ content: '✓ '; }
+.calc-flavors-split{ flex-basis: 100%; font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
+.calc-table td .calc-soon{ margin: 6px 0 0; }
+
+/* Kit de la semana: botones de un toque */
+#calc-pack-form .calc-field:first-child{ margin-top: 0; }
+#calc-pack-form .calc-pills{ gap: 6px; }
+#calc-pack-form .calc-pills .pill{ min-width: 44px; justify-content: center; }
+/* Filas parejas: 7 días en una fila y 5 duraciones en otra, también en celular */
+#calc-pack-form .calc-pills{ display: grid; gap: 6px; }
+#calc-pack-form [data-pills="days"]{ grid-template-columns: repeat(7, minmax(0, 1fr)); }
+#calc-pack-form [data-pills="nmin"], #calc-pack-form [data-pills="lmin"]{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
+#calc-pack-form .calc-pills .pill{ min-width: 0; padding: 0 4px; white-space: nowrap; font-size: 12.5px; }
+@media (max-width: 400px){ #calc-pack-form .calc-pills .pill{ font-size: 11.5px; } }
+
+/* Barra fija: cada botón con su nombre arriba y su precio abajo; sin línea de totales aparte */
+.calc-bar-in{ flex-direction: column; align-items: stretch; gap: 6px; }
+.calc-bar-btns{ display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--sp-2); }
+.calc-bar-btn{ height: auto; min-height: 52px; padding: 6px 12px; flex-direction: column; gap: 0; line-height: 1.2; white-space: normal; }
+.calc-bar-price{ font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.calc-bar-price:empty{ display: none; }
+.calc-bar .calc-added{ margin: 0; text-align: center; }
+@media (min-width: 641px){ .calc-bar-btns{ max-width: 640px; margin-left: auto; } }
+@media (max-width: 640px){ body.calc-bar-on{ padding-bottom: 96px; } body.calc-bar-on .wa-float{ bottom: calc(100px + env(safe-area-inset-bottom, 0px)); } }
+
+/* Barra: un solo botón, nombre y precio en una línea */
+.calc-bar-btn{ flex-direction: row; justify-content: center; gap: var(--sp-2); min-height: 48px; }
+.calc-bar-btn .calc-bar-price{ font-size: 15px; }
+.calc-bar-btn .calc-bar-price::before{ content: '· '; font-weight: 400; }
+@media (min-width: 641px){ .calc-bar-btn{ max-width: 420px; margin-left: auto; } }
+#calc-week-start{ margin-top: 0; }
+#calc-week-start[hidden], #calc-pack-form[hidden]{ display: none; }
+.calc-week-back{ margin: var(--sp-2) 0 0; text-align: center; }
+@media (max-width: 640px){ body.calc-bar-on{ padding-bottom: 80px; } body.calc-bar-on .wa-float{ bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } }

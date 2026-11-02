@@ -15,8 +15,8 @@
   const DESCUENTO = typeof CALC_DESCUENTO_PACK !== 'undefined' ? CALC_DESCUENTO_PACK : 0;
 
   let started = false;          // después del primer "Calcular", el plan se actualiza solo
-  let packStarted = false;      // igual para el kit de la semana
-  const flavors = {};           // sabor elegido por producto en el kit y el kit de la semana
+  let weekBuilt = false;        // si armó el kit de la semana, el botón de la barra compra ese kit
+  const flavors = {};           // sabores elegidos por producto (uno o varios), en el kit y el kit de la semana
 
   const NUM = function(x, d){ return Number(x).toLocaleString('es-VE', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); };
   const usd = function(x){ return typeof formatPrice === 'function' ? formatPrice(x) : '$' + NUM(x, 2); };
@@ -24,7 +24,8 @@
   const hm = function(m){ m = Math.round(m); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); };
   const dot = function(k){ return '<span class="calc-dot calc-dot--' + P[k].brand + '" aria-hidden="true"></span>'; };
   // Foto del sabor elegido (tienda.fotos en productos.js): [foto para el carrito, foto chica]
-  const fotoSabor = function(k){ const f = P[k].tienda.fotos, sab = flavors[k] || P[k].tienda.sabores[0]; return f && f[sab] ? f[sab] : [P[k].tienda.foto, P[k].mini]; };
+  const elegidos = function(k){ return flavors[k] && flavors[k].length ? flavors[k] : P[k].tienda.sabores.slice(0, 1); };
+  const fotoSabor = function(k){ const f = P[k].tienda.fotos, sab = elegidos(k)[0]; return f && f[sab] ? f[sab] : [P[k].tienda.foto, P[k].mini]; };
   const mini = function(k, size){ const src = fotoSabor(k)[1]; return src ? '<img src="' + src + '" alt="" width="' + size + '" height="' + size + '" loading="lazy" data-mini="' + k + '">' : dot(k); };
   const isSoon = function(k){ return typeof isComingSoonItem === 'function' && isComingSoonItem({ brand: P[k].tienda.marca, name: P[k].name }); };
   const soonTag = function(k){ return isSoon(k) ? ' <span class="calc-soon">Próximamente</span>' : ''; };
@@ -56,8 +57,9 @@
     };
   }
   function readTr(){
-    return { days: Math.min(7, Math.max(0, Math.round(num('calc-days')))), normalMin: Math.round(num('calc-nh') * 60),
-      hasLong: $('calc-haslong').checked, longMin: Math.round(num('calc-lh') * 60), gutBlock: $('calc-gutblock').checked };
+    const largo = parseInt(pillValue.lmin, 10) || 0;
+    return { days: parseInt(pillValue.days, 10) || 5, normalMin: parseInt(pillValue.nmin, 10) || 60,
+      hasLong: largo > 0, longMin: largo, gutBlock: $('calc-gutblock').checked };
   }
   function exclusions(){ return form.querySelectorAll('input[name="excl"]:checked').length > 0; }
 
@@ -65,7 +67,6 @@
   function syncFields(){
     const inp = readInp();
     document.querySelectorAll('[data-only-sport]').forEach(function(el){ el.hidden = el.dataset.onlySport !== inp.sport; });
-    $('calc-long-field').hidden = !$('calc-haslong').checked;
     // Bloque de entrenamiento intestinal: solo si la carrera dura más de 2.5 h y no entrena comiendo
     $('calc-gutblock-field').hidden = !(inp.min > 150 && !inp.gut);
   }
@@ -78,7 +79,7 @@
   const sesion = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10);
   function guardar(tipo, resultado){
     if(!$('calc-consent').checked) return;
-    const respuestas = Object.assign({}, readInp(), { entrenamiento: packStarted ? readTr() : null });
+    const respuestas = Object.assign({}, readInp(), { entrenamiento: readTr() });
     try {
       fetch('/api/calculadora', {
         method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
@@ -210,13 +211,23 @@
     return html + '</section>';
   }
 
-  function flavorSelect(k, scope){
+  /* Reparte las unidades entre los sabores elegidos: 7 sobres en Uva y Coco = 4 Uva + 3 Coco */
+  function reparto(k, q){
+    const sab = elegidos(k); const out = [];
+    sab.forEach(function(f, i){ const n = Math.floor(q / sab.length) + (i < q % sab.length ? 1 : 0); if(n > 0) out.push([f, n]); });
+    return out;
+  }
+  // "¿Qué sabores quieres?": se marcan uno o varios; siempre queda al menos uno
+  function flavorPicker(k, q){
     const s = P[k].tienda.sabores;
-    if(!flavors[k]) flavors[k] = s[0];
     if(s.length < 2) return s.length ? '<div class="calc-help">Sabor: ' + s[0] + '</div>' : '';
-    return '<label class="visually-hidden" for="calc-flavor-' + scope + '-' + k + '">Sabor de ' + P[k].name + '</label>' +
-      '<select id="calc-flavor-' + scope + '-' + k + '" data-flavor="' + k + '">' +
-      s.map(function(f){ return '<option' + (f === flavors[k] ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select>';
+    const sel = elegidos(k);
+    const rep = reparto(k, q);
+    return '<div class="calc-flavors" role="group" aria-label="Sabores de ' + P[k].name + '"><span class="calc-flavors-q">¿Qué sabores quieres?</span>' +
+      s.map(function(f){ const on = sel.indexOf(f) !== -1;
+        return '<button type="button" class="calc-flavor' + (on ? ' is-on' : '') + '" aria-pressed="' + on + '" data-flavor-k="' + k + '" data-flavor-v="' + f + '">' + f + '</button>';
+      }).join('') +
+      (rep.length > 1 ? '<span class="calc-flavors-split">' + rep.map(function(x){ return x[1] + ' ' + x[0]; }).join(' · ') + '</span>' : '') + '</div>';
   }
 
   function soonNote(keys){
@@ -228,7 +239,7 @@
     if(!keys.length) return '';
     let html = '<section class="calc-card"><h2 class="calc-section-title">Tu kit para el evento</h2><div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n calc-col-porc">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
       keys.map(function(k){ const p = P[k];
-        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + flavorSelect(k, 'kit') + soonTag(k) + '</td><td class="n calc-col-porc">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
+        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorPicker(k, pk.units[k]) + '</td><td class="n calc-col-porc">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
       }).join('') +
       '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(pk.total) + '</td></tr></tfoot></table></div>';
     html += '<p class="calc-help">' + (pk.fijadoPorApex ? 'Precio del kit fijado por APEX.' : 'Precio con el descuento por caja del sitio.') + ' El 10% de primera compra y las promociones se aplican en el carrito.</p>';
@@ -243,7 +254,7 @@
     if(!keys.length) return html + '<p>Con tus sesiones actuales no necesitas productos: basta con agua.</p></section>';
     html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th class="n calc-col-porc">Porciones</th><th>Compras</th><th class="n">Precio</th></tr></thead><tbody>' +
       keys.map(function(k){ const p = P[k];
-        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + flavorSelect(k, 'week') + soonTag(k) + '</td><td class="n calc-col-porc">' + NUM(w.week[k]) + '</td><td>' + NUM(w.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(w.lineas[k]) + '</td></tr>';
+        return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorPicker(k, w.units[k]) + '</td><td class="n calc-col-porc">' + NUM(w.week[k]) + '</td><td>' + NUM(w.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(w.lineas[k]) + '</td></tr>';
       }).join('') +
       '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(w.total) + '</td></tr></tfoot></table></div>';
     html += '<p class="calc-help">Calculado con las mismas reglas del plan: ' + w.nNormal + ' sesion' + (w.nNormal === 1 ? '' : 'es') + ' de ' + hours(tr.normalMin) + ' h' +
@@ -280,10 +291,9 @@
     b.hidden = !on;
     document.body.classList.toggle('calc-bar-on', on);
     if(!on) return;
-    const hasWeek = !!(current.week && Object.keys(current.week).length);
-    $('calc-bar-label').textContent = hasWeek ? 'Kit del evento · kit de la semana' : 'Tu kit para el evento';
-    $('calc-bar-total').textContent = usd(current.kitTotal) + (hasWeek ? ' · ' + usd(current.weekTotal) : '');
-    b.querySelector('[data-add="pack"]').hidden = !hasWeek;
+    const semana = !!(weekBuilt && current.week && Object.keys(current.week).length);
+    $('calc-bar-name').textContent = semana ? 'Agregar kit de la semana' : 'Agregar kit del evento';
+    $('calc-bar-price').textContent = usd(semana ? current.weekTotal : current.kitTotal);
   }
 
   let current = null;   // último resultado, para los botones de agregar
@@ -318,21 +328,15 @@
   }
 
   function renderWeek(inp){
-    const out = $('calc-pack-out');
-    if(!packStarted){ out.innerHTML = ''; return; }
-    const tr = readTr(); const err = $('calc-pack-error');
-    ['calc-days', 'calc-nh'].forEach(function(id){ $(id).removeAttribute('aria-invalid'); });
-    let field = null;
-    if(!(tr.days > 0)) field = $('calc-days'); else if(!(tr.normalMin > 0)) field = $('calc-nh');
-    if(field){
-      field.setAttribute('aria-invalid', 'true'); err.textContent = field.id === 'calc-days' ? 'Escribe cuántos días entrenas por semana.' : 'Escribe cuánto dura tu sesión normal.';
-      err.hidden = false; out.innerHTML = ''; current.week = null; return;
-    }
-    err.hidden = true;
+    $('calc-week-start').hidden = weekBuilt;
+    packForm.hidden = !weekBuilt;
+    if(!weekBuilt){ current.week = null; $('calc-pack-out').innerHTML = ''; return; }
+    const tr = readTr();
     const w = M.weekPack(inp, tr);
     current.week = w.units; current.weekTotal = w.total;
     current.resumen.semana = w.week; current.resumen.semanaPrecio = Math.round(w.total * 100) / 100;
-    out.innerHTML = weekHtml(w, tr);
+    $('calc-pack-out').innerHTML = weekHtml(w, tr) +
+      '<p class="calc-week-back"><button type="button" class="calc-linkbtn" id="calc-week-stop">Prefiero solo el kit del evento</button></p>';
   }
 
   /* ---------- Agregar al carrito (addItemToCart de app.js) ---------- */
@@ -341,17 +345,20 @@
     Object.keys(units).forEach(function(k){
       const p = P[k], q = units[k]; if(!(q > 0)) return;
       if(isSoon(k)){ skipped++; return; }
-      const name = p.tienda.titulo.replace('{sabor}', flavors[k] || p.tienda.sabores[0] || '').replace(/\s+/g, ' ').trim();
       const tiers = p.boxes ? [{ units: 1, unitPrice: p.price }].concat([6, 12, 24].map(function(n){ return { units: n, unitPrice: p.boxes[n] / n }; })) : null;
-      addItemToCart({
-        name: name, brand: p.tienda.marca, photo: fotoSabor(k)[0],
-        variant: tiers ? q + ' unidad' + (q === 1 ? '' : 'es') : '',
-        unitPrice: p.price, quantity: q,
-        family: tiers ? p.tienda.pagina : null, tiers: tiers
+      // Una línea por sabor; las del mismo producto comparten "family", así el precio por caja suma todos los sabores
+      (p.tienda.sabores.length ? reparto(k, q) : [['', q]]).forEach(function(x){
+        const f = P[k].tienda.fotos && P[k].tienda.fotos[x[0]];
+        addItemToCart({
+          name: p.tienda.titulo.replace('{sabor}', x[0]).replace(/\s+/g, ' ').trim(), brand: p.tienda.marca, photo: f ? f[0] : p.tienda.foto,
+          variant: tiers ? x[1] + ' unidad' + (x[1] === 1 ? '' : 'es') : '',
+          unitPrice: p.price, quantity: x[1],
+          family: tiers ? p.tienda.pagina : null, tiers: tiers
+        });
       });
       added++;
     });
-    $('calc-bar-msg').innerHTML = (added ? (which === 'kit' ? 'Kit agregado ✓' : 'Kit de la semana agregado ✓') + ' <a href="carrito.html">Ver carrito</a>' : 'No se agregó nada.') +
+    $('calc-bar-msg').innerHTML = (added ? (which === 'kit' ? 'Kit del evento agregado ✓' : 'Kit de la semana agregado ✓') + ' <a href="carrito.html">Ver carrito</a>' : 'No se agregó nada.') +
       (skipped ? ' Honey Stinger quedó fuera por ahora.' : '');
     if(typeof trackEvent === 'function') trackEvent('calculadora_agregar', { tipo: which });
     if(added) guardar(which === 'kit' ? 'kit' : 'pack', Object.assign({}, current.resumen, { unidadesAgregadas: units, sabores: flavors, honeyFuera: skipped > 0 }));
@@ -360,23 +367,27 @@
   document.addEventListener('click', function(e){
     const add = e.target.closest('[data-add]');
     if(add && current){
-      const units = add.dataset.add === 'kit' ? current.kit : current.week;
-      if(units) addToCart(units, add.dataset.add);
+      const semana = weekBuilt && current.week;
+      addToCart(semana ? current.week : current.kit, semana ? 'pack' : 'kit');
+    }
+    if(e.target.closest('#calc-week-start') || e.target.closest('#calc-week-stop')){
+      weekBuilt = !!e.target.closest('#calc-week-start');
+      render();
+      if(weekBuilt){ guardar('plan', current.resumen); const f = packForm.querySelector('.pill--active'); if(f) f.focus({ preventScroll: true }); }
+      else $('calc-week-start').focus({ preventScroll: true });
+    }
+    const fl = e.target.closest('[data-flavor-k]');
+    if(fl){
+      const k = fl.dataset.flavorK, v = fl.dataset.flavorV;
+      const sel = elegidos(k).slice(); const i = sel.indexOf(v);
+      if(i === -1) sel.push(v); else if(sel.length > 1) sel.splice(i, 1);
+      flavors[k] = P[k].tienda.sabores.filter(function(f){ return sel.indexOf(f) !== -1; });
+      const y = window.scrollY; render(); window.scrollTo(0, y);   // se redibuja con el nuevo reparto, sin mover la página
+      const again = document.querySelector('[data-flavor-k="' + k + '"][data-flavor-v="' + v + '"]'); if(again) again.focus({ preventScroll: true });
     }
     const drink = e.target.closest('[data-set-drink]');
     if(drink){ const r = form.querySelector('input[name="drink"][value="' + drink.dataset.setDrink + '"]'); if(r){ r.checked = true; onChange(); } }
   });
-  document.addEventListener('change', function(e){
-    const sel = e.target.closest('[data-flavor]');
-    if(sel){
-      const k = sel.dataset.flavor;
-      flavors[k] = sel.value;
-      document.querySelectorAll('[data-flavor="' + k + '"]').forEach(function(o){ o.value = sel.value; });
-      // la foto sigue al sabor en el plan, la línea de tiempo y los kits
-      document.querySelectorAll('img[data-mini="' + k + '"]').forEach(function(img){ img.src = fotoSabor(k)[1]; });
-    }
-  });
-
   function onChange(){
     syncFields();
     if(started) render();
@@ -402,16 +413,9 @@
     if(window.matchMedia('(max-width: 1024px)').matches) $('calc-out').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   });
 
-  packForm.addEventListener('input', function(){ syncFields(); if(packStarted && current){ renderWeek(readInp()); bar(); } });
-  packForm.addEventListener('change', function(){ syncFields(); if(packStarted && current){ renderWeek(readInp()); bar(); } });
-  packForm.addEventListener('submit', function(e){
-    e.preventDefault();
-    packStarted = true;
-    if(!current) return;
-    renderWeek(readInp()); bar();
-    if(current.week){ guardar('plan', current.resumen); $('calc-pack-out').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' }); }
-    else { const bad = packForm.querySelector('[aria-invalid="true"]'); if(bad) bad.focus(); }
-  });
+  // Kit de la semana: los botones de días y horas ya redibujan todo (onChange); aquí solo la casilla de práctica
+  packForm.addEventListener('change', onChange);
+  packForm.addEventListener('submit', function(e){ e.preventDefault(); });
 
   promo();
   syncFields();
