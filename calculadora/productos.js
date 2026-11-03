@@ -62,6 +62,14 @@ const CALC_PRODUCTOS = {
     // El sitio solo vende el sabor Café, y sin cajas.
     tienda: { pagina: '/producto-going-gel-cafe.html', marca: 'Going Nutrición', titulo: 'Gel Energético {sabor} Going', sabores: ['Café'], foto: 'assets/going/gel-cafe-colombia.webp' }
   },
+  going_granada: {
+    name: 'Going Gel Granada', brand: 'going', mini: 'assets/calculadora/going-gel-granada.webp',
+    carb: 19, na: 35, caf: 0, fru: false, role: 'carb',
+    serv: 'gel', sell: 'gel', perSell: 1,
+    price: 3.44, boxes: { 6: 19.38, 12: 37.92, 24: 74.40 },
+    // Granada es el único gel Going sin cafeína (tabla de producto.html). Se usa cuando eligen gel Going y no quieren cafeína.
+    tienda: { pagina: '/producto.html', marca: 'Going Nutrición', titulo: 'Gel Energético {sabor} Going', sabores: ['Granada'], foto: 'assets/going/gel-granada.webp' }
+  },
   hs_gel_fruta: {
     name: 'Honey Stinger Gel', brand: 'hs', mini: 'assets/calculadora/hs-gel-fruit-smoothie.webp',
     carb: 24, na: 50, caf: 0, fru: true, role: 'carb',

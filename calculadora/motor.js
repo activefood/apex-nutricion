@@ -68,8 +68,8 @@
   function resolvePref(inp, notas){
     let pref = inp.gelPref || GEL_BASE;
     if(pref === 'going_gel' && !inp.caf){
-      pref = GEL_BASE;
-      notas.push('El gel Going Café trae cafeína y marcaste que no quieres: usamos geles Honey Stinger.');
+      pref = 'going_granada';
+      notas.push('No marcaste cafeína: usamos el gel Going Granada, que no la trae.');
     }
     if(P[pref].soloIntensidad && P[pref].soloIntensidad.indexOf(inp.intens) === -1){
       pref = GEL_BASE;
@@ -149,7 +149,8 @@
       };
       if(ct.g > 60 && !P[pref].fru){ fill(pref, 60, true); fill(GEL_BASE, ct.g); }
       else fill(pref, ct.g);
-      if(!P[pref].fru && carbs < ct.g) fill(GEL_BASE, ct.g);  // lo que no cupo por cafeína o por la regla de fructosa
+      // Lo que no cupo por cafeína o por la regla de fructosa; si fue solo por cafeína, se completa con Going Granada (sin cafeína)
+      if(!P[pref].fru && carbs < ct.g) fill(pref === 'going_gel' && ct.g <= 60 ? 'going_granada' : GEL_BASE, ct.g);
       // Completar: si faltan 15 g o más, la unidad que más acerque a la meta sin pasar el tope ni la regla de fructosa
       const gap = ct.g - carbs;
       if(gap >= 15){

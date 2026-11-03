@@ -48,6 +48,12 @@ t('7. Cafeína en 50 kg, evento de 10 h: no pasa de 300 mg', function(){
   return [k.caf > 0 && k.caf <= 300 && kg.caf <= 300, 'geles Honey Stinger: ' + k.caf + ' mg (' + (k.caf / 50).toFixed(1) + ' mg/kg); gel Going preferido: ' + kg.caf + ' mg ' + JSON.stringify(kg.serv)];
 });
 
+t('7b. Gel Going sin cafeína: usa Going Granada (0 mg), no Honey Stinger', function(){
+  const i = Object.assign({}, base, { min: 180, gelPref: 'going_gel' }); const p = E.plan(i); const k = E.kitFromPlan(p, i);
+  const hs = Object.keys(k.serv).filter(function(x){ return /^hs_/.test(x); });
+  return [k.serv.going_granada > 0 && !k.serv.going_gel && hs.length === 0 && k.caf === 0, 'kit ' + JSON.stringify(k.serv) + '; cafeína ' + k.caf + ' mg'];
+});
+
 t('8. Pack mensual: 4 × 1 h + tirada de 2.5 h', function(){
   const m = E.monthPack(Object.assign({}, base, { min: 240 }), { days: 5, normalMin: 60, hasLong: true, longMin: 150, gutBlock: false });
   const ok = m.week.going_hidr === 7 && m.week.hs_gel_fruta === 5 && !m.week.ss_chews && m.month.going_hidr === 28 && m.month.hs_gel_fruta === 20 && m.pl.V === 0.5;

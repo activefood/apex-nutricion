@@ -130,7 +130,7 @@
   }
 
   // Nombre corto para los pasos de la línea de tiempo
-  const CORTO = { going_hidr: 'Hidratante', skratch: 'Skratch', going_gel: 'Gel Café', hs_gel_fruta: 'Gel', hs_gel_gold: 'Gel Gold',
+  const CORTO = { going_hidr: 'Hidratante', skratch: 'Skratch', going_gel: 'Gel Café', going_granada: 'Gel Granada', hs_gel_fruta: 'Gel', hs_gel_gold: 'Gel Gold',
     hs_gel_cafe: 'Gel con cafeína', hs_gomitas: 'Gomitas', probar_bolt: 'Bolt', hs_waffle: 'Waffle', ss_chews: 'FastChews', ss_caps: 'Cápsula de sal' };
 
   function groupByTime(ev){
