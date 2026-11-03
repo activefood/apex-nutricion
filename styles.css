@@ -364,7 +364,7 @@ button.pill:hover{ border-color: var(--ink); }
 .main-nav > ul{
   display: flex;
   align-items: center;
-  gap: var(--sp-5);
+  gap: 20px;  /* con 24px "HOT DEALS" quedaba debajo del buscador */
   height: 70px;
 }
 .nav-item{
@@ -3171,8 +3171,8 @@ button.pill:hover{ border-color: var(--ink); }
   .search-form input:focus{ width: 170px; }
 }
 @media (min-width: 1025px) and (max-width: 1100px){
-  .main-nav > ul{ gap: 10px; }
-  .search-form input{ width: 110px; }
+  .main-nav > ul{ gap: 8px; }
+  .search-form input{ width: 88px; }
   .search-form input:focus{ width: 150px; }
 }
 
