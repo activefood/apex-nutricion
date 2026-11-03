@@ -118,7 +118,7 @@
 
     // Regla 5.1: bebida
     let dk = inp.drink || 'auto'; if(dk === 'auto') dk = trig.length ? 'going_hidr' : 'agua';
-    let dCarb = 0, dNa = 0, waterExtra = V;
+    let dCarb = 0, dNa = 0, waterExtra = V; let bebidaPorSodio = null;
     if(dk !== 'agua'){
       const d = P[dk]; let n = Math.floor((V + 0.1) / d.vol + 1e-9);
       while(n > 0 && n * d.vol > S + 1e-9) n--;                 // nunca más líquido que el sudor
@@ -126,13 +126,11 @@
       if(n === 0 && d.vol <= S + 1e-9 && V >= d.vol * 0.5) n = 1;
       const n0 = n;
       if(naT != null) while(n > 0 && n * d.na > naT + 150) n--;  // ni pasa la meta de sodio por más de 150 mg
-      // Si la persona eligió la bebida y un sobre entero pasa la meta de sodio, medio sobre en la mitad del agua
-      // (pedido del dueño, 2026-11-03): se respeta su elección sin pasar la meta.
-      if(n === 0 && n0 > 0 && inp.drink === dk && d.na / 2 <= naT + 150) n = 0.5;
+      // Si la persona eligió la bebida y no cabe ni una porción, se le explica (si no, parece que el selector no funciona).
+      // Si fue por el sodio, la recomendación se arma al final, cuando ya se sabe qué SaltStick lleva (pedido del dueño, 2026-11-03).
       if(n === 0 && inp.drink === dk){
-        notas.push(n0 > 0
-          ? 'No usamos ' + d.name + ' esta vez: aun medio sobre te pasaría la meta de sodio de este evento. Toma agua sola y el sodio va en lo demás.'
-          : 'No usamos ' + d.name + ' esta vez: una porción es más líquido o carbohidrato del que te toca por hora. Toma agua sola.');
+        if(n0 > 0) bebidaPorSodio = d;
+        else notas.push('No usamos ' + d.name + ' esta vez: una porción es más líquido o carbohidrato del que te toca por hora. Toma agua sola.');
       }
       add(dk, n); dCarb = n * d.carb; dNa = n * d.na;
       waterExtra = Math.max(0, Math.round((V - n * d.vol) * 20) / 20);
@@ -187,6 +185,11 @@
         if(rem < 150 && chewsOk){ add('ss_chews', nChews); naSum += nChews * 100; carbs += chewsCarb; }
         else { const n = Math.round(rem / 215); add('ss_caps', n); naSum += n * 215; }
       }
+    }
+    if(bebidaPorSodio){
+      const sal = items.ss_chews ? 'SaltStick FastChews' : items.ss_caps ? 'las cápsulas SaltStick' : 'agua sola';
+      notas.unshift('Te recomendamos ' + sal + ' en vez de ' + bebidaPorSodio.name + ' para este evento: un sobre de ' + bebidaPorSodio.name +
+        ' trae ' + bebidaPorSodio.na + ' mg de sodio y tu meta es ' + Math.round(naT) + ' mg por hora. Así te llevas el sodio justo y el resto lo tomas en agua.');
     }
 
     const porque = {

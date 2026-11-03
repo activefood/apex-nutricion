@@ -23,10 +23,10 @@ t('2. Maratón 4 h, 70 kg, calor, salado: 0.75 L, 1 hidratante, 2 geles, 2 table
     E.sellUnits('ss_chews', k.serv.ss_chews || 0) + ' sobre de FastChews'];
 });
 
-t('2b. Eligió Skratch y un sobre pasa la meta de sodio: medio sobre, sin pasarla', function(){
+t('2b. Eligió Skratch y un sobre pasa la meta de sodio: SaltStick con recomendación', function(){
   const i = Object.assign({}, base, { sport: 'ciclismo', clima: 'fresco', min: 300, salty: false, drink: 'skratch', gelPref: 'going_gel' });
-  const p = E.plan(i); const k = E.kitFromPlan(p, i);
-  return [p.items.skratch === 0.5 && p.naSum <= p.naT + 150 && k.serv.skratch === 3, 'Skratch ' + p.items.skratch + ' sobre/h; sodio ' + p.naSum + ' mg (meta ' + Math.round(p.naT) + '); kit ' + JSON.stringify(k.serv)];
+  const p = E.plan(i);
+  return [!p.items.skratch && (p.items.ss_chews || p.items.ss_caps) && /^Te recomendamos SaltStick/.test(p.notas[0]), JSON.stringify(p.items) + '; ' + p.notas[0]];
 });
 
 t('3. Ciclismo 5 h, 80 kg, estómago entrenado: 90 g/h y al menos 30 g/h con fructosa', function(){
