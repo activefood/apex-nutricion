@@ -73,7 +73,7 @@ function json(body, status) {
    "CALC_DB", solo si el usuario marcó la casilla de consentimiento. No se
    guarda nombre, correo ni teléfono: solo un identificador anónimo de la
    visita y, si APEX se lo dio, un código de atleta (ej. ATL-03).
-   Si el Worker no tiene la base (el sitio principal hoy), responde 503 y la
+   Si el Worker no tiene la base, responde 503 y la
    calculadora sigue funcionando igual. La tabla se crea sola la primera vez. */
 const CALC_TIPOS = ['plan', 'kit', 'pack'];
 const CALC_MAX_BYTES = 16000;
