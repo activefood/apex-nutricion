@@ -124,7 +124,16 @@
       while(n > 0 && n * d.vol > S + 1e-9) n--;                 // nunca más líquido que el sudor
       if(ct.g > 0) while(n > 0 && n * d.carb > ct.g) n--;        // la bebida no pasa la meta de carbohidrato
       if(n === 0 && d.vol <= S + 1e-9 && V >= d.vol * 0.5) n = 1;
+      const n0 = n;
       if(naT != null) while(n > 0 && n * d.na > naT + 150) n--;  // ni pasa la meta de sodio por más de 150 mg
+      // Si la persona eligió la bebida y un sobre entero pasa la meta de sodio, medio sobre en la mitad del agua
+      // (pedido del dueño, 2026-11-03): se respeta su elección sin pasar la meta.
+      if(n === 0 && n0 > 0 && inp.drink === dk && d.na / 2 <= naT + 150) n = 0.5;
+      if(n === 0 && inp.drink === dk){
+        notas.push(n0 > 0
+          ? 'No usamos ' + d.name + ' esta vez: aun medio sobre te pasaría la meta de sodio de este evento. Toma agua sola y el sodio va en lo demás.'
+          : 'No usamos ' + d.name + ' esta vez: una porción es más líquido o carbohidrato del que te toca por hora. Toma agua sola.');
+      }
       add(dk, n); dCarb = n * d.carb; dNa = n * d.na;
       waterExtra = Math.max(0, Math.round((V - n * d.vol) * 20) / 20);
     }

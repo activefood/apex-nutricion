@@ -144,7 +144,10 @@
     evs.forEach(function(e){ const f = out.find(function(x){ return x.k === e.k; }); if(f) f.n += e.n; else out.push({ k: e.k, n: e.n, drink: e.drink }); });
     return out;
   }
+  // Porción de bebida: medio sobre va en la mitad del agua
+  function porcion(k, n){ return n === 0.5 ? 'medio sobre en ' + Math.round(P[k].vol * 500) + ' mL' : NUM(n) + ' × ' + P[k].serv; }
   function texto(x){
+    if(x.drink && x.n === 0.5) return 'Medio sobre de ' + P[x.k].name + ' en ' + Math.round(P[x.k].vol * 500) + ' mL de agua, a sorbos según tu sed';
     if(x.drink) return (x.n > 1 ? x.n + ' botellas' : '1 botella') + ' de ' + P[x.k].name + ' (' + P[x.k].serv + '), a sorbos según tu sed';
     return (x.n > 1 ? x.n + ' × ' : '') + P[x.k].name + ' (' + P[x.k].serv + ')';
   }
@@ -168,7 +171,7 @@
         const detalle = g.items.map(texto).join(' + ');
         return '<li class="calc-step"><span class="calc-step-min">' + Math.round(g.t) + '′</span>' +
           '<span class="calc-step-pics" aria-hidden="true">' + g.items.map(function(x){
-            return '<span class="calc-step-pic">' + mini(x.k, 48) + (x.n > 1 ? '<span class="calc-step-x">×' + x.n + '</span>' : '') + '</span>';
+            return '<span class="calc-step-pic">' + mini(x.k, 48) + (x.n > 1 ? '<span class="calc-step-x">×' + x.n + '</span>' : x.n === 0.5 ? '<span class="calc-step-x">½</span>' : '') + '</span>';
           }).join('') + '</span>' +
           '<span class="calc-step-name">' + nombre + '</span><span class="visually-hidden">: ' + detalle + '</span></li>';
       }).join('') + '</ol>';
@@ -193,7 +196,7 @@
     if(keys.length){
       html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th>Cantidad</th><th class="n">Energía</th><th class="n">Sodio</th></tr></thead><tbody>' +
         keys.map(function(k){ const p = P[k], n = pl.items[k];
-          return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + '</td><td>' + NUM(n) + ' × ' + p.serv + '</td><td class="n">' + NUM(n * p.carb) + ' g</td><td class="n">' + NUM(n * p.na) + ' mg</td></tr>';
+          return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + '</td><td>' + porcion(k, n) + '</td><td class="n">' + NUM(n * p.carb) + ' g</td><td class="n">' + NUM(n * p.na) + ' mg</td></tr>';
         }).join('') +
         '</tbody><tfoot><tr><td>Total</td><td></td><td class="n">' + NUM(pl.carbs) + ' g</td><td class="n">' + NUM(pl.naSum) + ' mg</td></tr></tfoot></table></div>';
     } else html += '<p>Con este evento basta con agua.</p>';
