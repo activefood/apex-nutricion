@@ -1940,7 +1940,8 @@ function getGaIds(){
     const ga = readCookie('_ga').split('.');
     if(ga.length >= 4) ids.gaClientId = ga.slice(2).join('.');
     // _ga_<ID> = GS2.1.s<sesión>$o1$g1...  (o el formato viejo GS1.1.<sesión>.1.1...)
-    const gs = readCookie('_ga_8QH40K8HJK');
+    // La sesión que importa es la del flujo que recibe los datos (G-CKJ8VQSLLE); la otra etiqueta, de respaldo.
+    const gs = readCookie('_ga_CKJ8VQSLLE') || readCookie('_ga_8QH40K8HJK');
     const match = gs.match(/\.s(\d+)/) || gs.match(/^GS1\.\d+\.(\d+)/);
     if(match) ids.gaSessionId = match[1];
   } catch(e){ /* sin cookies: no es crítico */ }
