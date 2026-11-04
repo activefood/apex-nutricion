@@ -33,18 +33,15 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="1200">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Precarga de Anton (latin, 12 KB): el título del carrusel la usa en la primera pantalla;
-     sin precarga llega tarde y el título cambia de tamaño (CLS). Si Google Fonts sube de
-     versión (v27 → v28), actualizar esta URL o se descargará dos veces. -->
-<link rel="preload" as="font" type="font/woff2" href="https://fonts.gstatic.com/s/anton/v27/1Ptgg87LROyAm3Kz-C8CSKlv.woff2" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- Fuentes alojadas en el sitio (assets/fonts, declaradas en styles.css): sin pedir nada a Google Fonts en el camino crítico.
+     Se precargan Anton (títulos) e Inter (texto) para que no lleguen tarde y el texto no cambie de tamaño (CLS). -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/anton.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var.woff2" crossorigin>
 <link rel="icon" type="image/png" href="favicon-32.png?v=3">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
-<link rel="stylesheet" href="styles.css?v=154">
+<link rel="stylesheet" href="styles.css?v=155">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>

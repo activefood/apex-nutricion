@@ -1,3 +1,9 @@
+/* Fuentes alojadas en el sitio (antes Google Fonts). Solo el subconjunto latino: cubre español. Inter es variable (400-700 en un archivo). */
+@font-face{ font-family:'Anton'; font-style:normal; font-weight:400; font-display:swap; src:url(assets/fonts/anton.woff2) format('woff2'); }
+@font-face{ font-family:'Inter'; font-style:normal; font-weight:100 900; font-display:swap; src:url(assets/fonts/inter-var.woff2) format('woff2'); }
+@font-face{ font-family:'Space Mono'; font-style:normal; font-weight:400; font-display:swap; src:url(assets/fonts/spacemono-400.woff2) format('woff2'); }
+@font-face{ font-family:'Space Mono'; font-style:normal; font-weight:700; font-display:swap; src:url(assets/fonts/spacemono-700.woff2) format('woff2'); }
+
 /* ==========================================================================
    Apex Nutrición — Nutrición Deportiva
    Sistema de diseño compartido
