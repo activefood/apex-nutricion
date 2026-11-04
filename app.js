@@ -1833,8 +1833,91 @@ function initCartPage(){
   });
 
   initDeliveryType();
+  initPhoneMask();
   initCheckoutButton();
   render();
+}
+
+/* ---------- Teléfono con formato +58 414 1234567 ----------
+   Un número venezolano se muestra siempre como "+58 AAA NNNNNNN", sin importar
+   cómo lo escriban o lo peguen (0414…, 414…, 58414…, +58414…). Un número de
+   otro país (+1 305…) se deja solo con dígitos para no deformarlo. */
+function formatPhone(raw){
+  const text = String(raw || '').trim();
+  const digits = text.replace(/\D/g, '');
+  if(!digits) return text.charAt(0) === '+' ? '+' : '';
+
+  let national;
+  if(text.charAt(0) === '+'){
+    if(digits.length === 1) return '+' + digits; // falta el 2.º dígito del código de país
+    if(digits.slice(0, 2) !== '58') return '+' + digits.slice(0, 15);
+    national = digits.slice(2);
+  } else if(digits.charAt(0) === '0'){
+    national = digits.slice(1);
+  } else if(digits.charAt(0) === '5'){
+    if(digits.length === 1) return digits;
+    if(digits.slice(0, 2) !== '58') return digits.slice(0, 15);
+    national = digits.slice(2);
+  } else if(digits.charAt(0) === '2' || digits.charAt(0) === '4'){
+    national = digits;
+  } else {
+    return digits.slice(0, 15);
+  }
+
+  if(national.charAt(0) === '0') national = national.slice(1); // "+58 0414…"
+  national = national.slice(0, 10);
+  let out = '+58';
+  if(national) out += ' ' + national.slice(0, 3);
+  if(national.length > 3) out += ' ' + national.slice(3);
+  return out;
+}
+
+// Un número +58 está completo con 10 dígitos después del código de país
+// (área de 3 + 7); otro país: entre 7 y 15 dígitos en total.
+function isPhoneComplete(value){
+  const digits = String(value || '').replace(/\D/g, '');
+  if(String(value || '').indexOf('+58') === 0) return digits.length === 12;
+  return digits.length >= 7 && digits.length <= 15;
+}
+
+function initPhoneMask(){
+  const input = document.getElementById('checkout-phone');
+  if(!input) return;
+  let digitCountBeforeEdit = 0;
+
+  function apply(event){
+    let raw = input.value;
+    const caret = input.selectionStart === null ? raw.length : input.selectionStart;
+    const digitsAfterCaret = raw.slice(caret).replace(/\D/g, '').length;
+
+    // Borrar un espacio no quita ningún dígito: el formato lo volvería a poner
+    // y el cursor no avanzaría nunca. En ese caso se borra el dígito anterior.
+    if(event && event.inputType === 'deleteContentBackward' && caret > 0 &&
+       raw.replace(/\D/g, '').length === digitCountBeforeEdit){
+      let i = caret - 1;
+      while(i >= 0 && !/\d/.test(raw.charAt(i))) i--;
+      if(i >= 0) raw = raw.slice(0, i) + raw.slice(i + 1);
+    }
+
+    const formatted = formatPhone(raw);
+    if(formatted !== input.value) input.value = formatted;
+
+    // Deja el cursor con los mismos dígitos a su derecha (sirve al editar a la mitad).
+    if(document.activeElement === input && input.setSelectionRange){
+      let pos = formatted.length;
+      let seen = 0;
+      while(pos > 0 && seen < digitsAfterCaret){
+        pos--;
+        if(/\d/.test(formatted.charAt(pos))) seen++;
+      }
+      input.setSelectionRange(pos, pos);
+    }
+  }
+
+  input.addEventListener('beforeinput', function(){ digitCountBeforeEdit = input.value.replace(/\D/g, '').length; });
+  input.addEventListener('input', apply);
+  input.addEventListener('change', function(){ apply(); }); // autocompletar del navegador
+  if(input.value) apply();
 }
 
 /* ---------- Botón "Continuar con el pago" -> WhatsApp ---------- */
@@ -1886,6 +1969,7 @@ function initCheckoutButton(){
     let focusEl = null;
     if(!customerName){ missingMsg = 'Por favor completa tu nombre.'; focusEl = nameInput; }
     else if(!phone){ missingMsg = 'Por favor completa tu teléfono.'; focusEl = phoneInput; }
+    else if(!isPhoneComplete(phone)){ missingMsg = 'Revisa tu teléfono: debe verse así +58 414 1234567.'; focusEl = phoneInput; }
     else if(deliveryCtx.type === 'delivery' && !deliveryCtx.state){ missingMsg = 'Por favor selecciona tu estado.'; focusEl = stateSelect; }
     else if(deliveryCtx.type === 'delivery' && !location){ missingMsg = deliveryCtx.isCaracas ? 'Por favor completa tu zona de despacho.' : 'Por favor completa tu dirección de envío.'; focusEl = zoneInput; }
     else if(isMrw && !ci){ missingMsg = 'Por favor completa tu cédula de identidad.'; focusEl = ciInput; }
