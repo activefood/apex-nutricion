@@ -16,5 +16,13 @@
       "database_name": "apex-calculadora",
       "database_id": "2f86abbf-8cfb-46fc-ba2f-b2f246fbbf3b"
     }
+  ],
+  // Límite de peticiones por IP (ver guardPublicApi en worker/index.js).
+  // Pedidos: 5 por minuto por IP — varias personas pueden compartir IP en
+  // las redes móviles de Venezuela, así que no se baja de ahí.
+  // El resto de /api/* (reseñas, cupón): 30 por minuto por IP.
+  "ratelimits": [
+    { "name": "ORDER_LIMITER", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
+    { "name": "API_LIMITER", "namespace_id": "1002", "simple": { "limit": 30, "period": 60 } }
   ]
 }

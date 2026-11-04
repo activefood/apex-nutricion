@@ -7,22 +7,27 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/api/submit-order') {
-      return handleSubmitOrder(request, env);
+      const blocked = await guardPublicApi(request, env.ORDER_LIMITER, 'submit-order');
+      return blocked || handleSubmitOrder(request, env);
     }
     if (url.pathname === '/api/submit-review') {
-      return handleSubmitReview(request, env);
+      const blocked = await guardPublicApi(request, env.API_LIMITER, 'submit-review');
+      return blocked || handleSubmitReview(request, env);
     }
     if (url.pathname === '/api/get-reviews') {
-      return handleGetReviews(request, env);
+      const blocked = await guardPublicApi(request, env.API_LIMITER, 'get-reviews');
+      return blocked || handleGetReviews(request, env);
     }
     if (url.pathname === '/api/check-welcome-coupon') {
-      return handleCheckWelcomeCoupon(request, env);
+      const blocked = await guardPublicApi(request, env.API_LIMITER, 'check-welcome-coupon');
+      return blocked || handleCheckWelcomeCoupon(request, env);
     }
     if (url.pathname === '/api/telegram-webhook') {
       return handleTelegramWebhook(request, env);
     }
     if (url.pathname === '/api/calculadora') {
-      return handleCalculadora(request, env);
+      const blocked = await guardPublicApi(request, env.API_LIMITER, 'calculadora');
+      return blocked || handleCalculadora(request, env);
     }
 
     // La raíz del dominio ("/") no se resuelve sola a index.html porque
@@ -115,6 +120,111 @@ async function handleCalculadora(request, env) {
   return json({ ok: true });
 }
 
+/* ---------- Protección contra pedidos falsos / abuso ----------
+   Cada llamada a Apps Script cuesta cuota de Google y cada pedido escribe
+   en la hoja y manda un Telegram, así que /api/* público necesita freno.
+   Capas: (1) el envío tiene que venir de nuestro propio sitio, (2) límite
+   por IP con el rate limiter de Cloudflare, (3) el pedido se valida con
+   topes razonables antes de reenviarlo. Un cliente real nunca queda sin
+   poder comprar: el checkout manda el pedido en segundo plano (sendBeacon)
+   y abre WhatsApp aparte, así que aunque este filtro rechace algo, el
+   mensaje de WhatsApp le llega igual al negocio. */
+
+const MAX_BODY_CHARS = 32000;
+const MAX_ORDER_ITEMS = 40;
+const MAX_ITEM_QUANTITY = 99;
+
+function clientIp(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown';
+}
+
+// Un navegador siempre manda Origin en un POST. Si viene y no es nuestro
+// propio host (prod, www, workers.dev o localhost), alguien está llamando
+// la API desde otra página. Sin Origin (curl, apps) no se bloquea acá: eso
+// lo frena el límite por IP y la validación.
+function isForeignOrigin(request) {
+  const origin = request.headers.get('Origin');
+  if (!origin) return false;
+  try {
+    return new URL(origin).host !== new URL(request.url).host;
+  } catch (err) {
+    return true;
+  }
+}
+
+// Devuelve una Response si hay que cortar la petición, o null si pasa.
+// Si el limitador no está configurado (pruebas locales) o falla, deja pasar:
+// es peor perder un pedido real que dejar pasar uno falso.
+async function guardPublicApi(request, limiter, route) {
+  if (request.method !== 'POST') return null; // los handlers ya devuelven 405
+  if (isForeignOrigin(request)) {
+    console.error('[' + route + '] Origin ajeno rechazado: ' + request.headers.get('Origin'));
+    return json({ ok: false, error: 'Forbidden' }, 403);
+  }
+  if (!limiter) return null;
+  try {
+    const result = await limiter.limit({ key: route + ':' + clientIp(request) });
+    if (!result.success) {
+      console.error('[' + route + '] Límite de peticiones excedido para ' + clientIp(request));
+      const res = json({ ok: false, error: 'Too many requests' }, 429);
+      res.headers.set('Retry-After', '60');
+      return res;
+    }
+  } catch (err) {
+    console.error('[' + route + '] El limitador falló, se deja pasar: ' + String(err));
+  }
+  return null;
+}
+
+async function readJsonBody(request) {
+  const raw = await request.text();
+  if (raw.length > MAX_BODY_CHARS) return { tooLarge: true };
+  return { payload: JSON.parse(raw) };
+}
+
+function isText(value, min, max) {
+  return typeof value === 'string' && value.trim().length >= min && value.length <= max;
+}
+
+function isOptionalText(value, max) {
+  return value === undefined || value === null || (typeof value === 'string' && value.length <= max);
+}
+
+function isNumberBetween(value, min, max) {
+  return typeof value === 'number' && isFinite(value) && value >= min && value <= max;
+}
+
+// Devuelve el motivo del rechazo, o null si el pedido es plausible. Los
+// topes son holgados (direcciones largas, pedidos de 24 unidades ya
+// ocurrieron): el objetivo es cortar basura y pedidos absurdos, no
+// ajustar al centavo.
+function validateOrder(order) {
+  if (!order || typeof order !== 'object') return 'payload no es un objeto';
+  if (!isText(order.customerName, 2, 100)) return 'customerName inválido';
+  const phoneDigits = typeof order.phone === 'string' ? order.phone.replace(/\D/g, '') : '';
+  if (phoneDigits.length < 7 || phoneDigits.length > 15 || order.phone.length > 30) return 'phone inválido';
+  if (!isText(order.location, 1, 1500)) return 'location inválido';
+  if (!isOptionalText(order.deliveryType, 30)) return 'deliveryType inválido';
+  if (!isOptionalText(order.state, 60)) return 'state inválido';
+  if (!isOptionalText(order.ci, 30)) return 'ci inválido';
+  if (!isOptionalText(order.mrwAddress, 1500)) return 'mrwAddress inválido';
+  if (order.total !== undefined && !isNumberBetween(order.total, 0, 10000)) return 'total inválido';
+
+  if (!Array.isArray(order.items) || order.items.length === 0 || order.items.length > MAX_ORDER_ITEMS) {
+    return 'items inválidos';
+  }
+  for (const item of order.items) {
+    if (!item || typeof item !== 'object') return 'item inválido';
+    if (!isText(item.product, 1, 200)) return 'item.product inválido';
+    if (!isOptionalText(item.brand, 60)) return 'item.brand inválido';
+    if (!isNumberBetween(item.unitPrice, 0, 1000)) return 'item.unitPrice inválido';
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > MAX_ITEM_QUANTITY) {
+      return 'item.quantity inválido';
+    }
+  }
+  return null;
+}
+
 /* ---------- /api/submit-order ---------- */
 async function handleSubmitOrder(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
@@ -127,12 +237,16 @@ async function handleSubmitOrder(request, env) {
 
   let payload;
   try {
-    payload = await request.json();
+    const body = await readJsonBody(request);
+    if (body.tooLarge) return json({ ok: false, error: 'Payload too large' }, 413);
+    payload = body.payload;
   } catch (err) {
     return json({ ok: false, error: 'Invalid order payload (bad JSON)' }, 400);
   }
 
-  if (!payload || !payload.customerName || !payload.location || !Array.isArray(payload.items) || payload.items.length === 0) {
+  const invalid = validateOrder(payload);
+  if (invalid) {
+    console.error('[submit-order] Pedido rechazado: ' + invalid);
     return json({ ok: false, error: 'Invalid order payload' }, 400);
   }
 
