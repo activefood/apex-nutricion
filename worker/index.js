@@ -208,6 +208,8 @@ function validateOrder(order) {
   if (!isOptionalText(order.state, 60)) return 'state inválido';
   if (!isOptionalText(order.ci, 30)) return 'ci inválido';
   if (!isOptionalText(order.mrwAddress, 1500)) return 'mrwAddress inválido';
+  if (!isOptionalText(order.gaClientId, 60)) return 'gaClientId inválido';
+  if (!isOptionalText(order.gaSessionId, 30)) return 'gaSessionId inválido';
   if (order.total !== undefined && !isNumberBetween(order.total, 0, 10000)) return 'total inválido';
 
   if (!Array.isArray(order.items) || order.items.length === 0 || order.items.length > MAX_ORDER_ITEMS) {

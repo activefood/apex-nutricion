@@ -1920,6 +1920,33 @@ function initPhoneMask(){
   if(input.value) apply();
 }
 
+/* ---------- Identificadores de GA4 del visitante ----------
+   Se mandan con el pedido para que, cuando se confirme la venta (botón "Completed" de Telegram), el
+   Apps Script la atribuya a la sesión y a la fuente de tráfico de este visitante en GA4. Se leen de las
+   cookies de GA4 (_ga y _ga_<ID>); si están bloqueadas, quedan vacíos y el pedido sigue igual. */
+function readCookie(name){
+  const parts = document.cookie ? document.cookie.split('; ') : [];
+  for(let i = 0; i < parts.length; i++){
+    const eq = parts[i].indexOf('=');
+    if(parts[i].slice(0, eq) === name) return decodeURIComponent(parts[i].slice(eq + 1));
+  }
+  return '';
+}
+
+function getGaIds(){
+  const ids = { gaClientId: '', gaSessionId: '' };
+  try {
+    // _ga = GA1.1.<número>.<marca de tiempo>  ->  client_id = "<número>.<marca de tiempo>"
+    const ga = readCookie('_ga').split('.');
+    if(ga.length >= 4) ids.gaClientId = ga.slice(2).join('.');
+    // _ga_<ID> = GS2.1.s<sesión>$o1$g1...  (o el formato viejo GS1.1.<sesión>.1.1...)
+    const gs = readCookie('_ga_8QH40K8HJK');
+    const match = gs.match(/\.s(\d+)/) || gs.match(/^GS1\.\d+\.(\d+)/);
+    if(match) ids.gaSessionId = match[1];
+  } catch(e){ /* sin cookies: no es crítico */ }
+  return ids;
+}
+
 /* ---------- Botón "Continuar con el pago" -> WhatsApp ---------- */
 function initCheckoutButton(){
   const btn = document.getElementById('checkout-whatsapp');
@@ -2038,6 +2065,9 @@ function initCheckoutButton(){
       orderPayload.ci = ci;
       orderPayload.mrwAddress = mrwAddress;
     }
+    const gaIds = getGaIds();
+    if(gaIds.gaClientId) orderPayload.gaClientId = gaIds.gaClientId;
+    if(gaIds.gaSessionId) orderPayload.gaSessionId = gaIds.gaSessionId;
 
     // 1) Registrar el pedido en segundo plano — sendBeacon sigue funcionando aunque la página navegue a WhatsApp.
     try {
