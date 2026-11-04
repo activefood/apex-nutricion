@@ -32,25 +32,6 @@ if (window.visualViewport) {
   });
 }
 
-/* ---------- Cache-busting de fotos de producto ----------
-   Los archivos de foto se reemplazan manteniendo el mismo nombre, así que el
-   navegador puede seguir mostrando una copia vieja en caché. Subir este número
-   cada vez que se reemplacen fotos de producto fuerza a descargar la versión
-   nueva en vez de servir la cacheada. */
-const IMG_V = 24;
-function withImgV(src){
-  if(!src) return src;
-  return src.split('?')[0] + '?v=' + IMG_V;
-}
-function initImageCacheBust(){
-  // assets/banners/ son archivos nuevos (sin copia vieja en caché): agregarles
-  // ?v= haría que el navegador descargue la foto del carrusel dos veces y
-  // retrasaría el LCP del inicio casi 3 s en celular.
-  document.querySelectorAll('img[src^="assets/"]:not([src^="assets/banners/"])').forEach(function(img){
-    img.src = withImgV(img.src);
-  });
-}
-
 /* ---------- Cupón de bienvenida (10% en la primera compra) ----------
    No hay cuentas de usuario, así que "primera compra" se detecta por
    navegador: si este dispositivo/navegador nunca completó un pedido con el
@@ -941,7 +922,7 @@ function initPdpFlavorSelector(){
       opt.classList.toggle('active', match && opt.classList.contains('pdp-thumb'));
       opt.setAttribute('aria-pressed', String(match));
     });
-    if(mainPhoto && img) mainPhoto.src = withImgV(img);
+    if(mainPhoto && img) mainPhoto.src = img;
     if(mainPhoto && img) mainPhoto.alt = (mainPhoto.dataset.altPrefix || '') + name;
     if(mainTitle) mainTitle.textContent = (mainTitle.dataset.titlePrefix || '') + name + brandSuffix;
     if(label) label.textContent = name;
@@ -986,7 +967,7 @@ function initPdpPhotoGallery(){
           t.classList.toggle('active', t === thumb);
           t.setAttribute('aria-pressed', String(t === thumb));
         });
-        if(mainPhoto && thumb.dataset.photoImg) mainPhoto.src = withImgV(thumb.dataset.photoImg);
+        if(mainPhoto && thumb.dataset.photoImg) mainPhoto.src = thumb.dataset.photoImg;
       });
     });
   });
@@ -1202,7 +1183,7 @@ function initPdpGallery(){
     });
     if(thumb.dataset.galleryType) currentType = thumb.dataset.galleryType;
     if(mainPhoto){
-      mainPhoto.src = withImgV(thumb.dataset.galleryImg);
+      mainPhoto.src = thumb.dataset.galleryImg;
       mainPhoto.alt = thumb.getAttribute('aria-label') || mainPhoto.alt;
     }
   }
@@ -2465,7 +2446,6 @@ function initProductReviews(){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-  initImageCacheBust();
   initLiveRegion();
   initAnnounceBar();
   initCartCount();
