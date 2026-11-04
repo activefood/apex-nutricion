@@ -16,6 +16,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import lighthouse from 'lighthouse';
@@ -50,8 +51,11 @@ function startStaticServer(root, port) {
     '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
     '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
-    '.webp': 'image/webp', '.txt': 'text/plain', '.xml': 'application/xml'
+    '.webp': 'image/webp', '.woff2': 'font/woff2', '.txt': 'text/plain', '.xml': 'application/xml'
   };
+  // Cloudflare comprime HTML, CSS y JS; sin esto el servidor local manda el CSS (103 KB) y el HTML
+  // sin comprimir y Lighthouse mide un LCP de ~4 s que en producción es ~2,4 s (medido el 2026-11-04).
+  const COMPRESSIBLE = /^(text\/|application\/(javascript|json|xml))/;
   const server = http.createServer((req, res) => {
     let urlPath = decodeURIComponent(req.url.split('?')[0]);
     if (urlPath === '/') urlPath = '/index.html';
@@ -61,7 +65,14 @@ function startStaticServer(root, port) {
     const ext = path.extname(filePath);
     try {
       const data = readFileSync(filePath);
-      res.writeHead(200, { 'Content-Type': mime[ext] || 'application/octet-stream' });
+      const type = mime[ext] || 'application/octet-stream';
+      if (COMPRESSIBLE.test(type) && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+        const zipped = zlib.gzipSync(data, { level: 9 });
+        res.writeHead(200, { 'Content-Type': type, 'Content-Encoding': 'gzip', 'Content-Length': zipped.length });
+        res.end(zipped);
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': type });
       res.end(data);
     } catch (e) {
       res.writeHead(500); res.end(String(e));

@@ -27,36 +27,55 @@ Elegidas en la entrevista de `/constraints` del 2026-10-01, porque:
 se sube directo a producción de forma iterativa. Bloquear frenaría arreglos
 urgentes. Los `⚠️` de los scripts son para leer, no para ignorar.
 
-**Números: medidos hoy, no inventados.** No había una medición previa del
-sitio. Se corrió Lighthouse móvil real (ver `scripts/thresholds.json`) y
-esos valores son el piso — que no empeore, no que llegue a un ideal
-abstracto como 90/100.
+**Números: medidos, no inventados.** Se corrió Lighthouse móvil real (ver
+`scripts/thresholds.json`) y esos valores, con un margen para el ruido, son
+el piso — que no empeore, no que llegue a un ideal abstracto.
 
-| Página | Performance (piso) | Accesibilidad (piso) |
-|---|---|---|
-| `index.html` | 74 | 81 |
-| `categoria.html?cat=hidratacion` | 73 | 89 |
-| `producto.html` | 74 | 85 |
-| `carrito.html` | 90 | 89 |
-| Cualquier otra página | 70 | 80 |
+| Página | Performance (piso) | Accesibilidad (piso) | Antes (2026-10-01) |
+|---|---|---|---|
+| `index.html` | 95 | 95 | 74 / 81 |
+| `categoria.html?cat=hidratacion` | 92 | 93 | 73 / 89 |
+| `producto.html` | 93 | 91 | 74 / 85 |
+| `carrito.html` | 91 | 95 | 90 / 89 |
+| Cualquier otra página | 85 | 88 | 70 / 80 |
 
-Medido el 2026-10-01 con `node scripts/check-performance.mjs --all --measure-baseline`,
-sirviendo el sitio con el servidor estático plano del propio script (sin la
-compresión/caché real de Cloudflare) — por diseño: el chequeo corre ANTES
-de subir, sobre el árbol de trabajo local, no contra producción. Los
-números no son comparables 1:1 con un Lighthouse corrido contra
-`apexnutricionve.com`; sí son comparables entre sí, corrida tras corrida.
+**Subidos el 2026-11-04.** Medido con `node scripts/check-performance.mjs`
+sobre 12 páginas, 3 pasadas. Cómo se fija cada número:
+- Performance = mínimo de las 3 pasadas − 4 puntos de margen (el ruido
+  normal entre corridas es de 2 a 5 puntos; el carrito dio 100, 95 y 98).
+- Accesibilidad = el valor medido (no varió entre pasadas).
+- "Cualquier otra página" queda por debajo del mínimo medido en las otras 8
+  páginas (rendimiento 92, accesibilidad 91), porque hay páginas no medidas
+  que pueden ser algo distintas.
 
-Reconsiderar estos números con `--measure-baseline` si cambia algo
-estructural (CSS/JS compartido, no solo contenido de una página).
+**Por qué subieron tanto: cambió el método y cambió el sitio.**
+- *El método.* Los pisos del 2026-10-01 se midieron con un servidor local
+  que mandaba el HTML y el CSS **sin comprimir**, y por eso medía un sitio
+  más lento que el real (el CSS pesaba 103 KB en vez de los ~21 KB que baja
+  un celular desde Cloudflare). Ahora `check-performance.mjs` comprime con
+  gzip como Cloudflare. El chequeo sigue corriendo ANTES de subir, sobre el
+  árbol de trabajo local, no contra producción.
+- *El sitio.* Fuentes propias en vez de Google Fonts y fin de las
+  descargas dobles de imágenes (`?v=`), el 2026-11-04.
+
+Contra producción (`apexnutricionve.com`, Lighthouse móvil, mediana de 5
+corridas, 2026-11-04) el sitio da 97 en home, ficha y carrito. Los números
+locales siguen sin ser idénticos a los de producción, pero ya no se
+distancian por un servidor distinto.
+
+Reconsiderar estos números con una medición nueva si cambia algo estructural
+(CSS/JS compartido, no solo contenido de una página). Sustituir
+`--measure-baseline` por el criterio de arriba: ese flag guarda el valor
+exacto medido, sin margen, y dispararía falsas alarmas.
 
 ## Métricas solo-medición (sin piso todavía)
 
 LCP, CLS y TBT se imprimen en cada corrida pero no tienen un número
-exigido — el LCP en el servidor local no refleja la red real, así que
-fijar un piso ahora sería inventar un número. Si se quiere un piso real de
-estas, hay que medirlas contra producción (`apexnutricionve.com`), no
-contra el servidor local.
+exigido. Referencia contra producción (2026-11-04, mediana de 5 corridas):
+LCP home 2,39 s, ficha 2,47 s, carrito 2,01 s (Google considera "bueno"
+hasta 2,5 s); la home dio 3,6 s en 2 de 5 corridas, así que un piso estricto
+daría falsas alarmas. Si se quiere un piso real, hay que medirlo contra
+producción (`apexnutricionve.com`), no contra el servidor local.
 
 ## Excepciones
 
