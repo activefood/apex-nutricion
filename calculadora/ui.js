@@ -48,12 +48,14 @@
     });
   });
 
+  let keepDrinkFor = null;   // bebida que la persona pidió dejar en el plan aunque pase la meta de sodio
   function readInp(){
     return {
       sport: pillValue.sport, min: num('calc-hh') * 60 + num('calc-mm'), w: num('calc-w'),
       intens: pillValue.intens, clima: pillValue.clima, sweat: num('calc-sweat'), dist: pillValue.sport === 'carrera' ? num('calc-dist') : 0,
       salty: $('calc-salty').checked, gut: $('calc-gut').checked, drinkTrained: $('calc-drinkTrained').checked, caf: $('calc-caf').checked,
-      drink: radio('drink') || 'auto', gelPref: radio('gelPref') || 'hs_gel_fruta'
+      drink: radio('drink') || 'auto', gelPref: radio('gelPref') || 'hs_gel_fruta',
+      keepDrink: keepDrinkFor !== null && keepDrinkFor === (radio('drink') || 'auto')
     };
   }
   function readTr(){
@@ -187,9 +189,26 @@
     return html + '</div>';
   }
 
+  /* Aviso visible cuando la bebida que la persona eligió no entró al plan, o cuando se dejó a su pedido aunque pasa la meta de sodio. */
+  function drinkNoticeHtml(pl){
+    const fz = pl.bebidaForzada, ex = pl.bebidaExcluida;
+    if(fz){
+      return '<div class="calc-notice calc-notice--info" role="status"><p><strong>Incluimos ' + fz.name + ' porque lo elegiste.</strong> Con él, tu plan trae ' +
+        NUM(pl.naSum) + ' mg de sodio por hora y tu meta es ' + NUM(fz.meta) + ' mg: son ' + NUM(pl.naSum - fz.meta) + ' mg de más. Si prefieres ceñirte a tu meta, quítalo.</p>' +
+        '<p><button type="button" class="btn btn--ghost calc-notice-btn" data-keep-drink="off">Quitar ' + fz.name + '</button></p></div>';
+    }
+    if(!ex) return '';
+    let html = '<div class="calc-notice" role="status"><p><strong>' + ex.name + ' no está en tu plan.</strong> ' + ex.texto + '</p>';
+    if(ex.motivo === 'sodio'){
+      html += '<p><button type="button" class="btn btn--ghost calc-notice-btn" data-keep-drink="' + ex.k + '">Agregar ' + ex.name + ' de todos modos</button> ' +
+        '<span class="calc-help">Si lo agregas, tu plan pasa tu meta de sodio.</span></p>';
+    }
+    return html + '</div>';
+  }
+
   function planHtml(pl, kit, inp){
     const keys = Object.keys(pl.items);
-    let html = '<section class="calc-card"><h2 class="calc-section-title">Tu plan por hora</h2>';
+    let html = '<section class="calc-card"><h2 class="calc-section-title">Tu plan por hora</h2>' + drinkNoticeHtml(pl);
     if(keys.length){
       html += '<div class="calc-table-wrap"><table class="calc-table"><thead><tr><th>Producto</th><th>Cantidad</th><th class="n">Energía</th><th class="n">Sodio</th></tr></thead><tbody>' +
         keys.map(function(k){ const p = P[k], n = pl.items[k];
@@ -200,7 +219,7 @@
     if(pl.drink === 'agua') html += '<p class="calc-help">Toma ' + NUM(pl.V, 2) + ' L de agua por hora.</p>';
     else if(pl.waterExtra > 0.04) html += '<p class="calc-help">Además, toma ' + NUM(pl.waterExtra, 2) + ' L de agua sola por hora.</p>';
     if(pl.alternativaBebida) html += '<p class="calc-help">¿Prefieres Skratch Hydration? <button type="button" class="calc-linkbtn" data-set-drink="skratch">Usar Skratch en vez de Going</button></p>';
-    pl.notas.forEach(function(n){ html += '<p class="calc-help">' + n + '</p>'; });
+    pl.notas.forEach(function(n){ if(pl.bebidaExcluida && n === pl.bebidaExcluida.texto) return; html += '<p class="calc-help">' + n + '</p>'; });
     if(pl.medirSudor) html += '<p class="calc-help">Usamos una tasa de sudor de ' + NUM(pl.S, 1) + ' L/h. Mide tu sudor para un cálculo exacto.</p>';
     html += timelineHtml(pl, kit, inp);
     if(pl.avisoAgua){
@@ -318,7 +337,8 @@
       carbMeta: pl.ct.g, carbPlan: pl.carbs, aguaLh: pl.V, aguaMin: pl.floor, sudorLh: pl.S, sudorFuente: pl.sweatSrc,
       sodioMeta: pl.naT != null ? Math.round(pl.naT) : null, sodioPlan: pl.naSum, porHora: pl.items,
       perdidaPct: pl.avisoAgua ? Math.round(pl.avisoAgua.perdida * 10) / 10 : null,
-      kitPorciones: kit.serv, cafeinaMg: kit.caf, kitPrecio: Math.round(pk.total * 100) / 100
+      kitPorciones: kit.serv, cafeinaMg: kit.caf, kitPrecio: Math.round(pk.total * 100) / 100,
+      bebidaForzada: !!pl.bebidaForzada, bebidaExcluida: pl.bebidaExcluida ? pl.bebidaExcluida.k + ':' + pl.bebidaExcluida.motivo : null
     };
     out.innerHTML = goalsHtml(pl) + planHtml(pl, kit, inp) + kitHtml(kit, pk);
     $('calc-pack').hidden = false;
@@ -387,6 +407,12 @@
     }
     const drink = e.target.closest('[data-set-drink]');
     if(drink){ const r = form.querySelector('input[name="drink"][value="' + drink.dataset.setDrink + '"]'); if(r){ r.checked = true; onChange(); } }
+    const keep = e.target.closest('[data-keep-drink]');
+    if(keep){
+      keepDrinkFor = keep.dataset.keepDrink === 'off' ? null : keep.dataset.keepDrink;
+      const y = window.scrollY; render(); window.scrollTo(0, y);   // se redibuja con (o sin) la bebida, sin mover la página
+      const again = document.querySelector('[data-keep-drink]'); if(again) again.focus({ preventScroll: true });
+    }
   });
   function onChange(){
     syncFields();
@@ -396,7 +422,7 @@
     if(/^calc-s[1-5]$/.test(e.target.id)){ sweatHelper(); return; }
     onChange();
   });
-  form.addEventListener('change', onChange);
+  form.addEventListener('change', function(e){ if(e.target && e.target.name === 'drink') keepDrinkFor = null; onChange(); });
   form.addEventListener('submit', function(e){
     e.preventDefault();
     started = true; syncFields(); render();

@@ -81,6 +81,44 @@ t('9. Triatleta 90.7 kg, 2.8 L/h de sudor, 5 h: 1.0 L/h y ~9.9 %; entrena bebien
   return [ok, 'sin entrenar: ' + a.V + ' L/h, pérdida ' + a.avisoAgua.perdida.toFixed(1) + ' %; entrenado: ' + b.V + ' L/h, pérdida ' + b.avisoAgua.perdida.toFixed(1) + ' %'];
 });
 
+/* Bebida elegida que no entra al plan: aviso visible (bebidaExcluida) y opción de dejarla de todos modos (keepDrink). */
+const larga = { sport: 'carrera', min: 180, w: 70, intens: 'moderada', clima: 'fresco', sweat: 0, dist: 25, salty: false, gut: false, drinkTrained: false, caf: false, drink: 'skratch', gelPref: 'hs_gel_fruta' };
+
+t('10. Skratch elegido y fuera por sodio: el plan lo explica con datos (bebidaExcluida)', function(){
+  const p = E.plan(larga), x = p.bebidaExcluida;
+  const ok = !p.items.skratch && !!x && x.motivo === 'sodio' && x.k === 'skratch' && x.na === 390 && x.meta === 230 && x.texto === p.notas[0] && p.bebidaForzada === null;
+  return [ok, JSON.stringify(p.items) + '; excluida ' + (x ? x.motivo + ' (' + x.na + ' mg vs meta ' + x.meta + ')' : 'no')];
+});
+
+t('11. "Agregar de todos modos" (keepDrink): Skratch entra al plan, sin SaltStick de más', function(){
+  const p = E.plan(Object.assign({}, larga, { keepDrink: true }));
+  const ok = p.items.skratch === 1 && !p.items.ss_chews && !p.items.ss_caps && !p.bebidaExcluida && p.bebidaForzada && p.bebidaForzada.k === 'skratch' && p.bebidaForzada.sobre === 160 && p.naSum >= 390;
+  return [ok, JSON.stringify(p.items) + '; sodio del plan ' + p.naSum + ' mg, meta ' + Math.round(p.naT)];
+});
+
+t('12. keepDrink no cambia nada si la bebida ya entraba, ni si se pide con otra bebida (5000 perfiles)', function(){
+  let n = 0, mal = 0, ej = '';
+  [20, 30, 45, 60, 90, 120, 150, 180, 240, 300].forEach(function(min){ ['baja', 'moderada', 'alta'].forEach(function(intens){ ['fresco', 'caluroso'].forEach(function(clima){
+    [50, 70, 90].forEach(function(w){ [false, true].forEach(function(salty){ [0, 0.5, 1.4].forEach(function(sweat){ ['carrera', 'otro'].forEach(function(sport){ ['skratch', 'going_hidr', 'auto', 'agua'].forEach(function(drink){
+      const i = { sport: sport, min: min, w: w, intens: intens, clima: clima, sweat: sweat, dist: 0, salty: salty, gut: false, drinkTrained: false, caf: false, drink: drink, gelPref: 'hs_gel_fruta' };
+      const a = E.plan(i), off = E.plan(Object.assign({}, i, { keepDrink: false })), on = E.plan(Object.assign({}, i, { keepDrink: true }));
+      n++;
+      const igualOff = JSON.stringify(a.items) === JSON.stringify(off.items) && a.naSum === off.naSum;
+      const entraba = !a.bebidaExcluida;           // si ya entraba (o no había bebida elegida), pedir "dejarla" no cambia el plan
+      const igualOn = !entraba || (JSON.stringify(a.items) === JSON.stringify(on.items) && a.naSum === on.naSum);
+      const soloSodio = a.bebidaExcluida && a.bebidaExcluida.motivo === 'porcion' ? JSON.stringify(a.items) === JSON.stringify(on.items) : true;   // por porción, "dejarla" no la fuerza
+      if(!(igualOff && igualOn && soloSodio)){ mal++; if(!ej) ej = JSON.stringify(i); }
+    }); }); }); }); }); }); }); });
+  return [mal === 0, n + ' perfiles; con diferencias: ' + mal + (ej ? '; ejemplo ' + ej : '')];
+});
+
+t('13. Si la bebida se excluye por porción (no por sodio), hay aviso pero keepDrink no la fuerza', function(){
+  const i = { sport: 'carrera', min: 20, w: 45, intens: 'baja', clima: 'fresco', sweat: 0.3, dist: 0, salty: false, gut: false, drinkTrained: false, caf: false, drink: 'skratch', gelPref: 'hs_gel_fruta' };
+  const p = E.plan(i), q = E.plan(Object.assign({}, i, { keepDrink: true }));
+  const ok = !p.items.skratch && p.bebidaExcluida && p.bebidaExcluida.motivo === 'porcion' && p.bebidaExcluida.texto === p.notas[0] && !q.items.skratch && q.bebidaForzada === null;
+  return [ok, p.bebidaExcluida ? p.bebidaExcluida.motivo : 'sin aviso'];
+});
+
 const n = T.filter(function(x){ return x.ok; }).length;
 T.forEach(function(x){ console.log((x.ok ? 'PASA ' : 'FALLA') + '  ' + x.name + '\n       ' + x.det); });
 console.log('\n' + n + ' de ' + T.length + ' casos pasan.');

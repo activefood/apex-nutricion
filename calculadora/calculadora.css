@@ -124,6 +124,8 @@ details.calc-card[open] > summary::after{ content: '−'; }
 .calc-notice li{ margin: 4px 0; color: var(--ink-2); }
 .calc-notice--stop{ border-left-color: var(--sale); background: var(--sale-sf); }
 .calc-notice--info{ border-left-color: var(--ink); background: var(--paper-2); }
+.calc-notice-btn{ margin-top: var(--sp-3); background: var(--paper); border-color: var(--ink); width: 100%; white-space: normal; text-align: center; justify-content: center; line-height: 1.3; }
+.calc-notice p + p{ margin-top: var(--sp-2); }
 
 .calc-actions{ display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; margin-top: var(--sp-4); }
 .calc-added{ font-size: 13px; color: var(--ok); font-weight: 600; margin: 0; }

@@ -119,18 +119,29 @@
     // Regla 5.1: bebida
     let dk = inp.drink || 'auto'; if(dk === 'auto') dk = trig.length ? 'going_hidr' : 'agua';
     let dCarb = 0, dNa = 0, waterExtra = V; let bebidaPorSodio = null;
+    // Para la pantalla: por qué la bebida elegida no quedó en el plan, o si se dejó a pedido aunque pasa la meta de sodio.
+    let bebidaExcluida = null, bebidaForzada = null;
     if(dk !== 'agua'){
       const d = P[dk]; let n = Math.floor((V + 0.1) / d.vol + 1e-9);
       while(n > 0 && n * d.vol > S + 1e-9) n--;                 // nunca más líquido que el sudor
       if(ct.g > 0) while(n > 0 && n * d.carb > ct.g) n--;        // la bebida no pasa la meta de carbohidrato
       if(n === 0 && d.vol <= S + 1e-9 && V >= d.vol * 0.5) n = 1;
       const n0 = n;
-      if(naT != null) while(n > 0 && n * d.na > naT + 150) n--;  // ni pasa la meta de sodio por más de 150 mg
+      // inp.keepDrink: la persona eligió esta bebida y pidió dejarla aunque pase la meta de sodio (botón "Agregar de todos modos").
+      // Sin esa petición, la regla de siempre: la bebida no pasa la meta de sodio por más de 150 mg.
+      const keep = !!inp.keepDrink && inp.drink === dk;
+      // Con keepDrink la regla sigue igual (se recorta por sodio), pero nunca por debajo de 1 sobre: solo evita quedarse sin la bebida.
+      if(naT != null) while(n > 0 && n * d.na > naT + 150 && !(keep && n === 1)) n--;
+      if(keep && naT != null && n > 0 && n * d.na > naT + 150) bebidaForzada = { k: dk, name: d.name, na: d.na, meta: Math.round(naT), sobre: Math.round(n * d.na - naT) };
       // Si la persona eligió la bebida y no cabe ni una porción, se le explica (si no, parece que el selector no funciona).
       // Si fue por el sodio, la recomendación se arma al final, cuando ya se sabe qué SaltStick lleva (pedido del dueño, 2026-11-03).
       if(n === 0 && inp.drink === dk){
         if(n0 > 0) bebidaPorSodio = d;
-        else notas.push('No usamos ' + d.name + ' esta vez: una porción es más líquido o carbohidrato del que te toca por hora. Toma agua sola.');
+        else {
+          const txt = 'No usamos ' + d.name + ' esta vez: una porción es más líquido o carbohidrato del que te toca por hora. Toma agua sola.';
+          notas.push(txt);
+          bebidaExcluida = { k: dk, motivo: 'porcion', name: d.name, texto: txt };
+        }
       }
       add(dk, n); dCarb = n * d.carb; dNa = n * d.na;
       waterExtra = Math.max(0, Math.round((V - n * d.vol) * 20) / 20);
@@ -188,8 +199,10 @@
     }
     if(bebidaPorSodio){
       const sal = items.ss_chews ? 'SaltStick FastChews' : items.ss_caps ? 'las cápsulas SaltStick' : 'agua sola';
-      notas.unshift('Te recomendamos ' + sal + ' en vez de ' + bebidaPorSodio.name + ' para este evento: un sobre de ' + bebidaPorSodio.name +
-        ' trae ' + bebidaPorSodio.na + ' mg de sodio y tu meta es ' + Math.round(naT) + ' mg por hora. Así te llevas el sodio justo y el resto lo tomas en agua.');
+      const txt = 'Te recomendamos ' + sal + ' en vez de ' + bebidaPorSodio.name + ' para este evento: un sobre de ' + bebidaPorSodio.name +
+        ' trae ' + bebidaPorSodio.na + ' mg de sodio y tu meta es ' + Math.round(naT) + ' mg por hora. Así te llevas el sodio justo y el resto lo tomas en agua.';
+      notas.unshift(txt);
+      bebidaExcluida = { k: dk, motivo: 'sodio', name: bebidaPorSodio.name, na: bebidaPorSodio.na, meta: Math.round(naT), reemplazo: sal, texto: txt };
     }
 
     const porque = {
@@ -207,7 +220,8 @@
       h: h, ct: ct, S: S, sweatSrc: sweatSrc, medirSudor: medirSudor, floor: floor, V: V, VCAP: VCAP, capHit: capHit, avisoAgua: avisoAgua,
       trig: trig, conc: conc, naT: naT, items: items, carbs: carbs, fruCarb: fruCarb, naSum: naSum,
       drink: dk, alternativaBebida: dk === 'going_hidr' ? 'skratch' : null, waterExtra: waterExtra,
-      pref: pref, opcional: opcional, notas: notas, porque: porque
+      pref: pref, opcional: opcional, notas: notas, porque: porque,
+      bebidaExcluida: bebidaExcluida, bebidaForzada: bebidaForzada
     };
   }
 
