@@ -717,72 +717,6 @@ button.pill:hover{ border-color: var(--ink); }
 }
 .promo-copy{ max-width: 520px; }
 .promo-copy .eyebrow{ color: var(--accent-text); }
-.promo-brandmark{ height: 28px; width: auto; margin-bottom: var(--sp-3); }
-
-.promo-offer{
-  display: inline-block;
-  margin-top: var(--sp-3);
-  padding: var(--sp-2) var(--sp-4) var(--sp-3);
-  background: var(--accent);
-  color: var(--ink);
-  border-radius: var(--r-card);
-}
-.hero-slide--promo .promo-offer p{ margin: 0; color: var(--ink); }
-.promo-offer-kicker{ font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.promo-offer-big{ font-family: var(--font-head); font-size: 44px; line-height: 1.05; letter-spacing: .04em; }
-.promo-offer-note{ font-size: 13px; font-weight: 600; }
-.hero-slide--nike .promo-text{ margin-top: var(--sp-3); }
-
-/* Banner de la Carrera Nike: regla de 10 km abajo, con línea de meta a cuadros.
-   Decorativa (aria-hidden); el contenido real está arriba. */
-.hero-slide--nike{ position: relative; }
-.hero-slide--nike .container{ padding-top: var(--sp-6); padding-bottom: calc(62px + var(--sp-5)); }
-.promo-ruler{
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 62px;
-  display: flex;
-  align-items: stretch;
-  background: var(--ink);
-  color: #fff;
-}
-.promo-ruler-track{ position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
-.promo-ruler-ticks{
-  list-style: none;
-  margin: 0 auto;
-  padding: 0 88px;
-  width: 100%;
-  max-width: 1280px;
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--font-head);
-  font-size: 20px;
-  letter-spacing: .06em;
-}
-.promo-ruler-ticks li{ position: relative; }
-.promo-ruler-ticks li::before{
-  content: "";
-  position: absolute;
-  left: 50%; top: -17px;
-  width: 2px; height: 9px;
-  background: var(--accent);
-}
-.promo-ruler-label{
-  position: absolute;
-  top: -22px;
-  left: max(88px, calc((100% - 1280px) / 2 + 88px));
-  padding: 3px 8px;
-  background: var(--accent);
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-}
-.promo-ruler-finish{
-  flex: 0 0 88px;
-  background: conic-gradient(#fff 25%, var(--ink) 0 50%, #fff 0 75%, var(--ink) 0) 0 0 / 22px 22px;
-}
 .promo-title{
   color: var(--ink);
   margin-top: var(--sp-3);
@@ -796,6 +730,16 @@ button.pill:hover{ border-color: var(--ink); }
 .promo-price{ margin-top: var(--sp-3); font-size: 15px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 .promo-price span{ font-weight: 500; color: var(--ink-3); }
 .promo-actions{ display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-5); }
+
+/* Banner de la calculadora: los pasos 1, 2, 3 como lista numerada (<ol>). El número es un cuadro lima con tinta, como el botón. */
+.promo-steps{ list-style: none; margin: var(--sp-4) 0 0; padding: 0; display: grid; gap: var(--sp-3); counter-reset: paso; }
+.promo-steps li{ display: flex; align-items: center; gap: var(--sp-3); counter-increment: paso; }
+.promo-steps li::before{ content: counter(paso); flex: 0 0 38px; height: 38px; display: grid; place-items: center; background: var(--accent); color: var(--ink);
+  font-family: var(--font-head); font-size: 24px; line-height: 1; border-radius: var(--r-control); }
+.promo-steps strong{ display: block; font-size: 16px; line-height: 1.2; color: var(--ink); }
+.promo-steps li > span > span{ display: block; margin-top: 2px; font-size: 13.5px; line-height: 1.3; color: var(--ink-2); }
+.promo-media--calc img:nth-child(2){ height: 100%; max-width: 38%; }
+.promo-media--calc img:nth-child(1), .promo-media--calc img:nth-child(3){ height: 84%; max-width: 26%; }
 .hero-slide--promo .btn--primary{ background: var(--accent); color: var(--ink); }
 .hero-slide--promo .btn--primary:hover{ background: var(--accent-dk); }
 .hero-slide--promo .btn--ghost{ color: var(--ink); border-color: var(--ink); }
@@ -851,15 +795,6 @@ button.pill:hover{ border-color: var(--ink); }
   .hero-slide--promo .container{ min-height: 420px; gap: var(--sp-5); padding-left: 72px; padding-right: 72px; }
   .promo-title{ font-size: 34px; }
   .promo-media{ height: 280px; }
-  .promo-ruler-ticks{ padding: 0 72px; }
-  .promo-offer-big{ font-size: 30px; }
-  .promo-ruler-label{ left: max(72px, calc((100% - 1280px) / 2 + 72px)); }
-}
-@media (min-width: 641px) and (max-width: 1024px){
-  .hero-slide--nike .promo-text{ display: none; }
-}
-@media (min-width: 641px) and (max-width: 800px){
-  .promo-offer-big{ font-size: 24px; }
 }
 @media (max-width: 640px){
   /* Celular: texto arriba, fotos abajo ocupando lo que sobra, mismo alto 3:4 en los 3 banners */
@@ -873,18 +808,11 @@ button.pill:hover{ border-color: var(--ink); }
     padding-top: var(--sp-5);
     padding-bottom: var(--sp-4);
   }
-  /* Nike en celular: sin la frase de apoyo (los botones ya dicen lo mismo) y un poco más alto, para que las bolsas
-     no queden aplastadas ni tapadas por los botones */
-  .hero-slide--nike .container{ padding-top: var(--sp-5); padding-bottom: calc(52px + var(--sp-4)); aspect-ratio: 5 / 7; max-height: 640px; }
-  .hero-slide--nike .promo-text{ display: none; }
-  .promo-offer-big{ font-size: 30px; }
-  .promo-offer-note{ font-size: 12px; }
-  .promo-ruler{ height: 52px; }
-  .promo-ruler-ticks{ padding: 0 14px; font-size: 18px; letter-spacing: .02em; }
-  .promo-ruler-ticks li::before{ top: -15px; }
-  .promo-ruler-label{ left: 20px; }
-  .promo-ruler-finish{ flex-basis: 56px; background-size: 14px 14px; }
   .promo-text{ font-size: 14.5px; margin-top: var(--sp-3); }
+  .promo-steps{ margin-top: var(--sp-3); gap: var(--sp-2); }
+  .promo-steps li::before{ flex-basis: 34px; height: 34px; font-size: 21px; }
+  .promo-steps strong{ font-size: 15px; }
+  .promo-steps li > span > span{ font-size: 12.5px; }
   .promo-actions{ margin-top: var(--sp-4); }
   .promo-actions .btn{ flex: 1 1 0; padding: 0 12px; }
   .promo-media{ height: 100%; min-height: 150px; gap: var(--sp-3); }

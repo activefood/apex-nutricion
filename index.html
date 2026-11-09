@@ -41,7 +41,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
-<link rel="stylesheet" href="styles.css?v=155">
+<link rel="stylesheet" href="styles.css?v=156">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -184,36 +184,26 @@
   <section class="hero-carousel">
     <h1 class="visually-hidden">Apex Nutrición — nutrición deportiva de Going, Probar, Skratch Labs, SaltStick y Honey Stinger en Venezuela</h1>
 
-    <div class="hero-slide hero-slide--promo hero-slide--nike active" data-promo-until="2026-11-08" data-promo-id="nike-run-caracas" data-promo-name="Nike Run Caracas 10K — 10% hidratación en bolsa" data-promo-slot="hero-1">
+    <div class="hero-slide hero-slide--promo hero-slide--calc active" data-promo-id="calculadora" data-promo-name="Calculadora APEX — qué comer y tomar" data-promo-slot="hero-1">
       <div class="container">
         <div class="promo-copy">
-          <img class="promo-brandmark" src="assets/banners/nike-swoosh.webp" alt="Nike" width="77" height="28">
-          <p class="eyebrow">8 de noviembre · 10 km · Las Mercedes</p>
-          <h2 class="h-46 promo-title">Carrera Nike</h2>
-          <div class="promo-offer">
-            <p class="promo-offer-kicker">Aprovecha</p>
-            <p class="promo-offer-big">10% de descuento</p>
-            <p class="promo-offer-note">en bolsas de hidratante · Válido hasta el 8 de noviembre</p>
-          </div>
-          <p class="promo-text">Geles Going y bolsas de hidratación para cada kilómetro.</p>
+          <p class="eyebrow">Calculadora para atletas</p>
+          <h2 class="h-46 promo-title">¿Qué comer y tomar?</h2>
+          <p class="promo-text">Te decimos cuánto gel, bebida y sodio llevar en tu carrera o entreno.</p>
+          <ol class="promo-steps">
+            <li><span><strong>Cuéntanos tu evento</strong><span>Deporte, duración y tu peso</span></span></li>
+            <li><span><strong>Recibe tu plan hora por hora</strong><span>Qué comer y tomar cada hora</span></span></li>
+            <li><span><strong>Agrega el kit al carrito</strong><span>Con productos APEX, en un toque</span></span></li>
+          </ol>
           <div class="promo-actions">
-            <a class="btn btn--primary" href="producto.html" data-promo-creative="geles">Geles Going</a>
-            <a class="btn btn--ghost" href="categoria.html?cat=hidratacion" data-promo-creative="hidratacion">Hidratación en bolsa</a>
+            <a class="btn btn--primary" href="calculadora.html" data-promo-creative="boton">Calcular mi plan</a>
           </div>
         </div>
-        <div class="promo-media promo-media--fila promo-media--cuatro">
-          <img src="assets/banners/going-gel-fresa-banano-v2.webp" alt="Gel Energético Going sabor Fresa Banano" width="299" height="640" fetchpriority="high">
-          <img src="assets/banners/going-gel-granada-v2.webp" alt="Gel Energético Going sabor Granada" width="307" height="640" fetchpriority="high">
-          <img src="assets/banners/going-bolsa-pitaya-v2.webp" alt="Bolsa de 300 g de Hidratante Going sabor Pitaya" width="404" height="640" fetchpriority="low">
-          <img src="assets/banners/skratch-bolsa-v2.webp" alt="Bolsa de 440 g de hidratación Skratch Labs Fresa Limonada" width="495" height="640" fetchpriority="low">
+        <div class="promo-media promo-media--fila promo-media--calc">
+          <img src="assets/banners/going-gel-granada-v2.webp" alt="Gel Energético Going sabor Granada" width="307" height="640">
+          <img src="assets/banners/going-bolsa-pitaya-v2.webp" alt="Bolsa de 300 g de Hidratante Going sabor Pitaya" width="404" height="640">
+          <img src="assets/banners/skratch-sobres-limon-v2.webp" alt="Sobres de Skratch Labs sabor Limón Lima" width="184" height="640">
         </div>
-      </div>
-      <div class="promo-ruler" aria-hidden="true">
-        <div class="promo-ruler-track">
-          <span class="promo-ruler-label">Km a km hasta la meta</span>
-          <ol class="promo-ruler-ticks"><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li><li>10</li></ol>
-        </div>
-        <span class="promo-ruler-finish"></span>
       </div>
     </div>
 
@@ -271,7 +261,7 @@
     <div class="carousel-dots" role="group" aria-label="Diapositivas del héroe"></div>
   </section>
   <!-- Banners con fecha: se quitan solos el día siguiente a data-promo-until (hora de Caracas), antes de que el carrusel arme sus puntos.
-       La fecha de la Carrera Nike debe coincidir con BAG_PROMO_LAST_DAY en app.js. -->
+       Si un banner con fecha anuncia una promoción de precio, su fecha debe coincidir con la del código de esa promoción en app.js. -->
   <script>
     (function(){
       var today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
