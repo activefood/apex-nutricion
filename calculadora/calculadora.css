@@ -92,6 +92,10 @@ details.calc-card[open] > summary::after{ content: '−'; }
 .calc-num{ font-family: var(--font-head); font-size: 40px; letter-spacing: .03em; line-height: 1; color: var(--ink); margin: var(--sp-2) 0 var(--sp-1); font-variant-numeric: tabular-nums; }
 .calc-num small{ font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--ink-3); letter-spacing: 0; margin-left: 4px; }
 .calc-sub{ font-size: 13px; color: var(--ink-2); margin: 0; }
+.calc-brief{ border-left: 3px solid var(--ink); background: var(--paper-2); border-radius: var(--r-card); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); }
+.calc-brief .eyebrow{ margin: 0 0 var(--sp-1); }
+.calc-brief p{ margin: 0; font-size: 14px; }
+.calc-brief ul{ list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
 .calc-why{ margin-top: var(--sp-2); }
 .calc-why summary{ cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; min-height: 32px; display: inline-flex; align-items: center; }
 .calc-why p{ font-size: 13px; margin-top: var(--sp-1); }
@@ -287,3 +291,41 @@ fieldset.calc-group .calc-check{ margin-bottom: 0; font-size: 14px; font-weight:
 #calc-week-start[hidden], #calc-pack-form[hidden]{ display: none; }
 .calc-week-back{ margin: var(--sp-2) 0 0; text-align: center; }
 @media (max-width: 640px){ body.calc-bar-on{ padding-bottom: 80px; } body.calc-bar-on .wa-float{ bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } }
+
+/* ==========================================================================
+   Celular (hasta 640 px): el formulario por pasos
+   ui.js agrega .calc-wizard al formulario y marca con .is-current lo que toca mostrar en cada paso (data-step en
+   calculadora.html). Fuera de .calc-wizard / body.calc-wiz-on nada de esto aplica: tablet y escritorio, igual que antes.
+   ========================================================================== */
+.calc-wiz-head, .calc-wiz-nav, .calc-wiz-edit{ display: none; }
+@media (max-width: 640px){
+  .calc-wizard .calc-wiz-head{ display: block; margin: 0 0 var(--sp-4); scroll-margin-top: 84px; }
+  .calc-wiz-count{ margin: 0 0 var(--sp-2); font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .calc-wiz-track{ height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .calc-wiz-track span{ display: block; width: 17%; height: 100%; background: var(--ink); transition: width .25s ease; }   /* 17% = paso 1 de 6, como llega en el HTML */
+  .calc-wiz-title{ margin: var(--sp-3) 0 0; outline: none; }
+  .calc-wiz-plan{ margin-top: var(--sp-2); }
+
+  /* Solo lo del paso actual; la tarjeta que se queda sin nada que mostrar se esconde entera */
+  .calc-wizard [data-step]:not(.is-current){ display: none; }
+  .calc-wizard .calc-card.is-empty{ display: none; }
+  /* El título de cada tarjeta lo reemplaza el encabezado del paso (queda para lectores de pantalla) */
+  .calc-wizard .calc-card-title{ position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+  .calc-wizard .calc-wiz-nav{ display: flex; gap: var(--sp-3); margin-top: var(--sp-2); }
+  .calc-wiz-nav .btn{ flex: 1 1 0; min-height: 48px; }
+  .calc-wiz-nav [data-wiz="back"]{ flex: 0 0 34%; }
+  .calc-wiz-nav [hidden]{ display: none; }
+  .calc-wizard > .btn[type="submit"]{ display: none; }   /* "Calcular mi plan" es el botón de la navegación en el último paso */
+
+  /* Mientras se llena el formulario no hay plan ni barra del carrito; al terminar, solo el plan */
+  body.calc-wiz-on:not(.calc-wiz-done) .calc-results{ display: none; }
+  body.calc-wiz-on:not(.calc-wiz-done) .calc-bar{ display: none !important; }
+  body.calc-wiz-done .calc-form{ display: none; }
+  body.calc-wiz-done .calc-wiz-edit{ display: block; margin: 0 0 var(--sp-3); scroll-margin-top: 84px; }
+  body.calc-wiz-done .calc-wiz-edit .btn{ width: 100%; min-height: 44px; }
+  body.calc-wiz-done .cat-header > p:not(.eyebrow){ display: none; }
+}
+
+/* El script enfoca el título del paso y el plan para lectores de pantalla: sin recuadro de foco en esos dos */
+.calc-wiz-title:focus, .calc-wiz-title:focus-visible, #calc-out:focus, #calc-out:focus-visible{outline:none}

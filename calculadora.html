@@ -39,9 +39,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
 <link rel="stylesheet" href="styles.css?v=156">
-<link rel="stylesheet" href="calculadora/calculadora.css?v=18">
+<link rel="stylesheet" href="calculadora/calculadora.css?v=22">
 </head>
-<body>
+<body class="calc-wiz-on">
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
 <!-- ============ Barra de anuncio ============ -->
@@ -185,10 +185,18 @@
     </div>
 
     <div class="calc-layout">
-      <form id="calc-form" class="calc-form" autocomplete="off" novalidate>
+      <form id="calc-form" class="calc-form calc-wizard" autocomplete="off" novalidate>
+
+        <!-- Solo en celular (ver calculadora.css): cabecera, botones de paso y plan. Van en el HTML, ya en el paso 1, para que la página no salte cuando ui.js los activa. -->
+        <div class="calc-wiz-head">
+          <p class="calc-wiz-count" aria-live="polite">Paso 1 de 6</p>
+          <div class="calc-wiz-track" aria-hidden="true"><span></span></div>
+          <h2 class="calc-wiz-title h-22" tabindex="-1">Antes de empezar</h2>
+          <button type="button" class="calc-linkbtn calc-wiz-plan" data-wiz="results" hidden>Ver mi plan</button>
+        </div>
 
         <!-- Exclusiones: si alguna aplica, no se calculan cifras -->
-        <fieldset class="calc-card">
+        <fieldset class="calc-card is-current" data-step="1">
           <legend class="calc-card-title">Antes de empezar</legend>
           <p class="calc-help">Marca si alguna de estas aplica a ti:</p>
           <label class="calc-check"><input type="checkbox" name="excl" value="menor"> Tengo menos de 18 años</label>
@@ -198,10 +206,10 @@
           <label class="calc-check"><input type="checkbox" name="excl" value="medica"> Un médico me indicó controlar el sodio o los líquidos</label>
         </fieldset>
 
-        <fieldset class="calc-card">
+        <fieldset class="calc-card is-empty">
           <legend class="calc-card-title">Tu evento</legend>
 
-          <div class="calc-field">
+          <div class="calc-field" data-step="2">
             <span class="calc-label" id="lbl-sport">Deporte</span>
             <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-sport" data-pills="sport">
               <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="carrera">Carrera</button>
@@ -211,7 +219,7 @@
             </div>
           </div>
 
-          <div class="calc-row">
+          <div class="calc-row" data-step="2">
             <div class="calc-field">
               <label for="calc-hh">Duración: horas</label>
               <input type="number" id="calc-hh" inputmode="numeric" min="0" max="30" placeholder="4">
@@ -222,12 +230,12 @@
             </div>
           </div>
 
-          <div class="calc-field">
+          <div class="calc-field" data-step="2">
             <label for="calc-w">Tu peso (kg)</label>
             <input type="number" id="calc-w" inputmode="decimal" min="35" max="150" step="0.1" placeholder="70">
           </div>
 
-          <div class="calc-field">
+          <div class="calc-field" data-step="3">
             <span class="calc-label" id="lbl-intens">Intensidad</span>
             <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-intens" data-pills="intens">
               <button type="button" class="pill" role="radio" aria-checked="false" data-value="baja">Baja</button>
@@ -236,7 +244,7 @@
             </div>
           </div>
 
-          <div class="calc-field">
+          <div class="calc-field" data-step="3">
             <span class="calc-label" id="lbl-clima">Clima</span>
             <div class="pill-group calc-pills" role="radiogroup" aria-labelledby="lbl-clima" data-pills="clima">
               <button type="button" class="pill pill--active" role="radio" aria-checked="true" data-value="caluroso">Caluroso</button>
@@ -244,12 +252,12 @@
             </div>
           </div>
 
-          <div class="calc-field" data-only-sport="carrera">
+          <div class="calc-field" data-only-sport="carrera" data-step="3">
             <label for="calc-dist">Distancia en km <span class="calc-opt">(opcional)</span></label>
             <input type="number" id="calc-dist" inputmode="decimal" min="0" step="0.1" placeholder="Ej: 42.2">
           </div>
 
-          <div class="calc-field">
+          <div class="calc-field" data-step="3">
             <label for="calc-sweat">Cuánto sudas por hora, en litros <span class="calc-opt">(opcional)</span></label>
             <input type="number" id="calc-sweat" inputmode="decimal" min="0" step="0.05" placeholder="Si no lo sabes, déjalo vacío">
             <details class="calc-details">
@@ -269,7 +277,7 @@
           </div>
 
           <!-- Casillas sobre el atleta: bloque aparte, para que no parezcan parte de "Medir mi sudor" -->
-          <fieldset class="calc-field calc-group">
+          <fieldset class="calc-field calc-group" data-step="4">
             <legend class="calc-label">Marca lo que aplique a ti</legend>
             <label class="calc-check"><input type="checkbox" id="calc-salty"> Me quedan marcas blancas de sal en la ropa o la piel</label>
             <label class="calc-check"><input type="checkbox" id="calc-gut"> Estoy acostumbrado a comer mientras entreno</label>
@@ -277,7 +285,7 @@
             <label class="calc-check"><input type="checkbox" id="calc-caf"> Quiero cafeína</label>
           </fieldset>
 
-          <fieldset class="calc-field calc-choice">
+          <fieldset class="calc-field calc-choice" data-step="5">
             <legend class="calc-label">Bebida</legend>
             <div class="calc-options">
               <label class="calc-option"><input type="radio" name="drink" value="auto" checked><span class="calc-option-auto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></span><span class="calc-option-name">Que la calculadora elija</span></label>
@@ -286,7 +294,7 @@
             </div>
           </fieldset>
 
-          <fieldset class="calc-field calc-choice">
+          <fieldset class="calc-field calc-choice" data-step="6">
             <legend class="calc-label">Formato de energía</legend>
             <div class="calc-options">
               <label class="calc-option"><input type="radio" name="gelPref" value="hs_gel_fruta" checked><img src="assets/calculadora/hs-gel-fruit-smoothie.webp" alt="" width="64" height="64" loading="lazy"><span class="calc-option-name">Gel Honey Stinger</span><span class="calc-option-sub">24 g por gel</span> <span class="calc-soon">Próximamente</span></label>
@@ -300,16 +308,21 @@
         </fieldset>
 
         <!-- Guardar datos: solo con consentimiento (ver /api/calculadora en worker/index.js) -->
-        <div class="calc-card">
+        <div class="calc-card" data-step="6">
           <label class="calc-check" style="margin-top:0"><input type="checkbox" id="calc-consent"> Acepto que APEX guarde mis respuestas y mi plan para mejorar la calculadora. No se guarda mi nombre ni mi teléfono.</label>
         </div>
 
         <p class="checkout-error" id="calc-error" hidden></p>
+        <div class="calc-wiz-nav">
+          <button type="button" class="btn btn--ghost" data-wiz="back" hidden>Atrás</button>
+          <button type="button" class="btn btn--primary" data-wiz="next">Continuar</button>
+        </div>
         <button type="submit" class="btn btn--primary btn--block">Calcular mi plan</button>
       </form>
 
       <div class="calc-results">
-        <div id="calc-out" class="calc-out" aria-live="polite">
+        <div class="calc-wiz-edit"><button type="button" class="btn btn--ghost" data-wiz="edit">← Editar mis datos</button></div>
+        <div id="calc-out" class="calc-out" aria-live="polite" tabindex="-1">
           <div class="calc-card calc-empty">
             <p>Completa la duración y tu peso para ver tu plan por hora.</p>
           </div>
@@ -429,6 +442,6 @@
 <script src="app.js?v=103"></script>
 <script src="calculadora/productos.js?v=4"></script>
 <script src="calculadora/motor.js?v=9"></script>
-<script src="calculadora/ui.js?v=19"></script>
+<script src="calculadora/ui.js?v=24"></script>
 </body>
 </html>

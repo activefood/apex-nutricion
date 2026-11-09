@@ -115,6 +115,42 @@
   /* ---------- Resultado ---------- */
   function why(text){ return '<details class="calc-why"><summary>¿Por qué?</summary><p>' + text + '</p></details>'; }
 
+  // Resumen de una sola mirada, en palabras del cliente y por producto: para qué está cada uno en su plan (sin cifras).
+  // El detalle con números y fuentes sigue en los "¿Por qué?" de cada meta.
+  function resumenHtml(pl, inp){
+    const SPORT = { carrera: 'tu carrera', ciclismo: 'tu salida en bici', triatlon: 'tu triatlón', otro: 'tu evento' };
+    const h = Math.floor(inp.min / 60), m = Math.round(inp.min % 60);
+    const dur = h ? h + ' h' + (m ? ' ' + m + ' min' : '') : m + ' min';
+    const hayProductos = Object.keys(pl.items).length > 0;
+    const lead = 'Para ' + (SPORT[inp.sport] || 'tu evento') + ' de ' + dur + ' ' + (inp.clima === 'caluroso' ? 'con calor' : 'con clima fresco') +
+      (hayProductos ? ', cada producto de tu plan tiene un trabajo:' : ', no necesitas productos:');
+    const sal = pl.naT != null;
+    const GEL = 'energía rápida en formato gel, fácil de llevar y de usar en movimiento';
+    const RAZON = {
+      going_hidr: sal ? 'te hidrata y repone la sal que pierdes al sudar, todo en una sola bebida' : 'te hidrata con un toque de sal y energía, en una sola bebida',
+      skratch: 'te hidrata y te da sal y energía en una sola bebida',
+      going_gel: 'energía rápida con el toque de cafeína que pediste',
+      going_granada: 'energía rápida sin cafeína, en formato gel',
+      hs_gel_fruta: GEL, hs_gel_gold: GEL,
+      hs_gel_cafe: 'energía rápida con cafeína para la segunda mitad del evento',
+      hs_gomitas: 'energía masticable, para cambiar de formato y no cansarte del gel',
+      probar_bolt: 'energía masticable, para cambiar de formato y no cansarte del gel',
+      hs_waffle: 'energía sólida y suave para el estómago, para ritmos tranquilos',
+      ss_chews: 'completa la sal que le falta a tu plan, en tabletas fáciles de masticar',
+      ss_caps: 'completa la sal que le falta a tu plan, sin sumar azúcar'
+    };
+    let lis = '';
+    Object.keys(pl.items).forEach(function(k){
+      if(pl.ct.band === 'opc' && k === pl.opcional) return;
+      lis += '<li><strong>' + P[k].name + ':</strong> ' + (RAZON[k] || 'parte de tu plan') + '.</li>';
+    });
+    if(pl.ct.band === 'opc' && pl.opcional) lis += '<li><strong>' + P[pl.opcional].name + ':</strong> opcional, si quieres un empujón de energía.</li>';
+    if(pl.drink === 'agua') lis += '<li><strong>Agua:</strong> con este evento, el agua basta para tu hidratación.</li>';
+    else if(pl.waterExtra > 0.04) lis += '<li><strong>Agua sola:</strong> completa el líquido que tu cuerpo necesita.</li>';
+    if(pl.ct.g > 0 && pl.carbs > 60) lis += '<li><strong>Combinamos varios productos</strong> para que tu cuerpo aproveche toda la energía que le das.</li>';
+    return '<div class="calc-brief"><p class="eyebrow">Por qué este plan</p><p>' + lead + '</p><ul>' + lis + '</ul></div>';
+  }
+
   function goalsHtml(pl){
     let carb;
     if(pl.ct.band === '<45') carb = '<div class="calc-num">0<small>g/h</small></div><p class="calc-sub">En menos de 45 minutos no hace falta.</p>';
@@ -340,7 +376,7 @@
       kitPorciones: kit.serv, cafeinaMg: kit.caf, kitPrecio: Math.round(pk.total * 100) / 100,
       bebidaForzada: !!pl.bebidaForzada, bebidaExcluida: pl.bebidaExcluida ? pl.bebidaExcluida.k + ':' + pl.bebidaExcluida.motivo : null
     };
-    out.innerHTML = goalsHtml(pl) + planHtml(pl, kit, inp) + kitHtml(kit, pk);
+    out.innerHTML = resumenHtml(pl, inp) + goalsHtml(pl) + planHtml(pl, kit, inp) + kitHtml(kit, pk);
     $('calc-pack').hidden = false;
     renderWeek(inp);
     $('calc-notices').innerHTML = noticesHtml(inp);
@@ -442,6 +478,134 @@
   // Kit de la semana: los botones de días y horas ya redibujan todo (onChange); aquí solo la casilla de práctica
   packForm.addEventListener('change', onChange);
   packForm.addEventListener('submit', function(e){ e.preventDefault(); });
+
+  /* ---------- Celular: el formulario por pasos ----------
+     En pantallas de hasta 640 px el formulario se muestra de a un grupo de preguntas por pantalla (barra de progreso y
+     botones Atrás / Continuar); al terminar aparece el plan y el formulario se esconde, con un botón "Editar mis
+     datos" para volver. En tablet y escritorio todo sigue en una sola página. No hay otro formulario: son los mismos
+     campos, agrupados con data-step en calculadora.html. Las flechas del navegador también van de un paso al otro. */
+  const PASOS = ['Antes de empezar', 'Tu evento', 'Intensidad y clima', 'Sobre ti', 'Tu bebida', 'Tu energía'];
+  const RESULTADO = PASOS.length + 1;      // estado del historial para la pantalla del plan
+  const mqCelular = window.matchMedia('(max-width: 640px)');
+  let wiz = null;                          // null = una sola página; si no: { step, done }
+  let wizEls = null;
+
+  // La cabecera, los botones y el "Editar mis datos" ya vienen en calculadora.html (en el paso 1) para que la página no
+  // salte al activarse el JS; aquí solo se buscan.
+  function wizBuild(){
+    if(wizEls) return wizEls;
+    const head = form.querySelector('.calc-wiz-head');
+    const nav = form.querySelector('.calc-wiz-nav');
+    wizEls = { head: head, edit: document.querySelector('.calc-wiz-edit'), count: head.querySelector('.calc-wiz-count'),
+      bar: head.querySelector('.calc-wiz-track span'), title: head.querySelector('.calc-wiz-title'), plan: head.querySelector('.calc-wiz-plan'),
+      back: nav.querySelector('[data-wiz="back"]'), next: nav.querySelector('[data-wiz="next"]') };
+    return wizEls;
+  }
+
+  // how: 'push' (paso nuevo en el historial), 'pop' (viene del historial), 'init' (arranque, sin mover la pantalla)
+  function wizShow(n, how){
+    const w = wizBuild();
+    const anterior = wiz.step;
+    wiz.step = n; wiz.done = false;
+    document.body.classList.remove('calc-wiz-done');
+    form.classList.add('calc-wizard'); form.classList.remove('is-done');
+    form.querySelectorAll('[data-step]').forEach(function(el){ el.classList.toggle('is-current', el.dataset.step === String(n)); });
+    form.querySelectorAll('.calc-card').forEach(function(card){
+      card.classList.toggle('is-empty', !(card.dataset.step === String(n) || card.querySelector('[data-step="' + n + '"]')));
+    });
+    w.count.textContent = 'Paso ' + n + ' de ' + PASOS.length;
+    w.bar.style.width = Math.round(n / PASOS.length * 100) + '%';
+    w.title.textContent = PASOS[n - 1];
+    w.back.hidden = n === 1;
+    w.next.textContent = n === PASOS.length ? 'Calcular mi plan' : 'Continuar';
+    w.plan.hidden = !(current && !exclusions());
+    $('calc-error').hidden = true;
+    if(how === 'push') history.pushState({ calcStep: n, desde: anterior }, '');
+    else if(how === 'init') history.replaceState({ calcStep: n }, '');
+    if(how && how !== 'init'){
+      w.head.scrollIntoView({ block: 'start' });   // salto directo: el scroll suave se cortaba en algunos celulares
+      w.title.focus({ preventScroll: true });
+      if(typeof trackEvent === 'function') trackEvent('calculadora_paso', { paso: n });
+    }
+  }
+
+  function wizResults(how){
+    wiz.done = true;
+    document.body.classList.add('calc-wiz-done'); form.classList.add('is-done');
+    if(how === 'push') history.pushState({ calcStep: RESULTADO }, '');
+    wizBuild().edit.scrollIntoView({ block: 'start' });
+    $('calc-out').focus({ preventScroll: true });
+    if(typeof trackEvent === 'function') trackEvent('calculadora_paso', { paso: RESULTADO });
+  }
+
+  function wizStopNotice(){
+    const stop = $('calc-stop');
+    stop.focus({ preventScroll: true });
+    window.scrollTo(0, Math.max(0, stop.getBoundingClientRect().top + window.scrollY - 120));
+  }
+
+  function wizNext(){
+    const n = wiz.step;
+    if(n === 1){
+      $('calc-stop').hidden = !exclusions();
+      if(exclusions()){ wizStopNotice(); return; }   // con alguna condición no se dan cifras
+    }
+    if(n === 2 && !validate(readInp())){ const bad = form.querySelector('[aria-invalid="true"]'); if(bad) bad.focus(); return; }
+    if(n === PASOS.length){ form.querySelector('button[type="submit"]').click(); return; }
+    wizShow(n + 1, 'push');
+  }
+
+  function wizEnable(){
+    wiz = { step: 1, done: false };
+    wizBuild();
+    document.body.classList.add('calc-wiz-on');
+    wizShow(1, 'init');
+  }
+  function wizDisable(){
+    wiz = null;
+    document.body.classList.remove('calc-wiz-on', 'calc-wiz-done');
+    form.classList.remove('calc-wizard', 'is-done');
+    form.querySelectorAll('.is-current, .is-empty').forEach(function(el){ el.classList.remove('is-current', 'is-empty'); });
+  }
+
+  document.addEventListener('click', function(e){
+    const b = e.target.closest('[data-wiz]');
+    if(!b || !wiz) return;
+    const a = b.dataset.wiz;
+    if(a === 'next') wizNext();
+    else if(a === 'back'){
+      if(wiz.step <= 1) return;
+      // si el paso anterior es justo el anterior del historial, retrocede de verdad (así la flecha del navegador no repite pasos)
+      if(history.state && history.state.calcStep === wiz.step && history.state.desde === wiz.step - 1) history.back();
+      else wizShow(wiz.step - 1, 'push');
+    }
+    else if(a === 'edit') wizShow(2, 'push');
+    else if(a === 'results'){ if(current && !exclusions()) wizResults('push'); }
+  });
+  // Enter / "Ir" del teclado en un número: avanza al siguiente paso (no calcula a medias)
+  form.addEventListener('keydown', function(e){
+    if(!wiz || e.key !== 'Enter' || e.target.tagName !== 'INPUT' || e.target.type !== 'number') return;
+    e.preventDefault(); wizNext();
+  });
+  form.addEventListener('change', function(e){
+    if(wiz && wiz.step === 1 && e.target.name === 'excl') $('calc-stop').hidden = !exclusions();
+  });
+  // Después de "Calcular" (el manejador de arriba ya dibujó el plan): mostrar el plan, o volver al paso que falta
+  form.addEventListener('submit', function(){
+    if(!wiz) return;
+    if(exclusions()){ wizShow(1, 'push'); wizStopNotice(); return; }
+    if(!$('calc-error').hidden){ wizShow(2, 'push'); validate(readInp()); const bad = form.querySelector('[aria-invalid="true"]'); if(bad) bad.focus(); return; }
+    if(current) wizResults('push');
+  });
+  window.addEventListener('popstate', function(e){
+    const s = e.state && e.state.calcStep;
+    if(!wiz || !s) return;
+    if(s === RESULTADO){ if(current && !exclusions()) wizResults(); else wizShow(PASOS.length, 'pop'); }
+    else wizShow(s, 'pop');
+  });
+  const wizCambio = function(e){ if(e.matches){ if(!wiz) wizEnable(); } else if(wiz) wizDisable(); };
+  if(mqCelular.addEventListener) mqCelular.addEventListener('change', wizCambio); else mqCelular.addListener(wizCambio);
+  if(mqCelular.matches) wizEnable(); else wizDisable();   // en pantalla grande se quitan las marcas del paso 1 que trae el HTML
 
   promo();
   syncFields();
