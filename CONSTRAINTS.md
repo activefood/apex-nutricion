@@ -56,7 +56,8 @@ sobre 12 páginas, 3 pasadas. Cómo se fija cada número:
   gzip como Cloudflare. El chequeo sigue corriendo ANTES de subir, sobre el
   árbol de trabajo local, no contra producción.
 - *El sitio.* Fuentes propias en vez de Google Fonts y fin de las
-  descargas dobles de imágenes (`?v=`), el 2026-11-04.
+  descargas dobles de imágenes (`?v=`), el 2026-11-04. Cómo está hecho hoy
+  el sitio, y qué se probó y no sirvió, está en la sección siguiente.
 
 Contra producción (`apexnutricionve.com`, Lighthouse móvil, mediana de 5
 corridas, 2026-11-04) el sitio da 97 en home, ficha y carrito. Los números
@@ -67,6 +68,58 @@ Reconsiderar estos números con una medición nueva si cambia algo estructural
 (CSS/JS compartido, no solo contenido de una página). Sustituir
 `--measure-baseline` por el criterio de arriba: ese flag guarda el valor
 exacto medido, sin margen, y dispararía falsas alarmas.
+
+## Cómo está hecho el sitio (lo que explica los números)
+
+Para no repetir pruebas: esto es lo que hoy hace el sitio, y por qué.
+
+**Cómo se sirve**
+- HTML, CSS y JS escritos a mano, **sin paso de compilación**. Cloudflare Workers
+  sirve los archivos de la carpeta raíz (`wrangler.jsonc`, como *assets*) y un
+  Worker (`worker/index.js`) atiende solo `/api/*`: pedidos, reseñas, cupón y
+  calculadora.
+- Cloudflare **comprime** lo que baja el celular: `styles.css` pesa 101 KB y baja
+  ~21 KB; `app.js` pesa 105 KB y baja ~29 KB (gzip). Por eso
+  `check-performance.mjs` también comprime.
+- Todos los archivos salen con `Cache-Control: public, max-age=0, must-revalidate`
+  y `ETag`: el navegador siempre pregunta si cambió. **Reemplazar una foto con el
+  mismo nombre se ve sola**, sin tocar nada más. Los `?v=` de `styles.css` y
+  `app.js` en las páginas se siguen subiendo al cambiarlos.
+
+**Fuentes**
+- Propias, en `assets/fonts/`: Anton, Inter (variable) y Space Mono (400 y 700), 4
+  archivos WOFF2 de 79 KB en total, solo el subconjunto latino (cubre el español) y
+  `font-display: swap`.
+- Inter se precarga en las 31 páginas, y Anton también en el inicio. **Ninguna
+  petición a Google Fonts** (antes bloqueaba el primer pintado).
+
+**Imágenes**
+- WebP. El HTML trae la URL final de cada foto: no hay un script que la cambie
+  después. (Antes `initImageCacheBust()` le agregaba `?v=24` cuando el navegador
+  ya la había pedido, y cada foto se bajaba dos veces: 211 KB de más en el inicio
+  y 108 KB en una ficha.)
+- Los banners usan recortes de 17 a 29 KB en `assets/banners/`, no imágenes con el
+  texto pintado.
+
+**CSS, analítica y carrusel**
+- Un solo `styles.css` compartido, que **bloquea el pintado a propósito** (ver abajo).
+- Google Analytics (`gtag.js`) se carga con `async` en el `<head>`.
+- Los 3 banners del carrusel miden lo mismo en celular y en escritorio, para que
+  la página no salte al cambiar de uno a otro.
+
+**Probado el 2026-11-04 y descartado** (puntaje de Lighthouse móvil, mediana de
+5 rondas, en la home):
+
+| Idea | Resultado | Por qué no |
+|---|---|---|
+| CSS sin bloquear el pintado (`media="print"` + `onload`) | 63 contra 99 *(servidor con gzip)* | la página se pinta sin estilos y salta |
+| Minificar `styles.css` | −7 KB comprimidos, sin cambio medible *(con gzip)* | no compensa agregar una herramienta de compilación |
+| Cargar `gtag.js` al terminar la página | 83 contra 86; primer contenido 2,33 contra 1,66 s *(servidor sin gzip)* | empeora, y las visitas que se van antes de que cargue no quedan en GA4 |
+| `fetchpriority="high"` en la imagen que decide el LCP del banner | LCP 4,43 contra 4,14 s *(servidor sin gzip)* | empeoró |
+| Pedir las fotos de los banners ocultos al terminar la carga | 86 / 4,14 s, igual que antes *(servidor sin gzip)* | no mejoró y agrega código |
+
+**Volver a medir antes de subir si se toca:** las fuentes, `styles.css` o `app.js`
+en bloque, el script de analítica, o el primer banner del carrusel.
 
 ## Métricas solo-medición (sin piso todavía)
 
