@@ -28,6 +28,13 @@
   const fotoSabor = function(k){ const f = P[k].tienda.fotos, sab = elegidos(k)[0]; return f && f[sab] ? f[sab] : [P[k].tienda.foto, P[k].mini]; };
   const mini = function(k, size){ const src = fotoSabor(k)[1]; return src ? '<img src="' + src + '" alt="" width="' + size + '" height="' + size + '" loading="lazy" data-mini="' + k + '">' : dot(k); };
   const isSoon = function(k){ return typeof isComingSoonItem === 'function' && isComingSoonItem({ brand: P[k].tienda.marca, name: P[k].name }); };
+  // Lo que el carrito sí recibe hoy: los productos "Próximamente" (Honey Stinger) no se agregan, así que no suman al precio del botón.
+  // Si APEX fija el precio del kit, ese precio manda.
+  const aCarrito = function(units, lineas, total, fijado){
+    const ks = Object.keys(units).filter(function(k){ return !isSoon(k); });
+    const hayFuera = ks.length < Object.keys(units).length;
+    return { total: (fijado || !hayFuera) ? total : ks.reduce(function(t, k){ return t + lineas[k]; }, 0), n: ks.length, hayFuera: hayFuera };
+  };
   const soonTag = function(k){ return isSoon(k) ? ' <span class="calc-soon">Próximamente</span>' : ''; };
   const num = function(id){ const v = parseFloat(($(id).value || '').replace(',', '.')); return isNaN(v) ? 0 : v; };
   const radio = function(name){ const el = form.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : null; };
@@ -117,7 +124,7 @@
 
   // Resumen de una sola mirada, en palabras del cliente y por producto: para qué está cada uno en su plan (sin cifras).
   // El detalle con números y fuentes sigue en los "¿Por qué?" de cada meta.
-  function resumenHtml(pl, inp){
+  function resumenHtml(pl, inp, kit){
     const SPORT = { carrera: 'tu carrera', ciclismo: 'tu salida en bici', triatlon: 'tu triatlón', otro: 'tu evento' };
     const h = Math.floor(inp.min / 60), m = Math.round(inp.min % 60);
     const dur = h ? h + ' h' + (m ? ' ' + m + ' min' : '') : m + ' min';
@@ -132,7 +139,7 @@
       going_gel: 'energía rápida con el toque de cafeína que pediste',
       going_granada: 'energía rápida sin cafeína, en formato gel',
       hs_gel_fruta: GEL, hs_gel_gold: GEL,
-      hs_gel_cafe: 'energía rápida con cafeína para la segunda mitad del evento',
+      hs_gel_cafe: 'en la segunda mitad del evento sustituye a parte de tus geles, para darte cafeína cuando llega el cansancio',
       hs_gomitas: 'energía masticable, para cambiar de formato y no cansarte del gel',
       probar_bolt: 'energía masticable, para cambiar de formato y no cansarte del gel',
       hs_waffle: 'energía sólida y suave para el estómago, para ritmos tranquilos',
@@ -144,6 +151,8 @@
       if(pl.ct.band === 'opc' && k === pl.opcional) return;
       lis += '<li><strong>' + P[k].name + ':</strong> ' + (RAZON[k] || 'parte de tu plan') + '.</li>';
     });
+    // Con cafeína pedida, el kit cambia parte de los geles por el de cafeína en la segunda mitad (no está en el plan por hora)
+    if(kit && kit.serv.hs_gel_cafe) lis += '<li><strong>' + P.hs_gel_cafe.name + ':</strong> ' + RAZON.hs_gel_cafe + '.</li>';
     if(pl.ct.band === 'opc' && pl.opcional) lis += '<li><strong>' + P[pl.opcional].name + ':</strong> opcional, si quieres un empujón de energía.</li>';
     if(pl.drink === 'agua') lis += '<li><strong>Agua:</strong> con este evento, el agua basta para tu hidratación.</li>';
     else if(pl.waterExtra > 0.04) lis += '<li><strong>Agua sola:</strong> completa el líquido que tu cuerpo necesita.</li>';
@@ -285,6 +294,11 @@
       (rep.length > 1 ? '<span class="calc-flavors-split">' + rep.map(function(x){ return x[1] + ' ' + x[0]; }).join(' · ') + '</span>' : '') + '</div>';
   }
 
+  // Fila extra del pie cuando hay productos que todavía no se pueden agregar: cuánto va realmente al carrito
+  function hoyRow(a){
+    return a.hayFuera ? '<tr class="calc-hoy"><td colspan="3">Se agrega hoy al carrito' + (a.n ? '' : ' (nada por ahora)') + '</td><td class="n">' + usd(a.total) + '</td></tr>' : '';
+  }
+
   function soonNote(keys){
     return keys.some(isSoon) ? '<p class="calc-help">Honey Stinger llega pronto: por ahora esos productos no se agregan al carrito. El resto sí.</p>' : '';
   }
@@ -296,7 +310,7 @@
       keys.map(function(k){ const p = P[k];
         return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorPicker(k, pk.units[k]) + '</td><td class="n calc-col-porc">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
       }).join('') +
-      '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(pk.total) + '</td></tr></tfoot></table></div>';
+      '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(pk.total) + '</td></tr>' + hoyRow(aCarrito(pk.units, pk.lineas, pk.total, pk.fijadoPorApex)) + '</tfoot></table></div>';
     html += '<p class="calc-help">' + (pk.fijadoPorApex ? 'Precio del kit fijado por APEX.' : 'Precio con el descuento por caja del sitio.') + ' El 10% de primera compra y las promociones se aplican en el carrito.</p>';
     if(kit.caf > 0) html += '<p class="calc-help">' + kit.porque + ' La cafeína va en la segunda mitad del evento. Si terminas de noche, puede afectar tu sueño.</p>';
     if(kit.cafNote) html += '<p class="calc-help">' + kit.cafNote + '</p>';
@@ -311,7 +325,7 @@
       keys.map(function(k){ const p = P[k];
         return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorPicker(k, w.units[k]) + '</td><td class="n calc-col-porc">' + NUM(w.week[k]) + '</td><td>' + NUM(w.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(w.lineas[k]) + '</td></tr>';
       }).join('') +
-      '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(w.total) + '</td></tr></tfoot></table></div>';
+      '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(w.total) + '</td></tr>' + hoyRow(aCarrito(w.units, w.lineas, w.total, w.fijadoPorApex)) + '</tfoot></table></div>';
     html += '<p class="calc-help">Calculado con las mismas reglas del plan: ' + w.nNormal + ' sesion' + (w.nNormal === 1 ? '' : 'es') + ' de ' + hours(tr.normalMin) + ' h' +
       (tr.hasLong ? ' y 1 sesión larga de ' + hours(tr.longMin) + ' h' : '') + '.' +
       (w.gutBlock ? ' Es una semana de práctica: en las sesiones de 1 h o más comes lo mismo que en la carrera.' : '') +
@@ -340,15 +354,18 @@
   }
 
   /* ---------- Barra fija con el botón del carrito ---------- */
+  // ¿Se está ofreciendo el kit de la semana? Solo si ya se armó y trae algo que se pueda agregar hoy; si no, el botón es el del kit del evento.
+  function semanaActiva(){ return !!(weekBuilt && current && current.week && current.weekHoy && current.weekHoy.n > 0); }
+
   function bar(){
     const b = $('calc-bar');
-    const on = !!(current && Object.keys(current.kit).length);
+    const on = !!(current && current.kitHoy.n > 0);   // sin nada que agregar hoy (todo Próximamente), la barra no se muestra
     b.hidden = !on;
     document.body.classList.toggle('calc-bar-on', on);
     if(!on) return;
-    const semana = !!(weekBuilt && current.week && Object.keys(current.week).length);
+    const semana = semanaActiva();
     $('calc-bar-name').textContent = semana ? 'Agregar kit de la semana' : 'Agregar kit del evento';
-    $('calc-bar-price').textContent = usd(semana ? current.weekTotal : current.kitTotal);
+    $('calc-bar-price').textContent = usd(semana ? current.weekHoy.total : current.kitHoy.total);
   }
 
   let current = null;   // último resultado, para los botones de agregar
@@ -367,7 +384,7 @@
     const inp = readInp();
     if(!validate(inp)){ current = null; $('calc-pack').hidden = true; bar(); return; }
     const pl = M.plan(inp); const kit = M.kitFromPlan(pl, inp); const pk = M.precioKit(kit);
-    current = { kit: pk.units, kitTotal: pk.total, week: null, weekTotal: 0 };
+    current = { kit: pk.units, kitTotal: pk.total, kitHoy: aCarrito(pk.units, pk.lineas, pk.total, pk.fijadoPorApex), week: null, weekTotal: 0, weekHoy: null };
     // Lo que se guarda del plan (si hay consentimiento)
     current.resumen = {
       carbMeta: pl.ct.g, carbPlan: pl.carbs, aguaLh: pl.V, aguaMin: pl.floor, sudorLh: pl.S, sudorFuente: pl.sweatSrc,
@@ -376,7 +393,7 @@
       kitPorciones: kit.serv, cafeinaMg: kit.caf, kitPrecio: Math.round(pk.total * 100) / 100,
       bebidaForzada: !!pl.bebidaForzada, bebidaExcluida: pl.bebidaExcluida ? pl.bebidaExcluida.k + ':' + pl.bebidaExcluida.motivo : null
     };
-    out.innerHTML = resumenHtml(pl, inp) + goalsHtml(pl) + planHtml(pl, kit, inp) + kitHtml(kit, pk);
+    out.innerHTML = resumenHtml(pl, inp, kit) + goalsHtml(pl) + planHtml(pl, kit, inp) + kitHtml(kit, pk);
     $('calc-pack').hidden = false;
     renderWeek(inp);
     $('calc-notices').innerHTML = noticesHtml(inp);
@@ -386,10 +403,10 @@
   function renderWeek(inp){
     $('calc-week-start').hidden = weekBuilt;
     packForm.hidden = !weekBuilt;
-    if(!weekBuilt){ current.week = null; $('calc-pack-out').innerHTML = ''; return; }
+    if(!weekBuilt){ current.week = null; current.weekHoy = null; $('calc-pack-out').innerHTML = ''; return; }
     const tr = readTr();
     const w = M.weekPack(inp, tr);
-    current.week = w.units; current.weekTotal = w.total;
+    current.week = w.units; current.weekTotal = w.total; current.weekHoy = aCarrito(w.units, w.lineas, w.total, w.fijadoPorApex);
     current.resumen.semana = w.week; current.resumen.semanaPrecio = Math.round(w.total * 100) / 100;
     $('calc-pack-out').innerHTML = weekHtml(w, tr) +
       '<p class="calc-week-back"><button type="button" class="calc-linkbtn" id="calc-week-stop">Prefiero solo el kit del evento</button></p>';
@@ -423,7 +440,7 @@
   document.addEventListener('click', function(e){
     const add = e.target.closest('[data-add]');
     if(add && current){
-      const semana = weekBuilt && current.week;
+      const semana = semanaActiva();
       addToCart(semana ? current.week : current.kit, semana ? 'pack' : 'kit');
     }
     if(e.target.closest('#calc-week-start') || e.target.closest('#calc-week-stop')){

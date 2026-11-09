@@ -107,6 +107,8 @@ details.calc-card[open] > summary::after{ content: '−'; }
 .calc-table th{ font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); }
 .calc-table .n{ text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .calc-table tfoot td{ font-weight: 700; color: var(--ink); border-bottom: 0; }
+.calc-table tfoot .calc-hoy td{ font-weight: 400; color: var(--ink-2, var(--ink)); padding-top: 0; font-size: 13px; }
+.calc-table tfoot .calc-hoy td.n{ font-weight: 700; }
 .calc-table select{ height: 36px; border: 1px solid var(--line); border-radius: var(--r-control); padding: 0 8px; font-size: 13px; background: var(--paper); margin-top: 6px; max-width: 100%; }
 .calc-prod{ display: flex; gap: 8px; align-items: center; font-weight: 600; color: var(--ink); }
 .calc-dot{ width: 10px; height: 10px; border-radius: 50%; flex: none; }
