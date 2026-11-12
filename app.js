@@ -140,7 +140,7 @@ function initBagPromoBadges(){
 function initOffersPage(){
   const cards = document.querySelectorAll('[data-deals-group]');
   if(!cards.length) return;
-  const active = { bag: bagPromoActive(), probar: probarPromoActive() };
+  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true };   // los kits no tienen fecha de fin
   let any = false;
   cards.forEach(function(card){
     const on = !!active[card.dataset.dealsGroup];
@@ -152,7 +152,7 @@ function initOffersPage(){
   if(emptyEl) emptyEl.hidden = any;
   const grid = document.getElementById('ofertas-grid');
   if(grid) grid.hidden = !any;
-  document.querySelectorAll('.deals-note').forEach(function(el){ el.hidden = !any; });
+  document.querySelectorAll('.deals-note').forEach(function(el){ el.hidden = !(active.bag || active.probar); });   // la nota habla del 10% de las promos con fecha
 }
 
 function isBagHydrationItem(item){
@@ -405,7 +405,8 @@ function addItemToCart(item){
       // "tiers" es la tabla de precios por unidad en cada tramo (1/6/12/24)
       // tal como está configurada en la ficha de ese producto.
       family: item.family || null,
-      tiers: item.tiers || null
+      tiers: item.tiers || null,
+      kit: !!item.kit   // kit de Hot Deals: su detalle (variant) se manda también en el pedido
     });
   }
   saveCart(cart);
@@ -509,6 +510,20 @@ function addCardToCart(card){
   const brandEl = card.querySelector('.product-brand');
   const photoEl = card.querySelector('.product-photo');
   if(!nameEl || !priceEl) return;
+
+  // Kit: un solo producto con precio propio; el contenido viaja en "variant" y también en el nombre del pedido (ver el envío)
+  if(card.hasAttribute('data-kit')){
+    addItemToCart({
+      name: nameEl.textContent.trim(),
+      brand: brandEl ? brandEl.textContent.trim() : '',
+      photo: photoEl ? photoEl.src : '',
+      variant: card.dataset.kitContents || '',
+      unitPrice: parseFloat(card.dataset.kitPrice) || 0,
+      quantity: 1,
+      kit: true
+    });
+    return;
+  }
 
   addItemToCart({
     name: nameEl.textContent.trim(),
@@ -2031,7 +2046,7 @@ function initCheckoutButton(){
     // cada línea, para que el total que se registra en la hoja y en
     // Telegram sea exactamente lo que el cliente debe pagar.
     const items = pricedCart.map(function(item){
-      return { brand: item.brand, product: item.name, unitPrice: item.unitPrice * (1 - discountRateForItem(appliedCoupon, item)), quantity: item.quantity };
+      return { brand: item.brand, product: item.name + (item.kit && item.variant ? ' (' + item.variant + ')' : ''), unitPrice: item.unitPrice * (1 - discountRateForItem(appliedCoupon, item)), quantity: item.quantity };
     });
 
     const orderPayload = {

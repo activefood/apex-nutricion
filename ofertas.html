@@ -22,13 +22,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#ffffff">
 <style>img,svg{max-width:100%;display:block}html,body{overflow-x:hidden;margin:0}.mobile-nav{display:none}</style>
-<title>Hot Deals — Descuentos en hidratantes y barras de proteína | Apex Nutrición</title>
-<meta name="description" content="Hot Deals de Apex Nutrición: 10% de descuento en bolsas de hidratante y barras de proteína Probar, por tiempo limitado. Se aplica solo al armar tu pedido, sin código.">
+<title>Hot Deals — Kits y descuentos | Apex Nutrición</title>
+<meta name="description" content="Hot Deals de Apex Nutrición: kits para tu carrera (5K, 10K y maratón) con precio especial y productos con descuento por tiempo limitado.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Apex Nutrición">
 <meta property="og:locale" content="es_VE">
-<meta property="og:title" content="Hot Deals — Descuentos en hidratantes y barras de proteína | Apex Nutrición">
-<meta property="og:description" content="Hot Deals de Apex Nutrición: 10% de descuento en bolsas de hidratante y barras de proteína Probar, por tiempo limitado. Se aplica solo al armar tu pedido, sin código.">
+<meta property="og:title" content="Hot Deals — Kits y descuentos | Apex Nutrición">
+<meta property="og:description" content="Hot Deals de Apex Nutrición: kits para tu carrera (5K, 10K y maratón) con precio especial y productos con descuento por tiempo limitado.">
 <meta property="og:image" content="https://apexnutricionve.com/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="1200">
@@ -38,7 +38,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
-<link rel="stylesheet" href="styles.css?v=156">
+<link rel="stylesheet" href="styles.css?v=157">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -173,7 +173,7 @@
     <!-- ============ Encabezado ============ -->
     <div class="cat-header">
       <h1 class="h-36">Hot Deals <span class="hot-emoji" aria-hidden="true">🔥</span></h1>
-      <p>Productos con 10% de descuento por tiempo limitado, hasta el 8 de noviembre. Se aplica solo al armar tu pedido, sin código.</p>
+      <p>Kits para tu carrera con precio especial y productos con descuento por tiempo limitado.</p>
     </div>
 
     <p class="cat-empty" id="ofertas-empty" hidden>
@@ -183,6 +183,58 @@
 
     <!-- Cada producto se muestra solo mientras su promo está vigente (initOffersPage en app.js). -->
     <div class="product-grid" id="ofertas-grid">
+
+          <!-- Kits: precio especial de APEX. El descuento (si lo hay) es contra comprar cada producto por separado en el carrito. -->
+          <div data-deals-group="kits" class="product-card" data-kit data-kit-price="46.43" data-kit-contents="9 geles + 6 hidratantes + 1 proteína + 2 barras endurance" data-brand="going" data-price="46.43">
+            <div class="product-card-box">
+              <div class="product-media">
+                <img class="product-photo" src="assets/kits/kit-maraton-42k.webp" alt="Kit Maratón 42K: 9 geles, 6 hidratantes, 1 proteína vegana y 2 barras endurance Going" width="800" height="800" loading="lazy">
+              </div>
+              <div class="product-info">
+                <p class="product-brand">Going Nutrición</p>
+                <h3 class="product-name">Kit Maratón 42K</h3>
+                <p class="product-stat">9 geles · 6 hidratantes · 1 proteína · 2 barras endurance</p>
+                <div class="product-bottom">
+                  <span class="product-price on-sale"><span class="product-price-usd"><span>$46,43</span><span class="was was--kit">$51,11</span></span></span>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+          <div data-deals-group="kits" class="product-card" data-kit data-kit-price="25.45" data-kit-contents="3 geles + 3 hidratantes + 1 proteína + 1 barra endurance" data-brand="going" data-price="25.45">
+            <div class="product-card-box">
+              <div class="product-media">
+                <img class="product-photo" src="assets/kits/kit-carrera-10k.webp" alt="Kit Carrera 10K: 3 geles, 3 hidratantes, 1 proteína vegana y 1 barra endurance Going" width="800" height="800" loading="lazy">
+              </div>
+              <div class="product-info">
+                <p class="product-brand">Going Nutrición</p>
+                <h3 class="product-name">Kit Carrera 10K</h3>
+                <p class="product-stat">3 geles · 3 hidratantes · 1 proteína · 1 barra endurance</p>
+                <div class="product-bottom">
+                  <span class="product-price">$25,45</span>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+          <div data-deals-group="kits" class="product-card" data-kit data-kit-price="8.64" data-kit-contents="1 hidratante + 2 barras endurance" data-brand="going" data-price="8.64">
+            <div class="product-card-box">
+              <div class="product-media">
+                <img class="product-photo" src="assets/kits/kit-caminata-5k.webp" alt="Kit Caminata 5K: 1 hidratante y 2 barras endurance Going" width="800" height="800" loading="lazy">
+              </div>
+              <div class="product-info">
+                <p class="product-brand">Going Nutrición</p>
+                <h3 class="product-name">Kit Caminata 5K</h3>
+                <p class="product-stat">1 hidratante · 2 barras endurance</p>
+                <div class="product-bottom">
+                  <span class="product-price on-sale"><span class="product-price-usd"><span>$8,64</span><span class="was was--kit">$9,99</span></span></span>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
 
           <div data-deals-group="bag" class="product-card" data-brand="going" data-format="polvo" data-caffeine="0" data-carbs="7.5" data-sodium="115" data-sport="running ciclismo triatlon trail gimnasio" data-price="25.99" data-rating="4.7" data-category="hidratacion">
             <a class="product-card-box" href="producto-going-hidratante-tarro.html?flavor=Uva">
@@ -370,6 +422,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=103"></script>
+<script src="app.js?v=104"></script>
 </body>
 </html>

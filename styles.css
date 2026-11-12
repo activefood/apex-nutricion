@@ -1227,6 +1227,8 @@ button.pill:hover{ border-color: var(--ink); }
   text-decoration: line-through;
 }
 .product-price.on-sale{ color: var(--sale); }
+/* Kits de Hot Deals: el precio de antes va tachado con una raya roja */
+.product-price .was--kit{ text-decoration-color: var(--sale); text-decoration-thickness: 2px; }
 .product-rating{
   display: flex;
   align-items: center;
