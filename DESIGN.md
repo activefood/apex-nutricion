@@ -157,3 +157,13 @@ Nunca se usan como acento general del sitio.
 
 
 * **Menú móvil**: no se bloquea el scroll con `overflow:hidden` en el `body` (en iPhone rompía el encabezado `sticky` y la hamburguesa desaparecía al hacer scroll); el panel se coloca con JS justo debajo del encabezado (`placePanel` en `app.js`) y usa `overscroll-behavior: contain`.
+
+## Panel de pedidos (panel.html) — pantalla interna
+
+No es parte de la tienda: lo usa quien recibe los pedidos (reemplaza a Telegram). Tiene su propio
+`panel/panel.css` (no carga `styles.css`) pero la misma identidad: tinta, papel, lima **solo como fondo**
+(botón "Confirmar" y contador de nuevos), Anton para números de pedido y totales, Space Mono para datos.
+Pensado para usarlo de pie y con una mano: botones de 56 px, letras grandes, tarjetas tipo ticket de
+cocina. Celular = pestañas por etapa; pantalla grande (≥ 900 px) = tres columnas (Nuevos / Entrega /
+Resueltos). El tiempo de espera pasa a ámbar a los 10 min y a rojo a los 30. No se indexa
+(`noindex`, `robots.txt`) y los datos solo salen por `/api/panel/*` con código de acceso.

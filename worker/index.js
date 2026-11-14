@@ -25,6 +25,19 @@ export default {
     if (url.pathname === '/api/telegram-webhook') {
       return handleTelegramWebhook(request, env);
     }
+    if (url.pathname.indexOf('/api/panel/') === 0) {
+      return handlePanel(request, env, url);
+    }
+    if (url.pathname === '/panel' || url.pathname === '/panel/') {
+      return Response.redirect(new URL('/panel.html', url).toString(), 302);
+    }
+    if (url.pathname === '/panel.html' || url.pathname.indexOf('/panel/') === 0) {
+      // El panel no se indexa (el contenido de los pedidos igual solo sale por /api/panel, con código).
+      const asset = await env.ASSETS.fetch(request);
+      const headers = new Headers(asset.headers);
+      headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      return new Response(asset.body, { status: asset.status, headers: headers });
+    }
     if (url.pathname === '/api/calculadora') {
       const blocked = await guardPublicApi(request, env.API_LIMITER, 'calculadora');
       return blocked || handleCalculadora(request, env);
@@ -362,6 +375,137 @@ async function forwardAndRelay(appsScriptUrl, body, logTag) {
     console.error(logTag + ' Fetch to Apps Script failed: ' + String(err));
     return json({ ok: false, error: 'Could not reach Google Apps Script' }, 502);
   }
+}
+
+/* ---------- Panel de pedidos (panel.html) ----------
+   Reemplaza a los botones de Telegram: la persona que recibe los pedidos entra con un código compartido y ve
+   los pedidos por etapa. Este Worker es el único que habla con Apps Script (con PANEL_APPS_KEY); el navegador
+   nunca ve esa clave ni la dirección de Apps Script.
+   Variables del Worker (secretas): PANEL_CODE (el código que se escribe para entrar) y PANEL_APPS_KEY (la misma
+   clave que PANEL_API_KEY en Apps Script). Sin ellas el panel responde 503 y no se expone nada.
+   Sesión: cookie firmada (HMAC con el propio código) que dura 14 días. Si se cambia PANEL_CODE, todas las
+   sesiones abiertas dejan de valer. Intentos de entrada: los limita guardPublicApi (5 por minuto por IP). */
+const PANEL_COOKIE = 'apex_panel';
+const PANEL_SESSION_SECONDS = 14 * 24 * 3600;
+const PANEL_ACTIONS = ['completed', 'canceled', 'pickup', 'delivery', 'delivery_price'];
+const PANEL_LIST_CACHE_MS = 4000;   // varias pantallas abiertas comparten la misma lectura de la hoja
+let panelListCache = null;          // { t, orders }
+
+function panelJson(body, status) {
+  const res = json(body, status);
+  res.headers.set('Cache-Control', 'no-store');
+  res.headers.set('X-Robots-Tag', 'noindex');
+  return res;
+}
+
+async function hmacBase64Url(secret, message) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(message)));
+  let bin = '';
+  for (let i = 0; i < sig.length; i++) bin += String.fromCharCode(sig[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Compara dos textos sin que el tiempo delate en qué letra difieren (se comparan sus firmas).
+async function safeEqual(a, b) {
+  const pair = await Promise.all([hmacBase64Url('apex-panel-compare', String(a)), hmacBase64Url('apex-panel-compare', String(b))]);
+  let diff = pair[0].length ^ pair[1].length;
+  for (let i = 0; i < pair[0].length && i < pair[1].length; i++) diff |= pair[0].charCodeAt(i) ^ pair[1].charCodeAt(i);
+  return diff === 0;
+}
+
+async function panelMakeToken(env) {
+  const exp = Math.floor(Date.now() / 1000) + PANEL_SESSION_SECONDS;
+  return exp + '.' + await hmacBase64Url(env.PANEL_CODE + '|apex-panel-session', String(exp));
+}
+
+async function panelIsAuthed(request, env) {
+  const match = (request.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + PANEL_COOKIE + '=([^;]+)'));
+  if (!match) return false;
+  const parts = match[1].split('.');
+  if (parts.length !== 2 || !/^\d+$/.test(parts[0]) || !parts[1]) return false;
+  if (Number(parts[0]) < Date.now() / 1000) return false;
+  return safeEqual(parts[1], await hmacBase64Url(env.PANEL_CODE + '|apex-panel-session', parts[0]));
+}
+
+function panelCookie(value, maxAge) {
+  return PANEL_COOKIE + '=' + value + '; Path=/api/panel; Max-Age=' + maxAge + '; HttpOnly; Secure; SameSite=Strict';
+}
+
+async function handlePanel(request, env, url) {
+  if (!env.PANEL_CODE || !env.PANEL_APPS_KEY || !env.APPS_SCRIPT_URL) {
+    console.error('[panel] Faltan PANEL_CODE, PANEL_APPS_KEY o APPS_SCRIPT_URL en las variables del Worker');
+    return panelJson({ ok: false, error: 'Panel not configured' }, 503);
+  }
+  const route = url.pathname.slice('/api/panel/'.length);
+
+  if (route === 'login') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const blocked = await guardPublicApi(request, env.ORDER_LIMITER, 'panel-login');
+    if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    let code = '';
+    try {
+      const body = await readJsonBody(request);
+      code = body.payload && typeof body.payload.code === 'string' ? body.payload.code : '';
+    } catch (err) { /* código vacío: falla abajo */ }
+    if (!code || code.length > 200 || !(await safeEqual(code, env.PANEL_CODE))) {
+      console.error('[panel] Código incorrecto desde ' + clientIp(request));
+      return panelJson({ ok: false, error: 'Unauthorized' }, 401);
+    }
+    const res = panelJson({ ok: true });
+    res.headers.append('Set-Cookie', panelCookie(await panelMakeToken(env), PANEL_SESSION_SECONDS));
+    return res;
+  }
+
+  if (route === 'logout') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const res = panelJson({ ok: true });
+    res.headers.append('Set-Cookie', panelCookie('', 0));
+    return res;
+  }
+
+  if (!(await panelIsAuthed(request, env))) return panelJson({ ok: false, error: 'Unauthorized' }, 401);
+
+  if (route === 'orders') {
+    if (request.method !== 'GET') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    if (panelListCache && Date.now() - panelListCache.t < PANEL_LIST_CACHE_MS) {
+      return panelJson({ ok: true, now: Date.now(), orders: panelListCache.orders });
+    }
+    const result = await forwardToAppsScript(env.APPS_SCRIPT_URL, { source: 'panel-list', key: env.PANEL_APPS_KEY });
+    if (!result || result.ok !== true || !Array.isArray(result.orders)) {
+      console.error('[panel] No se pudo leer la hoja: ' + (result && result.error));
+      return panelJson({ ok: false, error: 'No se pudo leer los pedidos. Intenta otra vez.' }, 502);
+    }
+    panelListCache = { t: Date.now(), orders: result.orders };
+    return panelJson({ ok: true, now: Date.now(), orders: result.orders });
+  }
+
+  if (route === 'action') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const blocked = await guardPublicApi(request, env.API_LIMITER, 'panel-action');
+    if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    let body;
+    try { body = (await readJsonBody(request)).payload; } catch (err) { return panelJson({ ok: false, error: 'Bad JSON' }, 400); }
+    const orderId = body && typeof body.orderId === 'string' ? body.orderId : '';
+    const action = body && body.action;
+    const value = body && typeof body.value === 'string' ? body.value.trim() : null;
+    if (!/^\d{1,8}$/.test(orderId)) return panelJson({ ok: false, error: 'Número de pedido inválido' }, 400);
+    if (PANEL_ACTIONS.indexOf(action) === -1) return panelJson({ ok: false, error: 'Acción no permitida' }, 400);
+    if (action === 'delivery_price' && (!value || value.length > 80)) return panelJson({ ok: false, error: 'Escribe el monto del delivery (o una nota corta).' }, 400);
+    panelListCache = null;
+    const result = await forwardToAppsScript(env.APPS_SCRIPT_URL, {
+      source: 'panel-action', key: env.PANEL_APPS_KEY, action: action, orderId: orderId, value: action === 'delivery_price' ? value : null
+    });
+    panelListCache = null;
+    if (!result || result.ok !== true) {
+      console.error('[panel] Acción ' + action + ' en ' + orderId + ' falló: ' + (result && result.error));
+      return panelJson({ ok: false, error: (result && result.error) || 'No se pudo guardar. Intenta otra vez.' }, 400);
+    }
+    return panelJson({ ok: true });
+  }
+
+  return panelJson({ ok: false, error: 'Not found' }, 404);
 }
 
 /* ---------- /api/telegram-webhook ---------- */

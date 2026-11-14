@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es-VE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#14120F">
+<title>Panel de pedidos · Apex</title>
+<link rel="manifest" href="panel/panel.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var.woff2" crossorigin>
+<link rel="stylesheet" href="panel/panel.css?v=1">
+</head>
+<body>
+
+<!-- Entrada con código compartido -->
+<main class="login" id="login">
+  <form class="login-box" id="login-form" autocomplete="off">
+    <p class="eyebrow">Apex Nutrición</p>
+    <h1>Panel de pedidos</h1>
+    <label for="login-code">Código de acceso</label>
+    <input id="login-code" name="code" type="password" inputmode="text" autocomplete="current-password" autocapitalize="off" spellcheck="false" required>
+    <p class="login-error" id="login-error" role="alert" hidden></p>
+    <button class="btn btn--primary" type="submit" id="login-btn">Entrar</button>
+  </form>
+</main>
+
+<!-- Panel -->
+<div class="app" id="app" hidden>
+  <header class="bar">
+    <div class="bar-title">
+      <h1>Pedidos</h1>
+      <span class="live" id="live" role="status"><span class="live-dot" aria-hidden="true"></span><span id="live-text">Conectando…</span></span>
+      <span class="clock" id="clock" aria-hidden="true"></span>
+    </div>
+    <div class="bar-tools">
+      <button type="button" class="tool" id="tool-sound" aria-pressed="true">Sonido: sí</button>
+      <button type="button" class="tool" id="tool-awake" aria-pressed="false" title="Mantiene la pantalla prendida mientras el panel está abierto">Pantalla: no</button>
+      <button type="button" class="tool" id="tool-exit">Salir</button>
+    </div>
+  </header>
+
+  <p class="notice" id="sound-notice" hidden>El sonido está bloqueado por el navegador. <button type="button" class="linkbtn" id="sound-enable">Tocar aquí para activarlo</button></p>
+
+  <nav class="tabs" role="tablist" aria-label="Etapas del pedido">
+    <button role="tab" class="tab is-active" id="tab-new" data-col="new" aria-selected="true" aria-controls="col-new">Nuevos <span class="count" data-count="new">0</span></button>
+    <button role="tab" class="tab" id="tab-delivery" data-col="delivery" aria-selected="false" aria-controls="col-delivery">Entrega <span class="count" data-count="delivery">0</span></button>
+    <button role="tab" class="tab" id="tab-done" data-col="done" aria-selected="false" aria-controls="col-done">Resueltos <span class="count" data-count="done">0</span></button>
+  </nav>
+
+  <main class="board">
+    <section class="col is-active" id="col-new" data-col="new" aria-labelledby="h-new">
+      <h2 id="h-new">Nuevos <span class="count" data-count="new">0</span><small>por confirmar</small></h2>
+      <div class="list" data-list="new"></div>
+    </section>
+    <section class="col" id="col-delivery" data-col="delivery" aria-labelledby="h-delivery">
+      <h2 id="h-delivery">Entrega <span class="count" data-count="delivery">0</span><small>confirmados, falta cómo se entregó</small></h2>
+      <div class="list" data-list="delivery"></div>
+    </section>
+    <section class="col" id="col-done" data-col="done" aria-labelledby="h-done">
+      <h2 id="h-done">Resueltos <span class="count" data-count="done">0</span><small>últimas 48 h</small></h2>
+      <div class="list" data-list="done"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+
+<script src="panel/panel.js?v=1"></script>
+</body>
+</html>
