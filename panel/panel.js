@@ -423,6 +423,11 @@
     { id: '00054', createdMs: M(420), status: 'Completed', customer: 'Diego Morales', phone: '+58 414 6664433', zona: 'El Hatillo', estado: 'Miranda', paidBy: 'Tienda', delivery: '$6', items: [{ product: 'Kit Gran Fondo (6 geles + 9 hidratantes + 1 proteína + 4 barras endurance)', qty: 1, price: 43.47 }] }
   ];
 
+  /* ---------- Instalable en Android ("Instalar app"): el service worker no guarda nada, solo habilita la instalación ---------- */
+  if(!DEMO && 'serviceWorker' in navigator){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('/panel-sw.js', { scope: '/panel.html' }).catch(function(){}); });
+  }
+
   /* ---------- Arranque ---------- */
   paintTools();
   if(DEMO){
