@@ -71,6 +71,17 @@
     }
     btn.disabled = false;
   });
+  $('tool-mail').addEventListener('click', async function(){
+    const b = $('tool-mail'); b.disabled = true;
+    try {
+      const r = await api('/api/panel/recordatorio-prueba', { method: 'POST', body: '{}' });
+      toast('Correo de prueba enviado' + (r.pendientes != null ? ' (' + r.pendientes + ' pendientes)' : '') + '. Revisa tu bandeja y el spam.');
+    } catch(err){
+      if(err.auth){ showLogin('Tu sesión terminó. Entra otra vez.'); }
+      else toast(err.message || 'No se pudo enviar el correo de prueba.', true);
+    }
+    b.disabled = false;
+  });
   $('tool-exit').addEventListener('click', async function(){
     try { await api('/api/panel/logout', { method: 'POST', body: '{}' }); } catch(e){}
     showLogin();

@@ -56,9 +56,12 @@ export default {
     return marcarSitioPrueba(await env.ASSETS.fetch(request), env);
   },
 
-  // Cada hora: manda a GA4 las ventas confirmadas que no se hayan enviado (red de seguridad). Solo con Supabase.
+  // Tareas programadas (solo con Supabase): el recordatorio de pedidos pendientes (lunes y viernes) y, cada hora,
+  // el envío a GA4 de las ventas confirmadas que no se hayan mandado (red de seguridad).
   async scheduled(event, env, ctx) {
-    if (usaSupabase(env)) ctx.waitUntil(sincronizarVentasGa4(env));
+    if (!usaSupabase(env)) return;
+    if (RECORDATORIO_CRONS.indexOf(event.cron) !== -1) ctx.waitUntil(enviarRecordatorioPedidos(env, false));
+    else ctx.waitUntil(sincronizarVentasGa4(env));
   }
 };
 
@@ -548,6 +551,98 @@ async function sincronizarVentasGa4(env) {
   }
 }
 
+/* ---------- Recordatorio por correo: pedidos pendientes por cerrar ----------
+   Lunes 8:00 a.m. y viernes 4:00 p.m. (hora de Caracas = UTC-4; cada uno con un reintento una hora después, que solo actúa si el
+   primero falló). Manda un correo con los pedidos sin confirmar y los confirmados sin entrega cerrada, SOLO si hay alguno.
+   Se manda con Resend (secreto RESEND_API_KEY; remitente en RECORDATORIO_DESDE, por defecto recordatorio@apexnutricionve.com).
+   El destinatario vive en la base (tienda.config, clave "recordatorio_para"), no en el código: este repositorio es público.
+   Cada envío queda anotado en tienda.recordatorios_enviados (enviado / omitido / error) y nunca se repite el mismo día. */
+const RECORDATORIO_CRONS = ['0 12 * * 1', '0 13 * * 1', '0 20 * * 5', '0 21 * * 5'];
+const RECORDATORIO_PANEL_URL = 'https://apexnutricionve.com/panel';
+
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function esperaLegible(ms) {
+  const min = Math.max(0, Math.floor(ms / 60000));
+  if (min < 60) return 'hace ' + min + ' min';
+  if (min < 1440) return 'hace ' + Math.floor(min / 60) + ' h';
+  const d = Math.floor(min / 1440);
+  return 'hace ' + d + (d === 1 ? ' día' : ' días');
+}
+
+function armarCorreoPendientes(pend, ahoraMs, prueba) {
+  const nuevos = pend.filter(function (o) { return o.stage === 'new'; });
+  const entrega = pend.filter(function (o) { return o.stage !== 'new'; });
+  const dinero = function (n) { return '$' + Number(n).toFixed(2).replace('.', ','); };
+  const falta = function (o) { return o.stage === 'delivery' ? 'Falta indicar cómo se entregó' : 'Falta el monto del delivery'; };
+  const asunto = (prueba ? '[PRUEBA] ' : '') + 'Apex: ' + (pend.length ? pend.length + (pend.length === 1 ? ' pedido pendiente' : ' pedidos pendientes') + ' por cerrar' : 'no hay pedidos pendientes');
+  const tdb = 'padding:8px 10px;border-bottom:1px solid #E4DFD5';
+  const tabla = function (titulo, arr, tercera) {
+    if (!arr.length) return '';
+    return '<h3 style="margin:22px 0 6px;font-size:16px">' + titulo + ' (' + arr.length + ')</h3>' +
+      '<table style="border-collapse:collapse;width:100%;font-size:14px"><thead><tr style="background:#F7F5F1;text-align:left"><th style="padding:8px 10px">Pedido</th><th style="padding:8px 10px">Cliente</th><th style="padding:8px 10px;text-align:right">Total</th><th style="padding:8px 10px">Estado</th></tr></thead><tbody>' +
+      arr.map(function (o) {
+        return '<tr><td style="' + tdb + ';font-weight:700">' + escHtml(o.id) + '</td><td style="' + tdb + '">' + escHtml(o.customer || '(sin nombre)') + '</td><td style="' + tdb + ';text-align:right">' + dinero(o.total) + '</td><td style="' + tdb + ';color:#514D48">' + escHtml(tercera(o)) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  };
+  const html = '<div style="font-family:Arial,Helvetica,sans-serif;color:#14120F;max-width:640px">' +
+    '<h2 style="margin:0 0 4px;font-size:20px">Pedidos pendientes por cerrar</h2>' +
+    '<p style="margin:0 0 8px;color:#514D48">' + (pend.length ? 'Estos pedidos siguen sin cerrar en el panel.' : 'No hay pedidos pendientes. Todo está al día.') + '</p>' +
+    tabla('Sin confirmar', nuevos, function (o) { return esperaLegible(ahoraMs - o.createdMs); }) +
+    tabla('Confirmados, falta cerrar la entrega', entrega, function (o) { return falta(o) + ' · ' + esperaLegible(ahoraMs - o.createdMs); }) +
+    '<p style="margin:24px 0"><a href="' + RECORDATORIO_PANEL_URL + '" style="background:#14120F;color:#fff;padding:12px 20px;text-decoration:none;font-weight:700">Abrir el panel de pedidos</a></p>' +
+    '<p style="font-size:12px;color:#726E67">Este recordatorio se envía los lunes y los viernes, solo si hay pedidos pendientes.</p></div>';
+  const lineas = function (arr, tercera) { return arr.map(function (o) { return '- ' + o.id + ' · ' + (o.customer || '(sin nombre)') + ' · ' + dinero(o.total) + ' · ' + tercera(o); }).join('\n'); };
+  const text = 'Pedidos pendientes por cerrar\n\n' +
+    (nuevos.length ? 'SIN CONFIRMAR (' + nuevos.length + ')\n' + lineas(nuevos, function (o) { return esperaLegible(ahoraMs - o.createdMs); }) + '\n\n' : '') +
+    (entrega.length ? 'CONFIRMADOS, FALTA CERRAR LA ENTREGA (' + entrega.length + ')\n' + lineas(entrega, function (o) { return falta(o) + ' · ' + esperaLegible(ahoraMs - o.createdMs); }) + '\n\n' : '') +
+    (pend.length ? '' : 'No hay pedidos pendientes. Todo está al día.\n\n') + 'Panel: ' + RECORDATORIO_PANEL_URL;
+  return { subject: asunto, html: html, text: text };
+}
+
+// prueba = true: manda el correo ya mismo aunque no haya pendientes, con "[PRUEBA]" en el asunto (botón del panel).
+async function enviarRecordatorioPedidos(env, prueba) {
+  if (!usaSupabase(env)) return { estado: 'omitido', detalle: 'Supabase apagado' };
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
+  const clave = prueba ? 'prueba:' + Date.now() : 'rec:' + hoy;
+  try {
+    if (!(await supabaseRpc(env, 'tienda_recordatorio_iniciar', { p_clave: clave, p_tipo: prueba ? 'prueba' : 'semanal' }))) return { estado: 'omitido', detalle: 'ya se envió hoy' };
+    let estado = 'error', pendientes = null, detalle = '';
+    try {
+      if (!env.RESEND_API_KEY) {
+        detalle = 'Falta RESEND_API_KEY';
+      } else {
+        const lista = await supabaseRpc(env, 'tienda_panel_listar', {});
+        const pend = (lista.orders || []).filter(function (o) { return o.stage !== 'done'; }).sort(function (a, b) { return a.createdMs - b.createdMs; });
+        pendientes = pend.length;
+        if (!pend.length && !prueba) {
+          estado = 'omitido'; detalle = 'sin pendientes';
+        } else {
+          const para = String(await supabaseRpc(env, 'tienda_recordatorio_destino', {}) || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+          if (!para.length) throw new Error('No hay destinatario guardado');
+          const correo = armarCorreoPendientes(pend, lista.now, prueba);
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: env.RECORDATORIO_DESDE || 'Apex Nutrición <recordatorio@apexnutricionve.com>', to: para, subject: correo.subject, html: correo.html, text: correo.text })
+          });
+          if (res.ok) { estado = 'enviado'; detalle = 'ok'; } else { detalle = 'Resend HTTP ' + res.status + ' ' + (await res.text()).slice(0, 150); }
+        }
+      }
+    } catch (err) {
+      detalle = String(err).slice(0, 200);
+    }
+    await supabaseRpc(env, 'tienda_recordatorio_cerrar', { p_clave: clave, p_estado: estado, p_pendientes: pendientes, p_detalle: detalle });
+    if (estado === 'error') console.error('[recordatorio] ' + detalle);
+    return { estado: estado, pendientes: pendientes, detalle: detalle };
+  } catch (err) {
+    console.error('[recordatorio] falló: ' + String(err));
+    return { estado: 'error', detalle: String(err).slice(0, 200) };
+  }
+}
+
 /* ---------- Panel de pedidos (panel.html) ----------
    Reemplaza a los botones de Telegram: la persona que recibe los pedidos entra con un código compartido y ve
    los pedidos por etapa. Este Worker es el único que habla con Apps Script (con PANEL_APPS_KEY); el navegador
@@ -655,6 +750,14 @@ async function handlePanel(request, env, url, ctx) {
     }
     panelListCache = { t: Date.now(), orders: result.orders };
     return panelJson({ ok: true, now: Date.now(), orders: result.orders });
+  }
+
+  if (route === 'recordatorio-prueba') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const blocked = await guardPublicApi(request, env.API_LIMITER, 'panel-recordatorio-prueba');
+    if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    const r = await enviarRecordatorioPedidos(env, true);
+    return panelJson({ ok: r.estado === 'enviado', estado: r.estado, pendientes: r.pendientes === undefined ? null : r.pendientes, error: r.estado === 'enviado' ? undefined : (r.detalle || 'No se pudo enviar') }, r.estado === 'enviado' ? 200 : 502);
   }
 
   if (route === 'action') {

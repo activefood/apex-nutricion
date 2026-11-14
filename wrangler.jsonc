@@ -28,8 +28,9 @@
     "PEDIDOS_BACKEND": "supabase",
     "GA4_MEASUREMENT_ID": "G-CKJ8VQSLLE"
   },
-  // Cada hora (minuto 17): manda a GA4 las ventas confirmadas que no se hayan enviado. Solo actúa con "supabase".
-  "triggers": { "crons": ["17 * * * *"] },
+  // Cada hora (minuto 17): manda a GA4 las ventas confirmadas que no se hayan enviado. Lunes 8:00 y viernes 16:00 (hora
+  // de Caracas, UTC-4) el recordatorio de pedidos pendientes por correo, con un reintento una hora después. Solo actúan con "supabase".
+  "triggers": { "crons": ["17 * * * *", "0 12 * * 1", "0 13 * * 1", "0 20 * * 5", "0 21 * * 5"] },
   // Límite de peticiones por IP (ver guardPublicApi en worker/index.js).
   // Pedidos: 5 por minuto por IP — varias personas pueden compartir IP en
   // las redes móviles de Venezuela, así que no se baja de ahí.
