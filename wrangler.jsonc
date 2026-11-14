@@ -25,7 +25,7 @@
   "vars": {
     "SUPABASE_URL": "https://ngbrcbweduazaoidavza.supabase.co",
     "SUPABASE_KEY": "sb_publishable_7wtBmKVZmCDBa1dgi5yLvA_bHBeG5sK",
-    "PEDIDOS_BACKEND": "appsscript",
+    "PEDIDOS_BACKEND": "supabase",
     "GA4_MEASUREMENT_ID": "G-CKJ8VQSLLE"
   },
   // Cada hora (minuto 17): manda a GA4 las ventas confirmadas que no se hayan enviado. Solo actúa con "supabase".
