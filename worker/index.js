@@ -26,7 +26,7 @@ export default {
       return handleTelegramWebhook(request, env);
     }
     if (url.pathname.indexOf('/api/panel/') === 0) {
-      return handlePanel(request, env, url);
+      return handlePanel(request, env, url, ctx);
     }
     if (url.pathname === '/panel' || url.pathname === '/panel/') {
       return Response.redirect(new URL('/panel.html', url).toString(), 302);
@@ -54,6 +54,11 @@ export default {
 
     // Todo lo demás: archivos estáticos del sitio (HTML, CSS, JS, imágenes).
     return marcarSitioPrueba(await env.ASSETS.fetch(request), env);
+  },
+
+  // Cada hora: manda a GA4 las ventas confirmadas que no se hayan enviado (red de seguridad). Solo con Supabase.
+  async scheduled(event, env, ctx) {
+    if (usaSupabase(env)) ctx.waitUntil(sincronizarVentasGa4(env));
   }
 };
 
@@ -245,7 +250,7 @@ async function handleSubmitOrder(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
   const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl) {
+  if (!appsScriptUrl && !usaSupabase(env)) {
     console.error('[submit-order] Falta APPS_SCRIPT_URL en variables de entorno');
     return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
   }
@@ -265,6 +270,7 @@ async function handleSubmitOrder(request, env) {
     return json({ ok: false, error: 'Invalid order payload' }, 400);
   }
 
+  if (usaSupabase(env)) return crearPedidoSupabase(env, payload);
   return forwardAndRelay(appsScriptUrl, { source: 'website-order', payload }, '[submit-order]');
 }
 
@@ -273,7 +279,7 @@ async function handleSubmitReview(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
   const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl) {
+  if (!appsScriptUrl && !usaSupabase(env)) {
     console.error('[submit-review] Falta APPS_SCRIPT_URL en variables de entorno');
     return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
   }
@@ -291,6 +297,7 @@ async function handleSubmitReview(request, env) {
     return json({ ok: false, error: 'Invalid review payload' }, 400);
   }
 
+  if (usaSupabase(env)) return resenaSupabase(env, payload);
   return forwardAndRelay(appsScriptUrl, { source: 'website-review', payload }, '[submit-review]');
 }
 
@@ -302,7 +309,7 @@ async function handleGetReviews(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
   const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl) {
+  if (!appsScriptUrl && !usaSupabase(env)) {
     console.error('[get-reviews] Falta APPS_SCRIPT_URL en variables de entorno');
     return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
   }
@@ -315,6 +322,7 @@ async function handleGetReviews(request, env) {
   }
 
   const product = payload && typeof payload.product === 'string' ? payload.product.trim() : '';
+  if (usaSupabase(env)) return listarResenasSupabase(env, product);
   return forwardAndRelay(appsScriptUrl, { source: 'get-reviews', payload: { product: product } }, '[get-reviews]');
 }
 
@@ -327,7 +335,7 @@ async function handleCheckWelcomeCoupon(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
   const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl) {
+  if (!appsScriptUrl && !usaSupabase(env)) {
     console.error('[check-welcome-coupon] Falta APPS_SCRIPT_URL en variables de entorno');
     return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
   }
@@ -345,6 +353,7 @@ async function handleCheckWelcomeCoupon(request, env) {
     return json({ ok: false, error: 'Missing name or phone' }, 400);
   }
 
+  if (usaSupabase(env)) return cuponSupabase(env, name, phone);
   return forwardAndRelay(appsScriptUrl, { source: 'check-welcome-coupon', payload: { name, phone } }, '[check-welcome-coupon]');
 }
 
@@ -374,6 +383,168 @@ async function forwardAndRelay(appsScriptUrl, body, logTag) {
   } catch (err) {
     console.error(logTag + ' Fetch to Apps Script failed: ' + String(err));
     return json({ ok: false, error: 'Could not reach Google Apps Script' }, 502);
+  }
+}
+
+/* ---------- Supabase: el lugar donde viven los pedidos (reemplaza a Apps Script y a la hoja) ----------
+   Variables: SUPABASE_URL y SUPABASE_KEY (llave pública, van en wrangler.jsonc), SUPABASE_RPC_TOKEN (secreto: el código
+   que abre las funciones tienda_* de la base), PEDIDOS_BACKEND = "supabase" para encenderlo (cualquier otro valor usa el
+   Apps Script de siempre), y para GA4: GA4_API_SECRET (secreto), GA4_MEASUREMENT_ID, GA4_DEBUG ("1" = solo validar).
+   La base asigna el número de pedido (OC), guarda el pedido como Pending y, al confirmarlo en el panel, pasa a venta. */
+function usaSupabase(env) {
+  return env.PEDIDOS_BACKEND === 'supabase' && !!env.SUPABASE_URL && !!env.SUPABASE_KEY && !!env.SUPABASE_RPC_TOKEN;
+}
+
+async function supabaseRpc(env, fn, args) {
+  const ctl = new AbortController();
+  const timer = setTimeout(function () { ctl.abort(); }, 12000);
+  try {
+    const res = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { 'apikey': env.SUPABASE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ p_token: env.SUPABASE_RPC_TOKEN }, args || {})),
+      signal: ctl.signal
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + text.slice(0, 200));
+    return text ? JSON.parse(text) : null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function crearPedidoSupabase(env, o) {
+  try {
+    const r = await supabaseRpc(env, 'tienda_crear_pedido', { p_pedido: {
+      cliente: o.customerName, telefono: o.phone, zona: o.location, estado_geo: o.state || '', ci: o.ci || '', agencia_mrw: o.mrwAddress || '',
+      ga_client_id: o.gaClientId || '', ga_session_id: o.gaSessionId || '',
+      items: o.items.map(function (i) { return { product: i.product, brand: i.brand || '', unitPrice: i.unitPrice, quantity: i.quantity }; })
+    } });
+    if (!r || r.ok !== true) {
+      console.error('[submit-order] Supabase rechazó el pedido: ' + JSON.stringify(r));
+      return json({ ok: false, error: (r && r.error) || 'Could not save order' }, 502);
+    }
+    return json({ ok: true, orderId: r.orderId }, 200);
+  } catch (err) {
+    console.error('[submit-order] Supabase falló: ' + String(err));
+    return json({ ok: false, error: 'Could not reach the database' }, 502);
+  }
+}
+
+async function resenaSupabase(env, payload) {
+  try {
+    const r = await supabaseRpc(env, 'tienda_resena_crear', { p_resena: { product: payload.product, brand: payload.brand || '', rating: Number(payload.rating), review: payload.review || '', name: payload.name, url: payload.url || '' } });
+    return json(r && r.ok ? { ok: true } : { ok: false, error: 'Could not save review' }, r && r.ok ? 200 : 502);
+  } catch (err) {
+    console.error('[submit-review] Supabase falló: ' + String(err));
+    return json({ ok: false, error: 'Could not reach the database' }, 502);
+  }
+}
+
+async function listarResenasSupabase(env, product) {
+  try {
+    return json(await supabaseRpc(env, 'tienda_resenas_listar', { p_producto: product }), 200);
+  } catch (err) {
+    console.error('[get-reviews] Supabase falló: ' + String(err));
+    return json({ ok: false, error: 'Could not reach the database' }, 502);
+  }
+}
+
+async function cuponSupabase(env, name, phone) {
+  try {
+    const r = await supabaseRpc(env, 'tienda_cupon_elegible', { p_nombre: name, p_telefono: phone });
+    return json(r, r && r.ok ? 200 : 400);
+  } catch (err) {
+    // Si la base no responde, no se le niega el descuento a nadie (el sitio ya trata este caso como "elegible").
+    console.error('[check-welcome-coupon] Supabase falló: ' + String(err));
+    return json({ ok: false, error: 'Could not reach the database' }, 502);
+  }
+}
+
+/* ---------- GA4: venta confirmada = evento "purchase" (Measurement Protocol) ----------
+   Mismas reglas que tenía el Apps Script: un purchase por pedido (la base lo "reclama" y nadie más lo manda), fechado el
+   día en que el cliente pidió si es reciente (GA4 acepta hasta 72 h), con la sesión y fuente del visitante si se guardaron;
+   si no, un identificador anónimo derivado del teléfono (o del nombre). Los teléfonos del equipo no identifican a nadie. */
+const GA4_TELEFONOS_EQUIPO = ['4141742967'];
+const GA4_MAX_ATRASO_MS = 70 * 60 * 60 * 1000;
+
+function sinTildes(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+function telefonoIdentifica(env, phone) {
+  const d = String(phone || '').replace(/\D/g, '');
+  if (d.length < 10) return false;
+  const extra = String(env.GA4_SHARED_PHONES || '').split(',').map(function (x) { return x.replace(/\D/g, '').slice(-10); }).filter(Boolean);
+  return GA4_TELEFONOS_EQUIPO.concat(extra).indexOf(d.slice(-10)) === -1;
+}
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+async function ga4ClientIdAnonimo(env, phone, name) {
+  const digits = telefonoIdentifica(env, phone) ? String(phone).replace(/\D/g, '').slice(-10) : '';
+  const key = digits ? 'tel:' + digits : 'nombre:' + sinTildes(name).trim();
+  if (key === 'nombre:') return '';
+  return 'apex.' + (await sha256Hex('apex-ga4:' + key)).slice(0, 20);
+}
+
+// d = datos del pedido que devuelve tienda_ga4_reclamar. Devuelve el cuerpo del purchase, o null si no hay cómo identificar al cliente.
+async function ga4CuerpoCompra(env, d, nowMs) {
+  const clientId = String(d.clientId || '').trim() || await ga4ClientIdAnonimo(env, d.telefono, d.cliente);
+  if (!clientId) return null;
+  let value = 0;
+  const items = (d.items || []).map(function (it) {
+    const price = Number(it.precio) || 0;
+    const quantity = Number(it.cantidad) || 1;
+    value += price * quantity;
+    const item = { item_name: String(it.producto || ''), item_brand: String(it.marca || ''), item_category: String(it.categoria || ''), price: Math.round(price * 100) / 100, quantity: quantity };
+    if (it.subcategoria) item.item_category2 = String(it.subcategoria);
+    return item;
+  });
+  const params = { transaction_id: String(d.oc), value: Math.round(value * 100) / 100, currency: 'USD', items: items, engagement_time_msec: 1 };
+  const delivery = String(d.entrega || '');
+  if (delivery.indexOf('$') !== -1) { const n = parseFloat(delivery.replace(/[^0-9.\-]/g, '')); if (n > 0) params.shipping = n; }
+  if (d.sessionId) params.session_id = String(d.sessionId);
+  const body = { client_id: clientId, events: [{ name: 'purchase', params: params }] };
+  const orderMs = Number(d.createdMs);
+  const now = nowMs || Date.now();
+  if (orderMs > 0 && orderMs <= now && now - orderMs <= GA4_MAX_ATRASO_MS) body.timestamp_micros = String(Math.round(orderMs) * 1000);
+  return body;
+}
+
+// Manda UNA venta a GA4. Nunca lanza error ni toca la respuesta del panel: un fallo se anota y la revisión de cada hora reintenta.
+async function enviarCompraGa4(env, oc) {
+  if (!env.GA4_API_SECRET) { console.error('[ga4] Falta GA4_API_SECRET: la venta ' + oc + ' queda pendiente de enviar'); return; }
+  let datos = null;
+  try {
+    datos = await supabaseRpc(env, 'tienda_ga4_reclamar', { p_oc: oc });
+    if (!datos) return;   // ya se había enviado, o el pedido no está confirmado
+    const body = await ga4CuerpoCompra(env, datos);
+    const debug = env.GA4_DEBUG === '1';
+    let enviada = false;
+    if (!body) {
+      console.error('[ga4] Pedido ' + oc + ' sin forma de identificar al cliente');
+    } else {
+      const url = 'https://www.google-analytics.com/' + (debug ? 'debug/mp/collect' : 'mp/collect') + '?measurement_id=' + encodeURIComponent(env.GA4_MEASUREMENT_ID || 'G-CKJ8VQSLLE') + '&api_secret=' + encodeURIComponent(env.GA4_API_SECRET);
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) console.error('[ga4] Pedido ' + oc + ' HTTP ' + res.status);
+      else if (debug) console.log('[ga4 debug] ' + oc + ' ' + (await res.text()).slice(0, 400));
+      enviada = res.ok && !debug;   // en modo depuración Google no registra nada: la venta sigue pendiente
+    }
+    if (!enviada) await supabaseRpc(env, 'tienda_ga4_liberar', { p_oc: oc });
+  } catch (err) {
+    console.error('[ga4] Pedido ' + oc + ' falló: ' + String(err));
+    if (datos) { try { await supabaseRpc(env, 'tienda_ga4_liberar', { p_oc: oc }); } catch (e) { /* se reintenta en la próxima revisión */ } }
+  }
+}
+
+async function sincronizarVentasGa4(env) {
+  try {
+    const pendientes = await supabaseRpc(env, 'tienda_ga4_pendientes', {});
+    for (const oc of (pendientes || []).slice(0, 50)) await enviarCompraGa4(env, oc);
+  } catch (err) {
+    console.error('[ga4] La revisión de ventas sin enviar falló: ' + String(err));
   }
 }
 
@@ -433,9 +604,9 @@ function panelCookie(value, maxAge) {
   return PANEL_COOKIE + '=' + value + '; Path=/api/panel; Max-Age=' + maxAge + '; HttpOnly; Secure; SameSite=Strict';
 }
 
-async function handlePanel(request, env, url) {
-  if (!env.PANEL_CODE || !env.PANEL_APPS_KEY || !env.APPS_SCRIPT_URL) {
-    console.error('[panel] Faltan PANEL_CODE, PANEL_APPS_KEY o APPS_SCRIPT_URL en las variables del Worker');
+async function handlePanel(request, env, url, ctx) {
+  if (!env.PANEL_CODE || (!usaSupabase(env) && (!env.PANEL_APPS_KEY || !env.APPS_SCRIPT_URL))) {
+    console.error('[panel] Faltan PANEL_CODE (y PANEL_APPS_KEY + APPS_SCRIPT_URL si no se usa Supabase) en las variables del Worker');
     return panelJson({ ok: false, error: 'Panel not configured' }, 503);
   }
   const route = url.pathname.slice('/api/panel/'.length);
@@ -472,7 +643,12 @@ async function handlePanel(request, env, url) {
     if (panelListCache && Date.now() - panelListCache.t < PANEL_LIST_CACHE_MS) {
       return panelJson({ ok: true, now: Date.now(), orders: panelListCache.orders });
     }
-    const result = await forwardToAppsScript(env.APPS_SCRIPT_URL, { source: 'panel-list', key: env.PANEL_APPS_KEY });
+    let result;
+    if (usaSupabase(env)) {
+      try { result = await supabaseRpc(env, 'tienda_panel_listar', {}); } catch (err) { console.error('[panel] Supabase (listar): ' + String(err)); result = { ok: false, error: 'No se pudo leer los pedidos' }; }
+    } else {
+      result = await forwardToAppsScript(env.APPS_SCRIPT_URL, { source: 'panel-list', key: env.PANEL_APPS_KEY });
+    }
     if (!result || result.ok !== true || !Array.isArray(result.orders)) {
       console.error('[panel] No se pudo leer la hoja: ' + (result && result.error));
       return panelJson({ ok: false, error: 'No se pudo leer los pedidos. Intenta otra vez.' }, 502);
@@ -494,9 +670,24 @@ async function handlePanel(request, env, url) {
     if (PANEL_ACTIONS.indexOf(action) === -1) return panelJson({ ok: false, error: 'Acción no permitida' }, 400);
     if (action === 'delivery_price' && (!value || value.length > 80)) return panelJson({ ok: false, error: 'Escribe el monto del delivery (o una nota corta).' }, 400);
     panelListCache = null;
-    const result = await forwardToAppsScript(env.APPS_SCRIPT_URL, {
-      source: 'panel-action', key: env.PANEL_APPS_KEY, action: action, orderId: orderId, value: action === 'delivery_price' ? value : null
-    });
+    let result;
+    if (usaSupabase(env)) {
+      try {
+        result = await supabaseRpc(env, 'tienda_panel_accion', { p_oc: orderId, p_accion: action, p_valor: action === 'delivery_price' ? value : null });
+      } catch (err) {
+        console.error('[panel] Supabase (acción ' + action + '): ' + String(err));
+        result = { ok: false, error: 'No se pudo guardar. Intenta otra vez.' };
+      }
+      // Pedido confirmado = venta: se manda a GA4 (en segundo plano; un fallo no afecta al panel).
+      if (result && result.ok === true && action === 'completed' && result.enviar_ga4) {
+        const envio = enviarCompraGa4(env, orderId);
+        if (ctx && ctx.waitUntil) ctx.waitUntil(envio); else await envio;
+      }
+    } else {
+      result = await forwardToAppsScript(env.APPS_SCRIPT_URL, {
+        source: 'panel-action', key: env.PANEL_APPS_KEY, action: action, orderId: orderId, value: action === 'delivery_price' ? value : null
+      });
+    }
     panelListCache = null;
     if (!result || result.ok !== true) {
       console.error('[panel] Acción ' + action + ' en ' + orderId + ' falló: ' + (result && result.error));

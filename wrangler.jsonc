@@ -17,6 +17,19 @@
       "database_id": "2f86abbf-8cfb-46fc-ba2f-b2f246fbbf3b"
     }
   ],
+  // Supabase = donde viven los pedidos (reemplaza al Apps Script y a la hoja de Google). PEDIDOS_BACKEND decide
+  // quién atiende los pedidos, el panel, el cupón y las reseñas: "appsscript" (como hasta ahora) o "supabase".
+  // Para volver atrás basta con poner "appsscript" y subir el cambio. SUPABASE_KEY es la llave PÚBLICA (la de la
+  // página, sin permisos sobre los datos de clientes); los secretos SUPABASE_RPC_TOKEN y GA4_API_SECRET se ponen en
+  // Cloudflare (Variables and Secrets), nunca aquí.
+  "vars": {
+    "SUPABASE_URL": "https://ngbrcbweduazaoidavza.supabase.co",
+    "SUPABASE_KEY": "sb_publishable_7wtBmKVZmCDBa1dgi5yLvA_bHBeG5sK",
+    "PEDIDOS_BACKEND": "appsscript",
+    "GA4_MEASUREMENT_ID": "G-CKJ8VQSLLE"
+  },
+  // Cada hora (minuto 17): manda a GA4 las ventas confirmadas que no se hayan enviado. Solo actúa con "supabase".
+  "triggers": { "crons": ["17 * * * *"] },
   // Límite de peticiones por IP (ver guardPublicApi en worker/index.js).
   // Pedidos: 5 por minuto por IP — varias personas pueden compartir IP en
   // las redes móviles de Venezuela, así que no se baja de ahí.
