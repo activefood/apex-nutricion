@@ -1242,6 +1242,9 @@ button.pill:hover{ border-color: var(--ink); }
 .product-add-btn{
   display: block;
   width: 100%;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
   margin-top: var(--sp-3);
   padding: 10px 16px;
   background: var(--ink);

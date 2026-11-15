@@ -140,7 +140,7 @@ function initBagPromoBadges(){
 function initOffersPage(){
   const cards = document.querySelectorAll('[data-deals-group]');
   if(!cards.length) return;
-  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true };   // los kits no tienen fecha de fin
+  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true, box24: true };   // kits y cajas x24 no tienen fecha de fin
   let any = false;
   cards.forEach(function(card){
     const on = !!active[card.dataset.dealsGroup];
@@ -1010,6 +1010,13 @@ function initPdpPresentationSelector(){
   options.forEach(function(opt){
     opt.addEventListener('click', function(){ select(opt); });
   });
+
+  // ?pack=24 (desde Hot Deals): abre la ficha con esa caja ya elegida.
+  const pack = parseInt(new URLSearchParams(window.location.search).get('pack'), 10);
+  if(pack > 1){
+    const match = options.find(function(opt){ return pillUnits(opt) === pack; });
+    if(match) match.click();
+  }
 }
 
 /* ---------- Elegir mezcla de sabores al comprar una caja (x6/x12/x24) ----------
