@@ -61,7 +61,10 @@ export default {
   async scheduled(event, env, ctx) {
     if (!usaSupabase(env)) return;
     if (RECORDATORIO_CRONS.indexOf(event.cron) !== -1) ctx.waitUntil(enviarRecordatorioPedidos(env, false));
-    else ctx.waitUntil(sincronizarVentasGa4(env));
+    else {
+      ctx.waitUntil(sincronizarVentasGa4(env));
+      ctx.waitUntil(vigilarBlackFriday(env));
+    }
   }
 };
 
@@ -640,6 +643,100 @@ async function enviarRecordatorioPedidos(env, prueba) {
   } catch (err) {
     console.error('[recordatorio] falló: ' + String(err));
     return { estado: 'error', detalle: String(err).slice(0, 200) };
+  }
+}
+
+/* ---------- Vigilancia de Black Friday 2026 (23 al 29 de nov) ----------
+   Cada hora (el mismo cron de GA4) revisa los pedidos nuevos con productos de la oferta y manda un correo a los mismos
+   destinatarios del recordatorio: 1) cuando entra el PRIMER pedido con algún producto de Black Friday (diga si los precios
+   quedaron bien o no); 2) cuando un pedido posterior trae un precio que no cuadra. Solo lee: nunca cambia pedidos.
+   El correo no lleva nombres ni teléfonos, solo número de pedido, productos y montos. Cada aviso se anota en
+   tienda.recordatorios_enviados con clave "bf:..." (tipo "semanal") y no se repite. Los precios esperados son los de app.js
+   (BF_RATE = 0.25): proteína chocolate 600 g $24,00; Skratch bolsa 440 g $26,66; hidratante $1,2075 por sobre con 24 o más. */
+const BF_PEDIDOS_DESDE_MS = Date.parse('2026-11-23T04:00:00Z');   // 23 nov 00:00, Caracas
+const BF_PEDIDOS_HASTA_MS = Date.parse('2026-11-30T04:00:00Z');   // fin del 29 nov, Caracas
+const BF_VIGILAR_HASTA_MS = Date.parse('2026-12-02T04:00:00Z');   // deja de consultar pasado el 1 de dic
+
+function bfUsd(n) { return '$' + Number(n).toFixed(2).replace('.', ','); }
+
+// Devuelve { hayBf, ok, lineas: [{ texto, ok }] } para un pedido del panel (o.items: { product, brand, qty, price }).
+function bfRevisarPedido(o) {
+  const items = o.items || [];
+  const lineas = [];
+  const sobres = items.filter(function (i) { return /hidratante/i.test(i.product) && !/300\s*g/i.test(i.product) && Number(i.price) < 10; });
+  const sobresTotal = sobres.reduce(function (a, i) { return a + Number(i.qty); }, 0);
+  const revisa = function (i, nombre, esperado, tol) {
+    const real = Number(i.price);
+    const ok = Math.abs(real - esperado) <= tol;
+    lineas.push({ ok: ok, texto: nombre + ' × ' + i.qty + ': ' + (ok ? 'precio ' + bfUsd(real) + ' (con 25% OFF)' : 'precio ' + real.toFixed(4).replace('.', ',') + ', se esperaba ' + esperado.toFixed(4).replace('.', ',') + ' (25% OFF)') });
+  };
+  items.forEach(function (i) {
+    const nombre = String(i.product || '');
+    if (/prote[ií]na en polvo chocolate/i.test(nombre) && !/sobre/i.test(nombre) && (/600\s*g/i.test(nombre) || Number(i.price) >= 20)) revisa(i, 'Proteína chocolate 600 g', 24, 0.01);
+    else if (/skratch/i.test(nombre + ' ' + (i.brand || '')) && /bolsa/i.test(nombre) && /440/.test(nombre)) revisa(i, nombre.replace(/Sport Hydration Drink Mix\s*/i, 'Skratch bolsa ').replace(/\s*—.*$/, ''), 26.6625, 0.01);
+    else if (sobresTotal >= 24 && sobres.indexOf(i) !== -1) revisa(i, nombre.replace(/\s*Going$/i, '') + ' (caja de ' + sobresTotal + ')', 38.64 / 24 * 0.75, 0.005);
+  });
+  return { hayBf: lineas.length > 0, ok: lineas.every(function (l) { return l.ok; }), lineas: lineas };
+}
+
+function bfArmarCorreo(o, rev, primero) {
+  const estado = rev.ok ? 'todo bien' : 'REVISAR PRECIOS';
+  const asunto = 'Black Friday: ' + (primero ? 'primer pedido con oferta' : 'pedido con precio distinto') + ' (' + o.id + ') — ' + estado;
+  const fecha = new Date(o.createdMs).toLocaleString('es-VE', { timeZone: 'America/Caracas', dateStyle: 'medium', timeStyle: 'short' });
+  const filas = rev.lineas.map(function (l) { return '<li style="margin:4px 0;color:' + (l.ok ? '#14120F' : '#B3261E') + '">' + (l.ok ? '✓ ' : '✗ ') + escHtml(l.texto) + '</li>'; }).join('');
+  const html = '<div style="font-family:Arial,Helvetica,sans-serif;color:#14120F;max-width:640px">' +
+    '<h2 style="margin:0 0 4px;font-size:20px">' + (primero ? 'Entró el primer pedido con Black Friday' : 'Un pedido de Black Friday trae un precio distinto') + '</h2>' +
+    '<p style="margin:0 0 10px;color:#514D48">Pedido <strong>' + escHtml(o.id) + '</strong> · ' + escHtml(fecha) + ' (hora de Caracas) · total de productos ' + bfUsd(o.total) + '</p>' +
+    '<p style="margin:0 0 6px;font-weight:700">' + (rev.ok ? 'Los precios de la oferta quedaron como deben.' : 'Algún precio de la oferta no coincide con lo esperado.') + '</p>' +
+    '<ul style="padding-left:18px;margin:0 0 14px;font-size:14px">' + filas + '</ul>' +
+    '<p style="margin:0 0 14px;font-size:14px;color:#514D48">Cuando lo confirmes en el panel, la venta pasa a GA4 sola (en menos de una hora).</p>' +
+    '<p style="margin:18px 0"><a href="' + RECORDATORIO_PANEL_URL + '" style="background:#14120F;color:#fff;padding:12px 20px;text-decoration:none;font-weight:700">Abrir el panel de pedidos</a></p>' +
+    '<p style="font-size:12px;color:#726E67">Aviso automático de Black Friday (23 al 29 de nov). Solo lee los pedidos; no cambia nada.</p></div>';
+  const text = asunto + '\n\nPedido ' + o.id + ' · ' + fecha + ' · total de productos ' + bfUsd(o.total) + '\n' +
+    rev.lineas.map(function (l) { return (l.ok ? '[ok] ' : '[REVISAR] ') + l.texto; }).join('\n') + '\n\nPanel: ' + RECORDATORIO_PANEL_URL;
+  return { subject: asunto, html: html, text: text };
+}
+
+async function bfEnviarAviso(env, clave, correo) {
+  if (!(await supabaseRpc(env, 'tienda_recordatorio_iniciar', { p_clave: clave, p_tipo: 'semanal' }))) return;
+  let estado = 'error', detalle = '';
+  try {
+    if (!env.RESEND_API_KEY) throw new Error('Falta RESEND_API_KEY');
+    const para = String(await supabaseRpc(env, 'tienda_recordatorio_destino', {}) || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!para.length) throw new Error('No hay destinatario guardado');
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: env.RECORDATORIO_DESDE || 'Apex Nutrición <recordatorio@apexnutricionve.com>', to: para, subject: correo.subject, html: correo.html, text: correo.text })
+    });
+    if (res.ok) { estado = 'enviado'; detalle = 'ok'; } else { detalle = 'Resend HTTP ' + res.status + ' ' + (await res.text()).slice(0, 150); }
+  } catch (err) {
+    detalle = String(err).slice(0, 200);
+  }
+  await supabaseRpc(env, 'tienda_recordatorio_cerrar', { p_clave: clave, p_estado: estado, p_pendientes: null, p_detalle: detalle });
+  if (estado === 'error') console.error('[black-friday] ' + detalle);
+}
+
+async function vigilarBlackFriday(env) {
+  const ahora = Date.now();
+  if (ahora < BF_PEDIDOS_DESDE_MS || ahora > BF_VIGILAR_HASTA_MS) return;
+  try {
+    const lista = await supabaseRpc(env, 'tienda_panel_listar', {});
+    const pedidos = (lista.orders || []).filter(function (o) { return o.createdMs >= BF_PEDIDOS_DESDE_MS && o.createdMs < BF_PEDIDOS_HASTA_MS; })
+      .sort(function (a, b) { return a.createdMs - b.createdMs; });
+    let primeroId = null;
+    for (const o of pedidos) {
+      const rev = bfRevisarPedido(o);
+      if (!rev.hayBf) continue;
+      if (primeroId === null) {
+        primeroId = o.id;
+        await bfEnviarAviso(env, 'bf:primero', bfArmarCorreo(o, rev, true));
+      } else if (!rev.ok) {
+        await bfEnviarAviso(env, 'bf:alerta:' + o.id, bfArmarCorreo(o, rev, false));
+      }
+    }
+  } catch (err) {
+    console.error('[black-friday] La revisión falló: ' + String(err));
   }
 }
 
