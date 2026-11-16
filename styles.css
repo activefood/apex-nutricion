@@ -774,6 +774,58 @@ button.pill:hover{ border-color: var(--ink); }
 .promo-media--escalera img:nth-child(2){ --giro: 4deg; }
 .promo-media--escalera img:nth-child(3){ --giro: -3deg; transform: translateX(12%) rotate(var(--giro)); }
 
+/* Black Friday (27-29 nov 2026): banner oscuro, único banner del carrusel sobre tinta. Lima solo como fondo del chip
+   y como letra sobre la tinta (ahí sí contrasta: 14,9:1). Las fotos recortadas son las de siempre. */
+.hero-slide--bf{ background: var(--ink); color: #fff; border-bottom-color: var(--ink); }
+.hero-slide--bf .promo-copy .eyebrow{ color: var(--accent); }
+.hero-slide--bf .promo-title{ color: #fff; }
+.hero-slide--bf .promo-text{ color: rgba(255,255,255,.78); }
+/* Letrero del descuento: grande, lima, inclinado, arriba a la derecha de las fotos */
+.bf-sign{ position: absolute; top: 0; right: 4%; z-index: 5; transform: rotate(-7deg); padding: 6px 18px 10px; background: var(--accent); color: var(--ink);
+  border-radius: var(--r-control); text-align: center; font-family: var(--font-head); line-height: .92; box-shadow: 0 10px 22px rgba(0,0,0,.4); }
+.bf-sign b{ display: block; font-weight: 400; font-size: 92px; letter-spacing: .01em; }
+.bf-sign small{ display: block; font-size: 32px; letter-spacing: .2em; margin-right: -.2em; }
+.bf-list{ list-style: none; margin: var(--sp-4) 0 0; padding: 0; display: grid; gap: 0; max-width: 460px; border-top: 1px solid rgba(255,255,255,.22); }
+.bf-list li{ display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.22); font-size: 14px; line-height: 1.3; color: #fff; }
+.bf-prices{ flex-shrink: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bf-prices s{ color: rgba(255,255,255,.6); font-size: 12.5px; margin-right: 4px; }
+.bf-prices strong{ color: var(--accent); font-size: 16px; font-weight: 800; }
+.hero-slide--bf .btn--primary{ background: var(--accent); color: var(--ink); }
+.promo-media--bf{ gap: var(--sp-3); }
+.promo-media--bf > img{ height: 100%; max-width: 31%; filter: drop-shadow(0 10px 18px rgba(0,0,0,.45)); }
+.promo-media--bf > img:nth-child(1){ --giro: -6deg; height: 54%; }
+.promo-media--bf > img:nth-child(2){ --giro: 0deg; height: 64%; }
+.promo-media--bf > img:nth-child(3){ --giro: 6deg; height: 54%; }
+.promo-media--bf{ position: relative; height: 420px; padding-bottom: 16%; box-sizing: border-box; }
+/* Caja x24 del hidratante: los tres sabores en abanico, delante de las bolsas, con la etiqueta lima "Caja ×24" */
+.bf-caja{ position: absolute; left: 50%; bottom: 3%; width: 42%; max-width: 230px; aspect-ratio: 5 / 2; transform: translateX(-50%); z-index: 3; }
+.promo-media--bf .bf-caja img{ position: absolute; left: 50%; height: auto; max-width: none; width: 58%; }
+.promo-media--bf .bf-caja img:nth-child(1){ top: -6%; --giro: -7deg; transform: translateX(-62%) rotate(var(--giro)); }
+.promo-media--bf .bf-caja img:nth-child(2){ top: 22%; --giro: 2deg; transform: translateX(-50%) rotate(var(--giro)); z-index: 1; }
+.promo-media--bf .bf-caja img:nth-child(3){ top: 4%; --giro: 7deg; transform: translateX(-38%) rotate(var(--giro)); z-index: 2; }
+.bf-caja-chip{ position: absolute; left: 50%; bottom: -34%; transform: translateX(-50%); z-index: 4; padding: 3px 10px; background: var(--accent); color: var(--ink);
+  font-family: var(--font-head); font-size: 20px; line-height: 1.15; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; border-radius: var(--r-control); }
+.hero-slide--bf .carousel-arrow, .hero-slide--bf .carousel-pause{ color: var(--ink); }
+@media (max-width: 640px){
+  .hero-slide--bf .promo-text{ display: none; }   /* en celular la lista de precios ya lo dice todo */
+  .bf-sign{ padding: 4px 12px 7px; top: -3%; right: 0; }
+  .promo-media--bf > img:nth-child(1), .promo-media--bf > img:nth-child(3){ height: 50%; }
+  .promo-media--bf > img:nth-child(2){ height: 60%; }
+  .bf-sign b{ font-size: 54px; }
+  .bf-sign small{ font-size: 19px; }
+  .promo-media--bf{ height: 100%; }
+  .bf-list{ margin-top: var(--sp-3); }
+  .bf-list li{ padding: 7px 0; font-size: 13px; }
+  .bf-prices strong{ font-size: 15px; }
+}
+
+/* Hot Deals en Black Friday: cinta sobre la grilla, ocupa todo el ancho */
+.bf-band{ grid-column: 1 / -1; background: var(--ink); color: #fff; border-radius: var(--r-control); padding: var(--sp-4) var(--sp-5); }
+.bf-band[hidden]{ display: none; }
+.bf-band-title{ color: #fff; font-family: var(--font-head); font-size: 24px; letter-spacing: .05em; text-transform: uppercase; line-height: 1.1; }
+.bf-band-text{ margin-top: var(--sp-2); font-size: 14px; color: rgba(255,255,255,.8); }
+.pdp-bf-hint{ margin-top: var(--sp-2); padding: var(--sp-2) var(--sp-3); background: var(--accent-sf); border: 1px solid var(--line); border-radius: var(--r-control); font-size: 14px; color: var(--ink); }
+
 /* Entrada de los productos (inspirada en The Feed, hecha con CSS): al activarse
    el banner, cada foto cae con un leve rebote, una tras otra (120ms). Solo
    translate/scale/opacity: no mueve el layout. app.js pone .is-entering. */

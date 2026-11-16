@@ -184,6 +184,80 @@
     <!-- Cada producto se muestra solo mientras su promo está vigente (initOffersPage en app.js). -->
     <div class="product-grid" id="ofertas-grid">
 
+          <!-- Black Friday 2026 (27-29 nov): se muestra solo esos días (initOffersPage en app.js). El 25% lo aplica el carrito. -->
+          <div class="bf-band" data-bf-only hidden>
+            <p class="bf-band-title"><span class="hot-emoji" aria-hidden="true">🔥</span> Black Friday · 23 al 29 de noviembre</p>
+            <p class="bf-band-text">25% de descuento en estos productos. No se suma al 10% de primera compra: en cada producto aplica el mayor.</p>
+          </div>
+
+          <div data-deals-group="bf" hidden class="product-card" data-brand="going" data-price="32.00">
+            <a class="product-card-box" href="producto-going-proteina-tarro.html?flavor=Chocolate">
+              <div class="product-media">
+                <img class="product-photo" src="assets/going/proteina-tarro-chocolate.webp" alt="Proteína en Polvo Chocolate — 600 g" width="1000" height="1000" loading="lazy">
+              </div>
+              <div class="product-info">
+                <p class="product-brand">Going Nutrición</p>
+                <h3 class="product-name">Proteína en Polvo Chocolate — 600 g Going</h3>
+                <p class="product-stat">20 g proteína · 113 kcal</p>
+                <div class="product-bottom">
+                  <span class="product-price">$32,00</span>
+                </div>
+              </div>
+            </a>
+            <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+          <div data-deals-group="bf" hidden class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Fresa%20Limonada">
+        <div class="product-media">
+              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada.webp" alt="Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g" width="1000" height="1000" loading="lazy">
+            </div>
+        <div class="product-info">
+              <p class="product-brand">Skratch Labs</p>
+              <h3 class="product-name">Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g Skratch Labs</h3>
+              <p class="product-stat">400 mg sodio · 20 g carbohidratos por porción</p>
+              <div class="product-bottom">
+                <span class="product-price">$35,55</span>
+              </div></div>
+      </a>
+      <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+          <div data-deals-group="bf" hidden class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Lim%C3%B3n%20Lima">
+        <div class="product-media">
+              <img class="product-photo" src="assets/skratch/hidratacion-limon-lima.webp" alt="Sport Hydration Drink Mix Limón Lima — Bolsa 440 g" width="1000" height="1000" loading="lazy">
+            </div>
+        <div class="product-info">
+              <p class="product-brand">Skratch Labs</p>
+              <h3 class="product-name">Sport Hydration Drink Mix Limón Lima — Bolsa 440 g Skratch Labs</h3>
+              <p class="product-stat">400 mg sodio · 20 g carbohidratos por porción</p>
+              <div class="product-bottom">
+                <span class="product-price">$35,55</span>
+              </div></div>
+      </a>
+      <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+
+          <div data-deals-group="bf" hidden class="product-card" data-brand="going" data-price="28.98">
+            <a class="product-card-box" href="producto-going-hidratante.html?pack=24">
+              <div class="product-media">
+                <span class="tag tag--discount" data-bf-badge><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>25% OFF</span>
+                <img class="product-photo" src="assets/going/hidratante-sobre-uva.webp" alt="Hidratante Going en sobres, caja de 24 con los tres sabores" width="1000" height="1000" loading="lazy">
+              </div>
+              <div class="product-info">
+                <p class="product-brand">Going Nutrición</p>
+                <h3 class="product-name">Hidratante en sobres Going</h3>
+                <p class="product-stat">Caja x24 · mezcla Uva, Coco y Pitaya</p>
+                <div class="product-bottom">
+                  <span class="product-price on-sale" data-original-usd="38.64" data-sale-rate="0.25"><span class="product-price-usd"><span>$28,98</span><span class="was">$38,64</span></span></span>
+                </div>
+              </div>
+            </a>
+            <a class="product-add-btn" href="producto-going-hidratante.html?pack=24">Elegir sabores</a>
+          </div>
+
           <!-- Kits: precio especial de APEX. El descuento es contra comprar cada producto por separado en el carrito. -->
           <div data-deals-group="kits" class="product-card" data-kit data-kit-price="8.64" data-kit-contents="1 hidratante + 2 barras endurance" data-brand="going" data-price="8.64">
             <div class="product-card-box">
@@ -290,7 +364,7 @@
             <a class="product-add-btn" href="producto-going-barra.html?pack=24">Elegir sabores</a>
           </div>
 
-          <div data-deals-group="box24" class="product-card" data-brand="going" data-price="38.64">
+          <div data-deals-group="box24" data-hide-in-bf class="product-card" data-brand="going" data-price="38.64">
             <a class="product-card-box" href="producto-going-hidratante.html?pack=24">
               <div class="product-media">
                 <span class="tag tag--discount">-10%</span>

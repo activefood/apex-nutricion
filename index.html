@@ -184,6 +184,37 @@
   <section class="hero-carousel">
     <h1 class="visually-hidden">Apex Nutrición — nutrición deportiva de Going, Probar, Skratch Labs, SaltStick y Honey Stinger en Venezuela</h1>
 
+    <!-- Black Friday 2026: aparece solo del 23 al 29 de nov (hora de Caracas); mismas fechas que BF_FIRST_DAY / BF_LAST_DAY en app.js. -->
+    <div class="hero-slide hero-slide--promo hero-slide--bf" data-promo-id="black-friday-2026" data-promo-name="Black Friday 25% OFF" data-promo-slot="hero-bf" data-promo-from="2026-11-23" data-promo-until="2026-11-29">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">Venezuela · 23 al 29 de noviembre</p>
+          <h2 class="h-46 promo-title">Black Friday</h2>
+          <p class="promo-text">Tres días, tres productos con descuento. En el hidratante, mezcla los sabores de la caja.</p>
+          <ul class="bf-list">
+            <li><span>Proteína Going Chocolate 600 g</span><span class="bf-prices"><s>$32,00</s> <strong>$24,00</strong></span></li>
+            <li><span>Skratch Hydration bolsa 440 g · 2 sabores</span><span class="bf-prices"><s>$35,55</s> <strong>$26,66</strong></span></li>
+            <li><span>Hidratante Going caja x24 · 3 sabores</span><span class="bf-prices"><s>$38,64</s> <strong>$28,98</strong></span></li>
+          </ul>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="ofertas.html" data-promo-creative="boton">Ver las ofertas</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--bf">
+          <img src="assets/banners/skratch-bolsa-v2.webp" alt="Bolsa de 440 g de Sport Hydration de Skratch Labs sabor Fresa Limonada" width="495" height="640" fetchpriority="low">
+          <img src="assets/banners/going-proteina-chocolate-v2.webp" alt="Proteína en polvo Going sabor Chocolate, 600 g" width="445" height="640" fetchpriority="low">
+          <img src="assets/banners/skratch-bolsa-limon-v2.webp" alt="Bolsa de 440 g de Sport Hydration de Skratch Labs sabor Limón Lima" width="495" height="640" fetchpriority="low">
+          <div class="bf-caja" role="img" aria-label="Caja de 24 sobres de hidratante Going, con los tres sabores: Uva, Coco y Pitaya">
+            <img src="assets/banners/going-hidratante-uva-v2.webp" alt="" width="729" height="264" fetchpriority="low">
+            <img src="assets/banners/going-hidratante-coco-v2.webp" alt="" width="742" height="326" fetchpriority="low">
+            <img src="assets/banners/going-hidratante-pitaya-v2.webp" alt="" width="803" height="245" fetchpriority="low">
+            <span class="bf-caja-chip">Caja ×24</span>
+          </div>
+          <div class="bf-sign" role="img" aria-label="25% de descuento"><b>25%</b><small>OFF</small></div>
+        </div>
+      </div>
+    </div>
+
     <div class="hero-slide hero-slide--promo hero-slide--calc active" data-promo-id="calculadora" data-promo-name="Calculadora APEX — qué comer y tomar" data-promo-slot="hero-1">
       <div class="container">
         <div class="promo-copy">
@@ -260,20 +291,29 @@
     </button>
     <div class="carousel-dots" role="group" aria-label="Diapositivas del héroe"></div>
   </section>
-  <!-- Banners con fecha: se quitan solos el día siguiente a data-promo-until (hora de Caracas), antes de que el carrusel arme sus puntos.
+  <!-- Banners con fecha: se quitan solos antes de data-promo-from y el día siguiente a data-promo-until (hora de Caracas), antes de que el carrusel arme sus puntos.
        Si un banner con fecha anuncia una promoción de precio, su fecha debe coincidir con la del código de esa promoción en app.js. -->
   <script>
     (function(){
       var today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
       var root = document.querySelector('.hero-carousel');
       if(!root) return;
-      root.querySelectorAll('.hero-slide[data-promo-until]').forEach(function(slide){
-        if(today > slide.getAttribute('data-promo-until')) slide.remove();
+      // Solo en localhost: ?hoy=2026-11-27 simula esa fecha (igual que en app.js).
+      try {
+        if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){
+          var q = new URLSearchParams(location.search).get('hoy');
+          if(q !== null) sessionStorage.setItem('apex_hoy', q);
+          var fake = sessionStorage.getItem('apex_hoy');
+          if(/^\d{4}-\d{2}-\d{2}$/.test(fake)) today = fake;
+        }
+      } catch(e){}
+      root.querySelectorAll('.hero-slide[data-promo-from], .hero-slide[data-promo-until]').forEach(function(slide){
+        var from = slide.getAttribute('data-promo-from'), until = slide.getAttribute('data-promo-until');
+        if((from && today < from) || (until && today > until)) slide.remove();
       });
-      if(!root.querySelector('.hero-slide.active')){
-        var first = root.querySelector('.hero-slide');
-        if(first) first.classList.add('active');
-      }
+      // El primer banner que quede es el que se ve al cargar.
+      var slides = root.querySelectorAll('.hero-slide');
+      slides.forEach(function(s, i){ s.classList.toggle('active', i === 0); });
     })();
   </script>
 
@@ -512,6 +552,80 @@
       </div>
       <div class="product-grid">
 
+        <!-- Black Friday 2026 (27-29 nov): se muestra solo esos días (initOffersPage en app.js). El 25% lo aplica el carrito. -->
+        <div class="bf-band" data-bf-only hidden>
+          <p class="bf-band-title"><span class="hot-emoji" aria-hidden="true">🔥</span> Black Friday · 23 al 29 de noviembre</p>
+          <p class="bf-band-text">25% de descuento en estos productos. No se suma al 10% de primera compra: en cada producto aplica el mayor.</p>
+        </div>
+
+        <div data-deals-group="bf" hidden class="product-card" data-brand="going" data-price="32.00">
+          <a class="product-card-box" href="producto-going-proteina-tarro.html?flavor=Chocolate">
+            <div class="product-media">
+              <img class="product-photo" src="assets/going/proteina-tarro-chocolate.webp" alt="Proteína en Polvo Chocolate — 600 g" width="1000" height="1000" loading="lazy">
+            </div>
+            <div class="product-info">
+              <p class="product-brand">Going Nutrición</p>
+              <h3 class="product-name">Proteína en Polvo Chocolate — 600 g Going</h3>
+              <p class="product-stat">20 g proteína · 113 kcal</p>
+              <div class="product-bottom">
+                <span class="product-price">$32,00</span>
+              </div>
+            </div>
+          </a>
+          <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+        </div>
+
+        <div data-deals-group="bf" hidden class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+            <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Fresa%20Limonada">
+        <div class="product-media">
+              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada.webp" alt="Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g" width="1000" height="1000" loading="lazy">
+            </div>
+        <div class="product-info">
+              <p class="product-brand">Skratch Labs</p>
+              <h3 class="product-name">Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g Skratch Labs</h3>
+              <p class="product-stat">400 mg sodio · 20 g carbohidratos por porción</p>
+              <div class="product-bottom">
+                <span class="product-price">$35,55</span>
+              </div></div>
+      </a>
+      <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+          </div>
+
+
+        <div data-deals-group="bf" hidden class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+        <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Lim%C3%B3n%20Lima">
+        <div class="product-media">
+        <img class="product-photo" src="assets/skratch/hidratacion-limon-lima.webp" alt="Sport Hydration Drink Mix Limón Lima — Bolsa 440 g" width="1000" height="1000" loading="lazy">
+        </div>
+        <div class="product-info">
+        <p class="product-brand">Skratch Labs</p>
+        <h3 class="product-name">Sport Hydration Drink Mix Limón Lima — Bolsa 440 g Skratch Labs</h3>
+        <p class="product-stat">400 mg sodio · 20 g carbohidratos por porción</p>
+        <div class="product-bottom">
+        <span class="product-price">$35,55</span>
+        </div></div>
+        </a>
+        <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+        </div>
+
+        <div data-deals-group="bf" hidden class="product-card" data-brand="going" data-price="28.98">
+          <a class="product-card-box" href="producto-going-hidratante.html?pack=24">
+            <div class="product-media">
+              <span class="tag tag--discount" data-bf-badge><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>25% OFF</span>
+              <img class="product-photo" src="assets/going/hidratante-sobre-uva.webp" alt="Hidratante Going en sobres, caja de 24 con los tres sabores" width="1000" height="1000" loading="lazy">
+            </div>
+            <div class="product-info">
+              <p class="product-brand">Going Nutrición</p>
+              <h3 class="product-name">Hidratante en sobres Going</h3>
+              <p class="product-stat">Caja x24 · mezcla Uva, Coco y Pitaya</p>
+              <div class="product-bottom">
+                <span class="product-price on-sale" data-original-usd="38.64" data-sale-rate="0.25"><span class="product-price-usd"><span>$28,98</span><span class="was">$38,64</span></span></span>
+              </div>
+            </div>
+          </a>
+          <a class="product-add-btn" href="producto-going-hidratante.html?pack=24">Elegir sabores</a>
+        </div>
+
         <!-- Kits: precio especial de APEX. El descuento es contra comprar cada producto por separado en el carrito. -->
         <div data-deals-group="kits" class="product-card" data-kit data-kit-price="8.64" data-kit-contents="1 hidratante + 2 barras endurance" data-brand="going" data-price="8.64">
           <div class="product-card-box">
@@ -618,7 +732,7 @@
           <a class="product-add-btn" href="producto-going-barra.html?pack=24">Elegir sabores</a>
         </div>
 
-        <div data-deals-group="box24" class="product-card" data-brand="going" data-price="38.64">
+        <div data-deals-group="box24" data-hide-in-bf class="product-card" data-brand="going" data-price="38.64">
           <a class="product-card-box" href="producto-going-hidratante.html?pack=24">
             <div class="product-media">
               <span class="tag tag--discount">-10%</span>
