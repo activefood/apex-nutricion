@@ -3290,3 +3290,13 @@ button.pill:hover{ border-color: var(--ink); }
   .brands-band-logos img.logo-probar{ height: 38px; }
   .brands-band-logos img.logo-saltstick{ height: 33px; }
 }
+/* Oferta con 3 sachets de regalo (bolsa-hidratante-regalo.html / caja-hidratante-regalo.html): un contador por sabor */
+.gift-rows{ display: grid; gap: var(--sp-2); }
+.gift-row{ display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-control); background: var(--paper); }
+.gift-row img{ width: 56px; height: 56px; object-fit: contain; flex: none; }
+.gift-row-name{ flex: 1; font-weight: 600; color: var(--ink); }
+.gift-step{ display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: var(--r-control); }
+.gift-step button{ width: 44px; height: 44px; font-size: 20px; line-height: 1; background: none; border: 0; color: var(--ink); cursor: pointer; }
+.gift-step button:disabled{ opacity: .35; cursor: not-allowed; }
+.gift-step output{ min-width: 28px; text-align: center; font-weight: 700; color: var(--ink); }
+.gift-hint{ margin-top: var(--sp-2); font-size: 14px; color: var(--ink-2); }

@@ -266,7 +266,7 @@ function initOffersPage(){
   const cards = document.querySelectorAll('[data-deals-group]');
   if(!cards.length) return;
   const bf = bfActive();
-  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true, box24: true, pair: true, bf: bf };   // kits, cajas x24 y pareja de bolsas no tienen fecha de fin
+  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true, box24: true, pair: true, gift: true, bf: bf };   // kits, cajas x24 y pareja de bolsas no tienen fecha de fin
   let any = false;
   document.querySelectorAll('[data-bf-only]').forEach(function(el){ el.hidden = !bf; });
   cards.forEach(function(card){
@@ -1120,6 +1120,75 @@ function injectKitRechargeBs(){
   const bsEl = document.querySelector('[data-kr-bs]');
   if(!bsEl || bcvRate == null) return;
   const bs = formatBsNumber(KIT_RECHARGE_PRICE);
+  if(bs != null) bsEl.textContent = '≈ Bs ' + bs + ' · Tasa BCV: Bs ' + formatBsNumber(1);
+}
+
+/* ---------- Oferta "con 3 sachets de regalo" (bolsa de hidratante 300 g o caja x24) ----------
+   Una línea de kit del carrito (kit:true): el precio es el de la bolsa o la caja; los 3 sachets de regalo van
+   en el detalle (variant), que viaja en el pedido. No entra en el 2x$47,50 ni en los tramos por volumen. */
+function initGiftOffer(){
+  const root = document.querySelector('[data-gift-offer]');
+  if(!root) return;
+  const GIFT_QTY = 3;
+  const main = root.querySelector('[data-gift-main]');
+  const mainOptions = Array.from(main.querySelectorAll('.flavor-card'));
+  const rows = Array.from(root.querySelectorAll('[data-gift-row]'));
+  const add = root.querySelector('[data-gift-add]');
+  const hint = root.querySelector('[data-gift-hint]');
+  const countEl = root.querySelector('[data-gift-count]');
+  const mainLabel = root.querySelector('[data-gift-label]');
+  const counts = {};
+  rows.forEach(function(r){ counts[r.dataset.giftRow] = parseInt(r.querySelector('output').textContent, 10) || 0; });
+  let mainFlavor = (mainOptions.find(function(o){ return o.classList.contains('pill--active'); }) || mainOptions[0]).dataset.flavorName;
+
+  function total(){ return rows.reduce(function(n, r){ return n + counts[r.dataset.giftRow]; }, 0); }
+  function giftText(){
+    return rows.filter(function(r){ return counts[r.dataset.giftRow] > 0; })
+      .map(function(r){ return counts[r.dataset.giftRow] + ' ' + r.dataset.giftRow; }).join(' + ');
+  }
+  function refresh(){
+    const t = total();
+    rows.forEach(function(r){
+      r.querySelector('output').textContent = String(counts[r.dataset.giftRow]);
+      r.querySelector('[data-gift-minus]').disabled = counts[r.dataset.giftRow] <= 0;
+      r.querySelector('[data-gift-plus]').disabled = t >= GIFT_QTY;
+    });
+    countEl.textContent = t + ' de ' + GIFT_QTY;
+    hint.textContent = t === GIFT_QTY ? 'Listo: ' + giftText() + '.' : 'Elige ' + (GIFT_QTY - t) + (GIFT_QTY - t === 1 ? ' sachet más.' : ' sachets más.');
+    add.disabled = t !== GIFT_QTY;
+  }
+  mainOptions.forEach(function(o){
+    o.addEventListener('click', function(){
+      mainOptions.forEach(function(x){ x.classList.toggle('pill--active', x === o); x.setAttribute('aria-pressed', x === o ? 'true' : 'false'); });
+      mainFlavor = o.dataset.flavorName;
+      mainLabel.textContent = mainFlavor;
+    });
+  });
+  rows.forEach(function(r){
+    const flavor = r.dataset.giftRow;
+    r.querySelector('[data-gift-minus]').addEventListener('click', function(){ if(counts[flavor] > 0){ counts[flavor]--; refresh(); } });
+    r.querySelector('[data-gift-plus]').addEventListener('click', function(){ if(total() < GIFT_QTY){ counts[flavor]++; refresh(); } });
+  });
+  add.addEventListener('click', function(){
+    if(total() !== GIFT_QTY) return;
+    const isBox = root.dataset.giftKind === 'caja';
+    addItemToCart({
+      name: root.dataset.giftName,
+      brand: 'Going Nutrición',
+      photo: new URL(root.dataset.giftPhoto, location.href).href,
+      variant: (isBox ? 'Caja x24 sabor ' : 'Sabor ') + mainFlavor + ' · 3 sachets de regalo: ' + giftText(),
+      unitPrice: parseFloat(root.dataset.giftPrice),
+      quantity: parseInt((root.querySelector('.qty-stepper output') || {}).textContent, 10) || 1,
+      kit: true
+    });
+  });
+  refresh();
+}
+function injectGiftBs(){
+  const root = document.querySelector('[data-gift-offer]');
+  const bsEl = root && root.querySelector('[data-gift-bs]');
+  if(!bsEl || bcvRate == null) return;
+  const bs = formatBsNumber(parseFloat(root.dataset.giftPrice));
   if(bs != null) bsEl.textContent = '≈ Bs ' + bs + ' · Tasa BCV: Bs ' + formatBsNumber(1);
 }
 
@@ -2730,6 +2799,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initBlackFridayPrices();
   initOffersPage();
   initKitRecharge();
+  initGiftOffer();
   initHeroCarousel();
   initReviewForm();
 
@@ -2737,6 +2807,7 @@ document.addEventListener('DOMContentLoaded', function(){
     injectProductCardBsPrices();
     injectPdpBsPrice();
     injectKitRechargeBs();
+    injectGiftBs();
     if(typeof window.__apexCartRerender === 'function') window.__apexCartRerender();
   });
 });
