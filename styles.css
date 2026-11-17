@@ -824,7 +824,13 @@ button.pill:hover{ border-color: var(--ink); }
 .bf-band[hidden]{ display: none; }
 .bf-band-title{ color: #fff; font-family: var(--font-head); font-size: 24px; letter-spacing: .05em; text-transform: uppercase; line-height: 1.1; }
 .bf-band-text{ margin-top: var(--sp-2); font-size: 14px; color: rgba(255,255,255,.8); }
-.pdp-bf-hint{ margin-top: var(--sp-2); padding: var(--sp-2) var(--sp-3); background: var(--accent-sf); border: 1px solid var(--line); border-radius: var(--r-control); font-size: 14px; color: var(--ink); }
+.pdp-bf-hint, .pdp-pair-note{ margin-top: var(--sp-2); padding: var(--sp-2) var(--sp-3); background: var(--accent-sf); border: 1px solid var(--line); border-radius: var(--r-control); font-size: 14px; color: var(--ink); }
+/* Kit Recharge (kit-recharge.html): las dos fotos lado a lado y los sabores de cada producto */
+.kit-recharge-photos{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); width: 100%; align-items: center; }
+.kit-recharge-photos img{ width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.kit-recharge-price{ display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-3); }
+.kit-recharge-was{ font-size: 18px; font-weight: 500; color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--sale); text-decoration-thickness: 2px; }
+.flavor-card:disabled{ opacity: .45; cursor: not-allowed; }
 
 /* Entrada de los productos (inspirada en The Feed, hecha con CSS): al activarse
    el banner, cada foto cae con un leve rebote, una tras otra (120ms). Solo

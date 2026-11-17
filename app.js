@@ -266,7 +266,7 @@ function initOffersPage(){
   const cards = document.querySelectorAll('[data-deals-group]');
   if(!cards.length) return;
   const bf = bfActive();
-  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true, box24: true, bf: bf };   // kits y cajas x24 no tienen fecha de fin
+  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true, box24: true, pair: true, bf: bf };   // kits, cajas x24 y pareja de bolsas no tienen fecha de fin
   let any = false;
   document.querySelectorAll('[data-bf-only]').forEach(function(el){ el.hidden = !bf; });
   cards.forEach(function(card){
@@ -591,7 +591,7 @@ function applyFamilyPricing(cart){
     totalsByFamily[item.family] = (totalsByFamily[item.family] || 0) + item.quantity;
   });
 
-  return cart.map(function(item){
+  return applyPairBagPricing(cart.map(function(item){
     if(!item.family || !item.tiers || !item.tiers.length) return item;
     const totalQty = totalsByFamily[item.family];
     let bestTier = item.tiers[0];
@@ -602,6 +602,31 @@ function applyFamilyPricing(cart){
     const priced = Object.assign({}, item);
     priced.unitPrice = bestTier.unitPrice;
     priced.appliedTierUnits = bestTier.units;
+    return priced;
+  }));
+}
+
+/* 2 bolsas de Hidratante Going de 300 g (cualquier sabor, mezclados o no) = $47,50 en vez de $51,98.
+   Cada pareja del carrito se cobra a ese precio; la bolsa que sobra paga el normal. Como todas valen lo mismo,
+   el descuento se reparte parejo entre las bolsas (2 bolsas = $23,75 c/u; 3 = $47,50 + $25,99). */
+const PAIR_BAG_PRICE = 47.50;
+function isPairBagItem(item){
+  // Desde la ficha el "300 g" viaja en variant ("presentación de 300 g"); desde Hot Deals va en el nombre.
+  const text = (item.name || '') + ' ' + (item.variant || '');
+  return !item.kit && /hidratante/i.test(item.name || '') && /300 g/i.test(text) && /going/i.test((item.brand || '') + ' ' + (item.name || ''));
+}
+function applyPairBagPricing(cart){
+  const bags = cart.filter(isPairBagItem);
+  const total = bags.reduce(function(n, i){ return n + i.quantity; }, 0);
+  const pairs = Math.floor(total / 2);
+  if(!pairs) return cart;
+  return cart.map(function(item){
+    if(!isPairBagItem(item)) return item;
+    const saving = 2 * item.unitPrice - PAIR_BAG_PRICE;
+    if(saving <= 0) return item;
+    const priced = Object.assign({}, item);
+    priced.unitPrice = item.unitPrice - (pairs * saving) / total;
+    priced.appliedPair = true;
     return priced;
   });
 }
@@ -1049,6 +1074,53 @@ function applyNutrition(el){
   tbody.innerHTML = rows.map(function(r){
     return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>';
   }).join('');
+}
+
+/* ---------- Kit Recharge: 1 proteína 600 g + 1 hidratante bolsa 300 g, cualquier sabor, 10% menos ----------
+   Página kit-recharge.html: la persona elige el sabor de cada producto; entra al carrito como un solo kit con
+   precio propio y el detalle (sabores) viaja en "variant", igual que los kits de Hot Deals. */
+const KIT_RECHARGE_PRICE = 52.19;     // (32,00 + 25,99) menos 10%
+const KIT_RECHARGE_PHOTO = 'assets/kits/kit-recharge.webp';
+function initKitRecharge(){
+  const root = document.querySelector('[data-kit-recharge]');
+  if(!root) return;
+  const state = {};
+  root.querySelectorAll('[data-kr-group]').forEach(function(group){
+    const key = group.dataset.krGroup;
+    const img = root.querySelector('[data-kr-photo="' + key + '"]');
+    const label = root.querySelector('[data-kr-label="' + key + '"]');
+    const options = Array.from(group.querySelectorAll('.flavor-card'));
+    function pick(opt){
+      options.forEach(function(o){
+        const on = o === opt;
+        o.classList.toggle('pill--active', on);
+        o.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      state[key] = opt.dataset.flavorName;
+      if(label) label.textContent = opt.dataset.flavorName;
+      if(img){ img.src = opt.dataset.flavorImg; img.alt = (img.dataset.altPrefix || '') + opt.dataset.flavorName; }
+    }
+    options.forEach(function(o){ if(!o.disabled) o.addEventListener('click', function(){ pick(o); }); });
+    pick(options.find(function(o){ return o.classList.contains('pill--active') && !o.disabled; }) || options.find(function(o){ return !o.disabled; }) || options[0]);
+  });
+  const add = root.querySelector('[data-kr-add]');
+  if(add) add.addEventListener('click', function(){
+    addItemToCart({
+      name: 'Kit Recharge',
+      brand: 'Going Nutrición',
+      photo: new URL(KIT_RECHARGE_PHOTO, location.href).href,
+      variant: 'Proteína ' + state.proteina + ' 600 g + Hidratante ' + state.hidratante + ' 300 g',
+      unitPrice: KIT_RECHARGE_PRICE,
+      quantity: parseInt((root.querySelector('.qty-stepper output') || {}).textContent, 10) || 1,   // el selector de cantidad es el de siempre (initQuantitySteppers)
+      kit: true
+    });
+  });
+}
+function injectKitRechargeBs(){
+  const bsEl = document.querySelector('[data-kr-bs]');
+  if(!bsEl || bcvRate == null) return;
+  const bs = formatBsNumber(KIT_RECHARGE_PRICE);
+  if(bs != null) bsEl.textContent = '≈ Bs ' + bs + ' · Tasa BCV: Bs ' + formatBsNumber(1);
 }
 
 /* ---------- Selector de sabor de la ficha de producto (miniaturas + píldoras + foto principal) ---------- */
@@ -2657,12 +2729,14 @@ document.addEventListener('DOMContentLoaded', function(){
   initBagPromoBadges();
   initBlackFridayPrices();
   initOffersPage();
+  initKitRecharge();
   initHeroCarousel();
   initReviewForm();
 
   fetchBcvRate().then(function(){
     injectProductCardBsPrices();
     injectPdpBsPrice();
+    injectKitRechargeBs();
     if(typeof window.__apexCartRerender === 'function') window.__apexCartRerender();
   });
 });
