@@ -156,6 +156,10 @@ No hay framework de pruebas en el repo; se verifica con:
 
 **Titulares de las diapositivas:** deben caber en UNA línea (`.promo-title` tiene alto fijo para no mover la página al cargar la fuente): ~24 caracteres en escritorio y ~20 en celular. Hablan del beneficio; el nombre del producto va al inicio del texto de apoyo. **La Carrera Nike va siempre primera** mientras esté vigente (hasta el 8-nov); el carrusel arranca en la diapositiva con la clase `active`, que es la de Nike.
 
-## Banner temporal: Black Friday 2026 (23-29 nov)
+## Banner temporal: Black Friday 2026 (24-29 nov)
 
-Durante esos tres días aparece un 4.º banner, el primero, sobre fondo oscuro: "Black Friday -25%" con proteína Going Chocolate 600 g ($32,00 → $24,00), Skratch Hydration bolsa 440 g ($35,55 → $26,66) e hidratante Going caja x24 ($38,64 → $28,98). Lleva a `ofertas.html`. Se quita solo el 30 de nov. El 25% no se suma al 10% de primera compra (en cada producto aplica el mayor).
+Durante esos seis días aparece un 4.º banner, el primero, sobre fondo oscuro: "Black Friday -25%" con proteína Going Chocolate 600 g ($32,00 → $24,00), Skratch Hydration bolsa 440 g ($35,55 → $26,66) e hidratante Going caja x24 ($38,64 → $28,98). Lleva a `ofertas.html`. Se quita solo el 30 de nov. El 25% no se suma al 10% de primera compra (en cada producto aplica el mayor).
+
+## Banner temporal: Cyber Monday 2026 (lunes 30 nov)
+
+El 30 de nov aparece un banner oscuro (el primero) con el concepto hidratación: "Cyber Monday 50% OFF" con Skratch Hydration bolsa 440 g ($35,55 → $17,78), Skratch Hydration caja x12 sobres ($38,04 → $19,02), SaltStick FastChews display x12 ($66,12 → $33,06) y SaltStick cápsulas de sal caja x24 ($107,76 → $53,88). Lleva a `ofertas.html`. Se quita solo el 1 de dic. El 50% no se suma al 10% de primera compra (en cada producto aplica el mayor). Las cajas solo entran desde su tamaño (x12; cápsulas x24).

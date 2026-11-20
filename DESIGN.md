@@ -115,8 +115,11 @@ Nunca se usan como acento general del sitio.
 - **Carrusel del inicio:** cada banner (`.hero-slide--promo`) dura 3.5s. Al activarse, sus fotos de producto **caen una tras otra** (700ms, 120ms de diferencia, leve rebote) y quedan inclinadas entre −7° y +8° — inspirado en The Feed, hecho con CSS (`promo-entrada`). Es la **única animación de entrada permitida** del sitio; no se anima con "reducir movimiento".
 - **Sin animaciones decorativas en bucle,** sin parallax, sin animaciones de entrada al hacer scroll.
 
-### Black Friday (23-29 nov 2026) — única excepción de banner oscuro
+### Black Friday (24-29 nov 2026) — única excepción de banner oscuro
 El carrusel del inicio sigue siendo blanco; solo durante Black Friday aparece un banner sobre Tinta Carbón (`.hero-slide--bf`) con la lima como fondo del chip "-25%" y del botón, y como letra **solo sobre la tinta** (ahí contrasta 14,9:1). Se muestra y se quita solo por fecha (`data-promo-from` / `data-promo-until` + `BF_FIRST_DAY` / `BF_LAST_DAY` en `app.js`). En Hot Deals, una cinta oscura (`.bf-band`) y las tarjetas del grupo `bf` solo existen esos días. En localhost, `?hoy=2026-11-27` simula la fecha para verlo.
+
+### Cyber Monday (lunes 30 nov 2026) — segunda y última excepción de banner oscuro
+Mismo banner oscuro de Black Friday (`.hero-slide--bf.hero-slide--cm`), con el concepto **hidratación**: 50% en Skratch bolsa 440 g, Skratch caja x12 sobres, SaltStick FastChews display x12 y cápsulas x24. Los sobres de Skratch van al frente (`.cm-sobres`) con la etiqueta lima "Caja ×12". Fechas: `data-promo-from` / `data-promo-until` + `CM_FIRST_DAY` / `CM_LAST_DAY` en `app.js`. En Hot Deals: cinta `[data-cm-only]` y tarjetas del grupo `cm`; las cajas x24 de Skratch y SaltStick se ocultan ese día (`data-hide-in-cm`). Black Friday y Cyber Monday no se cruzan: `eventActive()`, `eventRate()` y `eventName()` sirven a ambos.
 
 ## 7. Anti-Patterns (Banned)
 

@@ -184,13 +184,13 @@
   <section class="hero-carousel">
     <h1 class="visually-hidden">Apex Nutrición — nutrición deportiva de Going, Probar, Skratch Labs, SaltStick y Honey Stinger en Venezuela</h1>
 
-    <!-- Black Friday 2026: aparece solo del 23 al 29 de nov (hora de Caracas); mismas fechas que BF_FIRST_DAY / BF_LAST_DAY en app.js. -->
-    <div class="hero-slide hero-slide--promo hero-slide--bf" data-promo-id="black-friday-2026" data-promo-name="Black Friday 25% OFF" data-promo-slot="hero-bf" data-promo-from="2026-11-23" data-promo-until="2026-11-29">
+    <!-- Black Friday 2026: aparece solo del 24 al 29 de nov (hora de Caracas); mismas fechas que BF_FIRST_DAY / BF_LAST_DAY en app.js. -->
+    <div class="hero-slide hero-slide--promo hero-slide--bf" data-promo-id="black-friday-2026" data-promo-name="Black Friday 25% OFF" data-promo-slot="hero-bf" data-promo-from="2026-11-24" data-promo-until="2026-11-29">
       <div class="container">
         <div class="promo-copy">
-          <p class="eyebrow">Venezuela · 23 al 29 de noviembre</p>
+          <p class="eyebrow">Venezuela · 24 al 29 de noviembre</p>
           <h2 class="h-46 promo-title">Black Friday</h2>
-          <p class="promo-text">Tres días, tres productos con descuento. En el hidratante, mezcla los sabores de la caja.</p>
+          <p class="promo-text">Seis días, tres productos con descuento. En el hidratante, mezcla los sabores de la caja.</p>
           <ul class="bf-list">
             <li><span>Proteína Going Chocolate 600 g</span><span class="bf-prices"><s>$32,00</s> <strong>$24,00</strong></span></li>
             <li><span>Skratch Hydration bolsa 440 g · 2 sabores</span><span class="bf-prices"><s>$35,55</s> <strong>$26,66</strong></span></li>
@@ -211,6 +211,37 @@
             <span class="bf-caja-chip">Caja ×24</span>
           </div>
           <div class="bf-sign" role="img" aria-label="25% de descuento"><b>25%</b><small>OFF</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cyber Monday 2026: aparece solo el lunes 30 de nov (hora de Caracas); mismas fechas que CM_FIRST_DAY / CM_LAST_DAY en app.js. Concepto: hidratación. -->
+    <div class="hero-slide hero-slide--promo hero-slide--bf hero-slide--cm" data-promo-id="cyber-monday-2026" data-promo-name="Cyber Monday 50% OFF hidratación" data-promo-slot="hero-cm" data-promo-from="2026-11-30" data-promo-until="2026-11-30">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">Hidratación · lunes 30 de noviembre</p>
+          <h2 class="h-46 promo-title">Cyber Monday</h2>
+          <p class="promo-text">Un solo día, la mitad de precio en hidratación y electrolitos. En las cajas puedes mezclar sabores.</p>
+          <ul class="bf-list">
+            <li><span>Skratch Hydration bolsa 440 g · 2 sabores</span><span class="bf-prices"><s>$35,55</s> <strong>$17,78</strong></span></li>
+            <li><span>Skratch Hydration caja x12 sobres</span><span class="bf-prices"><s>$38,04</s> <strong>$19,02</strong></span></li>
+            <li><span>SaltStick FastChews display x12</span><span class="bf-prices"><s>$66,12</s> <strong>$33,06</strong></span></li>
+            <li><span>SaltStick cápsulas de sal caja x24</span><span class="bf-prices"><s>$107,76</s> <strong>$53,88</strong></span></li>
+          </ul>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="ofertas.html" data-promo-creative="boton">Ver las ofertas</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--bf">
+          <img src="assets/banners/saltstick-capsulas-v2.webp" alt="Cápsulas de electrolitos SaltStick" width="461" height="640" fetchpriority="low">
+          <img src="assets/banners/skratch-bolsa-v2.webp" alt="Bolsa de 440 g de Sport Hydration de Skratch Labs sabor Fresa Limonada" width="495" height="640" fetchpriority="low">
+          <img src="assets/banners/saltstick-fastchews-display-v2.webp" alt="Display de masticables SaltStick FastChews" width="441" height="640" fetchpriority="low">
+          <div class="cm-sobres" role="img" aria-label="Sobres de Sport Hydration de Skratch Labs, caja de 12">
+            <img src="assets/banners/skratch-sobres-fresa-v2.webp" alt="" width="184" height="640" fetchpriority="low">
+            <img src="assets/banners/skratch-sobres-limon-v2.webp" alt="" width="184" height="640" fetchpriority="low">
+            <span class="bf-caja-chip">Caja ×12</span>
+          </div>
+          <div class="bf-sign" role="img" aria-label="50% de descuento"><b>50%</b><small>OFF</small></div>
         </div>
       </div>
     </div>
@@ -552,9 +583,104 @@
       </div>
       <div class="product-grid">
 
-        <!-- Black Friday 2026 (27-29 nov): se muestra solo esos días (initOffersPage en app.js). El 25% lo aplica el carrito. -->
+        <!-- Cyber Monday 2026 (lunes 30 nov): se muestra solo ese día (initOffersPage en app.js). El 50% lo aplica el carrito. -->
+        <div class="bf-band" data-cm-only hidden>
+          <p class="bf-band-title"><span class="hot-emoji" aria-hidden="true">💧</span> Cyber Monday · lunes 30 de noviembre</p>
+          <p class="bf-band-text">50% de descuento en hidratación: Skratch en bolsa y en caja x12, SaltStick FastChews x12 y cápsulas x24. No se suma al 10% de primera compra: en cada producto aplica el mayor.</p>
+        </div>
+
+        <div data-deals-group="cm" hidden class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+          <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Fresa%20Limonada">
+            <div class="product-media">
+              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada.webp" alt="Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g" width="1000" height="1000" loading="lazy">
+            </div>
+            <div class="product-info">
+              <p class="product-brand">Skratch Labs</p>
+              <h3 class="product-name">Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g Skratch Labs</h3>
+              <p class="product-stat">400 mg sodio · 20 g carbohidratos por porción</p>
+              <div class="product-bottom">
+                <span class="product-price">$35,55</span>
+              </div>
+            </div>
+          </a>
+          <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+        </div>
+
+        <div data-deals-group="cm" hidden class="product-card" data-brand="skratch" data-format="polvo" data-caffeine="0" data-carbs="20" data-sodium="400" data-sport="running ciclismo triatlon trail gimnasio" data-price="35.55" data-rating="4.8" data-category="hidratacion">
+          <a class="product-card-box" href="producto-skratch-bolsa.html?flavor=Lim%C3%B3n%20Lima">
+            <div class="product-media">
+              <img class="product-photo" src="assets/skratch/hidratacion-limon-lima.webp" alt="Sport Hydration Drink Mix Limón Lima — Bolsa 440 g" width="1000" height="1000" loading="lazy">
+            </div>
+            <div class="product-info">
+              <p class="product-brand">Skratch Labs</p>
+              <h3 class="product-name">Sport Hydration Drink Mix Limón Lima — Bolsa 440 g Skratch Labs</h3>
+              <p class="product-stat">400 mg sodio · 20 g carbohidratos por porción</p>
+              <div class="product-bottom">
+                <span class="product-price">$35,55</span>
+              </div>
+            </div>
+          </a>
+          <button type="button" class="product-add-btn" data-add-to-cart-card>Agregar al carrito</button>
+        </div>
+
+        <div data-deals-group="cm" hidden class="product-card" data-brand="skratch" data-price="19.02">
+          <a class="product-card-box" href="producto-skratch.html?pack=12">
+            <div class="product-media">
+              <span class="tag tag--discount" data-bf-badge><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>50% OFF</span>
+              <img class="product-photo" src="assets/skratch/hidratacion-fresa-limonada-sticks.webp" alt="Sport Hydration Drink Mix Skratch Labs en sobres, caja de 12" width="1000" height="1000" loading="lazy">
+            </div>
+            <div class="product-info">
+              <p class="product-brand">Skratch Labs</p>
+              <h3 class="product-name">Sport Hydration Drink Mix Skratch Labs</h3>
+              <p class="product-stat">Caja x12 sobres · mezcla los sabores · $1,59 c/u</p>
+              <div class="product-bottom">
+                <span class="product-price on-sale" data-original-usd="38.04" data-sale-rate="0.5"><span class="product-price-usd"><span>$19,02</span><span class="was">$38,04</span></span></span>
+              </div>
+            </div>
+          </a>
+          <a class="product-add-btn" href="producto-skratch.html?pack=12">Elegir sabores</a>
+        </div>
+
+        <div data-deals-group="cm" hidden class="product-card" data-brand="saltstick" data-price="33.06">
+          <a class="product-card-box" href="producto-saltstick.html?pack=12">
+            <div class="product-media">
+              <span class="tag tag--discount" data-bf-badge><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>50% OFF</span>
+              <img class="product-photo" src="assets/saltstick/fastchews-carton-pinklemonade.webp" alt="Display de 12 sobres de masticables SaltStick FastChews" width="1000" height="1000" loading="lazy">
+            </div>
+            <div class="product-info">
+              <p class="product-brand">SaltStick</p>
+              <h3 class="product-name">Masticables FastChews SaltStick</h3>
+              <p class="product-stat">Display x12 · mezcla los sabores · $2,76 c/u</p>
+              <div class="product-bottom">
+                <span class="product-price on-sale" data-original-usd="66.12" data-sale-rate="0.5"><span class="product-price-usd"><span>$33,06</span><span class="was">$66,12</span></span></span>
+              </div>
+            </div>
+          </a>
+          <a class="product-add-btn" href="producto-saltstick.html?pack=12">Elegir sabores</a>
+        </div>
+
+        <div data-deals-group="cm" hidden class="product-card" data-brand="saltstick" data-price="53.88">
+          <a class="product-card-box" href="producto-saltstick-capsulas.html?pack=24">
+            <div class="product-media">
+              <span class="tag tag--discount" data-bf-badge><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>50% OFF</span>
+              <img class="product-photo" src="assets/saltstick/capsulas-electrolitos.webp" alt="Cápsulas de Electrolitos SaltStick, caja de 24" width="1000" height="1000" loading="lazy">
+            </div>
+            <div class="product-info">
+              <p class="product-brand">SaltStick</p>
+              <h3 class="product-name">Cápsulas de Electrolitos SaltStick</h3>
+              <p class="product-stat">Caja x24 · $2,25 c/u</p>
+              <div class="product-bottom">
+                <span class="product-price on-sale" data-original-usd="107.76" data-sale-rate="0.5"><span class="product-price-usd"><span>$53,88</span><span class="was">$107,76</span></span></span>
+              </div>
+            </div>
+          </a>
+          <a class="product-add-btn" href="producto-saltstick-capsulas.html?pack=24">Elegir sabores</a>
+        </div>
+
+
+        <!-- Black Friday 2026 (24-29 nov): se muestra solo esos días (initOffersPage en app.js). El 25% lo aplica el carrito. -->
         <div class="bf-band" data-bf-only hidden>
-          <p class="bf-band-title"><span class="hot-emoji" aria-hidden="true">🔥</span> Black Friday · 23 al 29 de noviembre</p>
+          <p class="bf-band-title"><span class="hot-emoji" aria-hidden="true">🔥</span> Black Friday · 24 al 29 de noviembre</p>
           <p class="bf-band-text">25% de descuento en estos productos. No se suma al 10% de primera compra: en cada producto aplica el mayor.</p>
         </div>
 
@@ -878,7 +1004,7 @@
           <a class="product-add-btn" href="producto-probar-gomas.html?pack=24">Elegir sabores</a>
         </div>
 
-        <div data-deals-group="box24" class="product-card" data-brand="saltstick" data-price="107.76">
+        <div data-deals-group="box24" data-hide-in-cm class="product-card" data-brand="saltstick" data-price="107.76">
           <a class="product-card-box" href="producto-saltstick-capsulas.html?pack=24">
             <div class="product-media">
               <span class="tag tag--discount">-10%</span>
@@ -896,7 +1022,7 @@
           <a class="product-add-btn" href="producto-saltstick-capsulas.html?pack=24">Elegir sabores</a>
         </div>
 
-        <div data-deals-group="box24" class="product-card" data-brand="saltstick" data-price="129.36">
+        <div data-deals-group="box24" data-hide-in-cm class="product-card" data-brand="saltstick" data-price="129.36">
           <a class="product-card-box" href="producto-saltstick.html?pack=24">
             <div class="product-media">
               <span class="tag tag--discount">-10%</span>
@@ -914,7 +1040,7 @@
           <a class="product-add-btn" href="producto-saltstick.html?pack=24">Elegir sabores</a>
         </div>
 
-        <div data-deals-group="box24" class="product-card" data-brand="skratch" data-price="74.64">
+        <div data-deals-group="box24" data-hide-in-cm class="product-card" data-brand="skratch" data-price="74.64">
           <a class="product-card-box" href="producto-skratch.html?pack=24">
             <div class="product-media">
               <span class="tag tag--discount">-10%</span>

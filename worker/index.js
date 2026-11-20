@@ -646,14 +646,14 @@ async function enviarRecordatorioPedidos(env, prueba) {
   }
 }
 
-/* ---------- Vigilancia de Black Friday 2026 (23 al 29 de nov) ----------
+/* ---------- Vigilancia de Black Friday 2026 (24 al 29 de nov) ----------
    Cada hora (el mismo cron de GA4) revisa los pedidos nuevos con productos de la oferta y manda un correo a los mismos
    destinatarios del recordatorio: 1) cuando entra el PRIMER pedido con algún producto de Black Friday (diga si los precios
    quedaron bien o no); 2) cuando un pedido posterior trae un precio que no cuadra. Solo lee: nunca cambia pedidos.
    El correo no lleva nombres ni teléfonos, solo número de pedido, productos y montos. Cada aviso se anota en
    tienda.recordatorios_enviados con clave "bf:..." (tipo "semanal") y no se repite. Los precios esperados son los de app.js
    (BF_RATE = 0.25): proteína chocolate 600 g $24,00; Skratch bolsa 440 g $26,66; hidratante $1,2075 por sobre con 24 o más. */
-const BF_PEDIDOS_DESDE_MS = Date.parse('2026-11-23T04:00:00Z');   // 23 nov 00:00, Caracas
+const BF_PEDIDOS_DESDE_MS = Date.parse('2026-11-24T04:00:00Z');   // 24 nov 00:00, Caracas
 const BF_PEDIDOS_HASTA_MS = Date.parse('2026-11-30T04:00:00Z');   // fin del 29 nov, Caracas
 const BF_VIGILAR_HASTA_MS = Date.parse('2026-12-02T04:00:00Z');   // deja de consultar pasado el 1 de dic
 
@@ -691,7 +691,7 @@ function bfArmarCorreo(o, rev, primero) {
     '<ul style="padding-left:18px;margin:0 0 14px;font-size:14px">' + filas + '</ul>' +
     '<p style="margin:0 0 14px;font-size:14px;color:#514D48">Cuando lo confirmes en el panel, la venta pasa a GA4 sola (en menos de una hora).</p>' +
     '<p style="margin:18px 0"><a href="' + RECORDATORIO_PANEL_URL + '" style="background:#14120F;color:#fff;padding:12px 20px;text-decoration:none;font-weight:700">Abrir el panel de pedidos</a></p>' +
-    '<p style="font-size:12px;color:#726E67">Aviso automático de Black Friday (23 al 29 de nov). Solo lee los pedidos; no cambia nada.</p></div>';
+    '<p style="font-size:12px;color:#726E67">Aviso automático de Black Friday (24 al 29 de nov). Solo lee los pedidos; no cambia nada.</p></div>';
   const text = asunto + '\n\nPedido ' + o.id + ' · ' + fecha + ' · total de productos ' + bfUsd(o.total) + '\n' +
     rev.lineas.map(function (l) { return (l.ok ? '[ok] ' : '[REVISAR] ') + l.texto; }).join('\n') + '\n\nPanel: ' + RECORDATORIO_PANEL_URL;
   return { subject: asunto, html: html, text: text };

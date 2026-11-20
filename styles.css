@@ -3300,3 +3300,14 @@ button.pill:hover{ border-color: var(--ink); }
 .gift-step button:disabled{ opacity: .35; cursor: not-allowed; }
 .gift-step output{ min-width: 28px; text-align: center; font-weight: 700; color: var(--ink); }
 .gift-hint{ margin-top: var(--sp-2); font-size: 14px; color: var(--ink-2); }
+/* Cyber Monday (hidratación): mismo banner oscuro de Black Friday; los sobres de Skratch van al frente con la etiqueta "Caja ×12" */
+.cm-sobres{ position: absolute; left: 50%; bottom: 3%; width: 26%; height: 38%; transform: translateX(-50%); z-index: 3; }
+.promo-media--bf .cm-sobres img{ position: absolute; bottom: 0; height: 100%; width: auto; max-width: none; }
+.promo-media--bf .cm-sobres img:nth-child(1){ left: 8%; --giro: -8deg; transform: rotate(var(--giro)); }
+.promo-media--bf .cm-sobres img:nth-child(2){ right: 8%; --giro: 7deg; transform: rotate(var(--giro)); z-index: 1; }
+.cm-sobres .bf-caja-chip{ bottom: -16%; }
+@media (max-width: 640px){
+  .hero-slide--cm .bf-sign{ right: auto; left: 0; top: -7%; transform: rotate(-7deg); }
+  .hero-slide--cm .bf-sign b{ font-size: 46px; }
+  .hero-slide--cm .bf-sign small{ font-size: 16px; }
+}

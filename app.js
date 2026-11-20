@@ -54,14 +54,14 @@ const PROBAR_PROMO_LAST_DAY = '2026-11-08';
 const PROMO_BADGE_SELECTOR = '[data-bag-promo],[data-probar-promo]';
 const PROMO_BADGE_SVG = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>10% OFF';
 
-/* Black Friday 2026 (Venezuela): 25% en tres productos, del 23 al 29 de noviembre (hora de Caracas, inclusive):
+/* Black Friday 2026 (Venezuela): 25% en tres productos, del 24 al 29 de noviembre (hora de Caracas, inclusive):
    - Proteína en Polvo Chocolate — 600 g Going
    - Sport Hydration Drink Mix Skratch Labs en bolsa de 440 g (los dos sabores)
    - Hidratante Going en caja x24 (mezclando sabores; la caja ya trae su -10%, el 25% va sobre ese precio)
    El 25% no se suma al 10% de primera compra: cada producto se queda con el mayor. El banner del inicio
    (data-promo-from / data-promo-until en index.html) debe tener las mismas fechas que estas dos. */
 const BF_RATE = 0.25;
-const BF_FIRST_DAY = '2026-11-23';
+const BF_FIRST_DAY = '2026-11-24';
 const BF_LAST_DAY = '2026-11-29';
 function bfActive(){
   const today = todayCaracas();
@@ -85,6 +85,44 @@ function isBfItem(item){
   if(!bfActive()) return false;
   return isBfProductName(item.name) || isBfProtein600Item(item) || (isBfHydrationFamily(item.family) && (item.appliedTierUnits || 0) >= 24);
 }
+
+/* Cyber Monday 2026 (Venezuela): 50% en hidratación, un solo día: lunes 30 de noviembre (hora de Caracas):
+   - Skratch Labs Sport Hydration en bolsa de 440 g (los dos sabores)
+   - Skratch Labs Hydration en sobres: caja x12 (o más, mezclando sabores)
+   - SaltStick FastChews: display x12 (o más, mezclando sabores)
+   - SaltStick cápsulas de electrolitos: caja x24
+   Igual que Black Friday: no se suma al 10% de primera compra (en cada producto aplica el mayor) y el descuento lo
+   calcula el carrito. El banner del inicio (data-promo-from / data-promo-until en index.html) lleva las mismas fechas. */
+const CM_RATE = 0.50;
+const CM_FIRST_DAY = '2026-11-30';
+const CM_LAST_DAY = '2026-11-30';
+function cmActive(){
+  const today = todayCaracas();
+  return today >= CM_FIRST_DAY && today <= CM_LAST_DAY;
+}
+function isSkratchBag440(name){
+  return /bolsa 440 g/i.test(name || '') && /skratch/i.test(name || '');
+}
+/* Fichas con presentaciones por caja que entran en Cyber Monday, y desde cuántas unidades (la caja). */
+function cmMinUnits(family){
+  family = family || '';
+  if(/producto-skratch(\.html)?$/.test(family)) return 12;
+  if(/producto-saltstick(\.html)?$/.test(family)) return 12;
+  if(/producto-saltstick-capsulas(\.html)?$/.test(family)) return 24;
+  return 0;
+}
+function isCmItem(item){
+  if(!cmActive()) return false;
+  if(isSkratchBag440(item.name)) return true;
+  const min = cmMinUnits(item.family);
+  return min > 0 && (item.appliedTierUnits || 0) >= min;
+}
+/* Black Friday y Cyber Monday no se cruzan (fechas distintas): estas funciones sirven a cualquiera de los dos. */
+function eventActive(){ return bfActive() || cmActive(); }
+function eventRate(){ return cmActive() ? CM_RATE : BF_RATE; }
+function eventName(){ return cmActive() ? 'Cyber Monday' : 'Black Friday'; }
+function isEventItem(item){ return isBfItem(item) || isCmItem(item); }
+function isEventProductName(name){ return cmActive() ? isSkratchBag440(name) : isBfProductName(name); }
 
 function bagPromoActive(){
   return todayCaracas() <= BAG_PROMO_LAST_DAY;
@@ -172,12 +210,18 @@ function bfBadge(inline){
   const badge = document.createElement('span');
   badge.className = 'tag tag--discount' + (inline ? ' tag--inline' : '');
   badge.setAttribute('data-bf-badge', '');
-  badge.innerHTML = PROMO_BADGE_SVG.replace('10% OFF', Math.round(BF_RATE * 100) + '% OFF');
+  badge.innerHTML = PROMO_BADGE_SVG.replace('10% OFF', Math.round(eventRate() * 100) + '% OFF');
   return badge;
 }
 function bfPdpRate(){
   const title = document.getElementById('pdp-main-title');
-  if(!title || !bfActive()) return 0;
+  if(!title || !eventActive()) return 0;
+  if(cmActive()){
+    if(isSkratchBag440(title.textContent)) return CM_RATE;
+    const min = cmMinUnits(location.pathname);
+    const activePill = document.querySelector('[data-pill-group="presentation"] .pill--active');
+    return min > 0 && activePill && pillUnits(activePill) >= min ? CM_RATE : 0;
+  }
   if(isBfProductName(title.textContent)) return BF_RATE;
   if(/producto-going-proteina-tarro(\.html)?$/.test(location.pathname) && /chocolate/i.test(title.textContent)) return BF_RATE;
   const active = document.querySelector('[data-pill-group="presentation"] .pill--active');
@@ -198,12 +242,14 @@ function applyBfPdp(){
     if(oldBadge) oldBadge.remove();
     if(oldSale){ row.classList.remove('on-sale'); delete row.dataset.saleRate; }
     // En la ficha del hidratante en sobres, mientras no esté elegida la caja x24, se avisa dónde está el descuento.
-    if(bfActive() && isBfHydrationFamily(location.pathname)){
+    const hintUnits = cmActive() ? cmMinUnits(location.pathname) : (bfActive() && isBfHydrationFamily(location.pathname) ? 24 : 0);
+    if(hintUnits){
       if(!hint){
         const p = document.createElement('p');
         p.className = 'pdp-bf-hint';
         p.setAttribute('data-bf-hint', '');
-        p.innerHTML = '<strong>Black Friday:</strong> elige la <strong>Caja x24</strong> (puedes mezclar sabores) y llévala con 25% OFF.';
+        const mezcla = /capsulas/.test(location.pathname) ? '' : ' (puedes mezclar sabores)';
+        p.innerHTML = '<strong>' + eventName() + ':</strong> elige la <strong>Caja x' + hintUnits + '</strong>' + mezcla + ' y llévala con ' + Math.round(eventRate() * 100) + '% OFF.';
         row.parentNode.insertBefore(p, row.nextSibling);
       }
     }
@@ -226,12 +272,12 @@ function applyBfPdp(){
   injectPdpBsPrice();
 }
 function initBlackFridayPrices(){
-  if(!bfActive()) return;
+  if(!eventActive()) return;
   document.querySelectorAll('.product-card').forEach(function(card){
     const nameEl = card.querySelector('.product-name');
     const media = card.querySelector('.product-media');
     const priceEl = card.querySelector('.product-price');
-    if(!nameEl || !media || !priceEl || !isBfProductName(nameEl.textContent) || card.querySelector('[data-bf-badge]')) return;
+    if(!nameEl || !media || !priceEl || !isEventProductName(nameEl.textContent) || card.querySelector('[data-bf-badge]')) return;
     // La tarjeta ya trae una promo de 10% de otra fecha (apagada): se muestra solo el 25%.
     const old = card.querySelector(PROMO_BADGE_SELECTOR);
     if(old) old.remove();
@@ -239,7 +285,7 @@ function initBlackFridayPrices(){
     const original = priceEl.dataset.originalUsd ? parseFloat(priceEl.dataset.originalUsd) : parsePriceText(priceEl.textContent);
     if(original == null) return;
     priceEl.dataset.originalUsd = String(original);
-    priceEl.dataset.saleRate = String(BF_RATE);
+    priceEl.dataset.saleRate = String(eventRate());
     priceEl.classList.add('on-sale');
     let usdSpan = priceEl.querySelector('.product-price-usd');
     if(!usdSpan){
@@ -248,7 +294,7 @@ function initBlackFridayPrices(){
       usdSpan.className = 'product-price-usd';
       priceEl.appendChild(usdSpan);
     }
-    usdSpan.innerHTML = '<span>' + formatPrice(original * (1 - BF_RATE)) + '</span><span class="was">' + formatPrice(original) + '</span>';
+    usdSpan.innerHTML = '<span>' + formatPrice(original * (1 - eventRate())) + '</span><span class="was">' + formatPrice(original) + '</span>';
   });
   const title = document.getElementById('pdp-main-title');
   if(title){
@@ -266,11 +312,13 @@ function initOffersPage(){
   const cards = document.querySelectorAll('[data-deals-group]');
   if(!cards.length) return;
   const bf = bfActive();
-  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true, box24: true, pair: true, gift: true, bf: bf };   // kits, cajas x24 y pareja de bolsas no tienen fecha de fin
+  const cm = cmActive();
+  const active = { bag: bagPromoActive(), probar: probarPromoActive(), kits: true, box24: true, pair: true, gift: true, bf: bf, cm: cm };   // kits, cajas x24 y pareja de bolsas no tienen fecha de fin
   let any = false;
   document.querySelectorAll('[data-bf-only]').forEach(function(el){ el.hidden = !bf; });
+  document.querySelectorAll('[data-cm-only]').forEach(function(el){ el.hidden = !cm; });
   cards.forEach(function(card){
-    const on = !!active[card.dataset.dealsGroup] && !(bf && card.hasAttribute('data-hide-in-bf'));
+    const on = !!active[card.dataset.dealsGroup] && !(bf && card.hasAttribute('data-hide-in-bf')) && !(cm && card.hasAttribute('data-hide-in-cm'));
     card.hidden = !on;
     if(on) any = true;
   });
@@ -290,7 +338,7 @@ function itemPromoActive(item){
 }
 /* Descuento automático del producto (sin código): Black Friday 25%, o el 10% de las promos con fecha. */
 function promoRateForItem(item){
-  if(isBfItem(item)) return BF_RATE;
+  if(isEventItem(item)) return eventRate();
   return itemPromoActive(item) ? PRODUCT_PROMO_RATE : 0;
 }
 /* El código de primera compra y la promo del producto no se suman: gana el mayor. */
@@ -301,7 +349,7 @@ function discountRateForItem(coupon, item){
 function promoLabelForCart(cart){
   const priced = applyFamilyPricing(cart);
   const names = [];
-  if(priced.some(isBfItem)) names.push('Black Friday');
+  if(priced.some(isEventItem)) names.push(eventName());
   if(priced.some(function(i){ return bagPromoActive() && isBagHydrationItem(i); })) names.push('hidratantes en bolsa');
   if(priced.some(function(i){ return probarPromoActive() && isProbarBarItem(i); })) names.push('barras Probar');
   return names.join(' y ') || 'promoción';
@@ -314,8 +362,8 @@ function cartDiscount(pricedCart, coupon){
 /* Texto del descuento para el resumen del carrito y el mensaje del pedido. */
 function discountLabelFor(cart, coupon){
   const priced = applyFamilyPricing(cart);
-  const bf = priced.some(isBfItem);
-  if(coupon) return 'código ' + coupon.code + (bf ? ' + Black Friday' : '');
+  const bf = priced.some(isEventItem);
+  if(coupon) return 'código ' + coupon.code + (bf ? ' + ' + eventName() : '');
   const rates = [];
   priced.forEach(function(i){
     const r = promoRateForItem(i);
@@ -340,6 +388,10 @@ function initAnnounceBar(){
   if(!el) return;
   if(bfActive()){
     el.innerHTML = '🔥 <strong>BLACK FRIDAY: 25% OFF</strong> en productos seleccionados, hasta el 29 de nov';
+    return;
+  }
+  if(cmActive()){
+    el.innerHTML = '💧 <strong>CYBER MONDAY: 50% OFF</strong> en hidratación, solo hoy lunes 30 de nov';
     return;
   }
   if(!hasUsedWelcomeCoupon()){
@@ -1905,7 +1957,7 @@ function initCartPage(){
     // El descuento no afecta el umbral de envío gratis — se calcula sobre
     // el subtotal real, no sobre el subtotal ya rebajado.
     const discount = cartDiscount(pricedCart, appliedCoupon);
-    if(discountLabelEl) discountLabelEl.textContent = appliedCoupon ? 'Descuento (primera compra' + (applyFamilyPricing(getCart()).some(isBfItem) ? ' y Black Friday' : '') + ')' : 'Descuento (' + promoLabelForCart(getCart()) + ')';
+    if(discountLabelEl) discountLabelEl.textContent = appliedCoupon ? 'Descuento (primera compra' + (applyFamilyPricing(getCart()).some(isEventItem) ? ' y ' + eventName() : '') + ')' : 'Descuento (' + promoLabelForCart(getCart()) + ')';
     if(welcomeBannerEl) welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = "a coordinar" (MRW) | undefined = todavía no elige estado/zona
@@ -2069,7 +2121,7 @@ function initCartPage(){
             appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE };
             if(welcomeBannerEl) welcomeBannerEl.hidden = true;
             const pricedNow = applyFamilyPricing(getCart());
-            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + (pricedNow.some(isBfItem) ? ' Los productos de Black Friday mantienen su 25%: no se suman.' : (pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : '')), 'ok');
+            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + (pricedNow.some(isEventItem) ? ' Los productos de ' + eventName() + ' mantienen su ' + Math.round(eventRate() * 100) + '%: no se suman.' : (pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : '')), 'ok');
           } else {
             appliedCoupon = null;
             showCouponNote('Código no válido.', 'error');
