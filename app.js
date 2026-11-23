@@ -362,8 +362,17 @@ function cartDiscount(pricedCart, coupon){
 /* Texto del descuento para el resumen del carrito y el mensaje del pedido. */
 function discountLabelFor(cart, coupon){
   const priced = applyFamilyPricing(cart);
-  const bf = priced.some(isEventItem);
-  if(coupon) return 'código ' + coupon.code + (bf ? ' + ' + eventName() : '');
+  const ev = priced.filter(isEventItem);
+  if(coupon){
+    // Los descuentos no se suman: en cada producto aplica solo el mayor (el del evento o el 10% de primera compra).
+    const base = 'primera compra ' + Math.round(coupon.rate * 100) + '%';
+    const pct = Math.round(eventRate() * 100) + '%';
+    let txt;
+    if(!ev.length) txt = base;
+    else if(ev.length === priced.length) txt = eventName() + ' ' + pct + ', no se suma a la primera compra';
+    else txt = eventName() + ' ' + pct + ' y ' + base + ' (no se suman: aplica el mayor por producto)';
+    return txt + (coupon.auto ? '' : ' · código ' + coupon.code);
+  }
   const rates = [];
   priced.forEach(function(i){
     const r = promoRateForItem(i);
@@ -1973,8 +1982,14 @@ function initCartPage(){
     // El descuento no afecta el umbral de envío gratis — se calcula sobre
     // el subtotal real, no sobre el subtotal ya rebajado.
     const discount = cartDiscount(pricedCart, appliedCoupon);
-    if(discountLabelEl) discountLabelEl.textContent = appliedCoupon ? 'Descuento (primera compra' + (applyFamilyPricing(getCart()).some(isEventItem) ? ' y ' + eventName() : '') + ')' : 'Descuento (' + promoLabelForCart(getCart()) + ')';
-    if(welcomeBannerEl) welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
+    if(discountLabelEl) discountLabelEl.textContent = 'Descuento (' + discountLabelFor(getCart(), appliedCoupon) + ')';
+    if(welcomeBannerEl){
+      welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
+      // Con productos de Black Friday / Cyber Monday el banner aclara que los descuentos no se suman.
+      welcomeBannerEl.innerHTML = pricedCart.some(isEventItem)
+        ? '🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código. Los productos de ' + eventName() + ' mantienen su ' + Math.round(eventRate() * 100) + '%: los descuentos no se suman, en cada producto aplica el mayor.'
+        : '🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código.';
+    }
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = pago a destino (MRW o Zoom, no se suma al total) | undefined = todavía no elige estado/zona
     let shipping;
@@ -2003,7 +2018,7 @@ function initCartPage(){
         shippingNoteEl.textContent = 'Retiro en tienda — sin costo de envío.';
         shippingNoteEl.classList.add('ok');
       } else if(shipping === null){
-        shippingNoteEl.textContent = 'Envío por ' + deliveryCtx.carrier + ': pago a destino. Pagas el flete a ' + deliveryCtx.carrier + ' cuando recibes tu pedido.';
+        shippingNoteEl.textContent = 'Envío por ' + deliveryCtx.carrier + ': pagas el envío cuando recibas tu pedido.';
         shippingNoteEl.classList.remove('ok');
       } else if(shipping === 0){
         shippingNoteEl.textContent = 'Tu pedido califica para envío gratis.';
