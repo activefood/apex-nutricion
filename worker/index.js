@@ -560,7 +560,8 @@ async function sincronizarVentasGa4(env) {
    Se manda con Resend (secreto RESEND_API_KEY; remitente en RECORDATORIO_DESDE, por defecto recordatorio@apexnutricionve.com).
    El destinatario vive en la base (tienda.config, clave "recordatorio_para"), no en el código: este repositorio es público.
    Cada envío queda anotado en tienda.recordatorios_enviados (enviado / omitido / error) y nunca se repite el mismo día. */
-const RECORDATORIO_CRONS = ['0 12 * * 1', '0 13 * * 1', '0 20 * * 5', '0 21 * * 5'];
+// En Cloudflare el día de la semana cuenta desde 1 = domingo (no desde lunes): por eso se escribe con nombre (MON, FRI), no con número.
+const RECORDATORIO_CRONS = ['0 12 * * MON', '0 13 * * MON', '0 20 * * FRI', '0 21 * * FRI'];
 const RECORDATORIO_PANEL_URL = 'https://apexnutricionve.com/panel';
 
 function escHtml(v) {
