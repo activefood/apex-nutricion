@@ -58,7 +58,7 @@ const PROMO_BADGE_SVG = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none"
    - Proteína en Polvo Chocolate — 600 g Going
    - Sport Hydration Drink Mix Skratch Labs en bolsa de 440 g (los dos sabores)
    - Hidratante Going en caja x24 (mezclando sabores; la caja ya trae su -10%, el 25% va sobre ese precio)
-   El 25% no se suma al 10% de primera compra: cada producto se queda con el mayor. El banner del inicio
+   El 25% no se suma al 10% de primera compra: si el carrito tiene un producto de Black Friday aplica SOLO el 25% (a los de la lista) y el 10% no se usa en el resto (couponForCart). El banner del inicio
    (data-promo-from / data-promo-until en index.html) debe tener las mismas fechas que estas dos. */
 const BF_RATE = 0.25;
 const BF_FIRST_DAY = '2026-11-23';
@@ -91,7 +91,7 @@ function isBfItem(item){
    - Skratch Labs Hydration en sobres: caja x12 (o más, mezclando sabores)
    - SaltStick FastChews: display x12 (o más, mezclando sabores)
    - SaltStick cápsulas de electrolitos: caja x24
-   Igual que Black Friday: no se suma al 10% de primera compra (en cada producto aplica el mayor) y el descuento lo
+   Igual que Black Friday: con un producto de Cyber Monday en el carrito aplica SOLO el 50% (el 10% de primera compra no se usa) y el descuento lo
    calcula el carrito. El banner del inicio (data-promo-from / data-promo-until en index.html) lleva las mismas fechas. */
 const CM_RATE = 0.50;
 const CM_FIRST_DAY = '2026-11-30';
@@ -341,8 +341,18 @@ function promoRateForItem(item){
   if(isEventItem(item)) return eventRate();
   return itemPromoActive(item) ? PRODUCT_PROMO_RATE : 0;
 }
+/* Con un producto de Black Friday / Cyber Monday en el carrito aplica SOLO el descuento del evento (a los productos de la lista):
+   el 10% de primera compra no se suma ni se usa en los demás productos. Sin evento, el código vale como siempre. */
+function couponForCart(pricedCart, coupon){
+  return coupon && !pricedCart.some(isEventItem) ? coupon : null;
+}
 /* El código de primera compra y la promo del producto no se suman: gana el mayor. */
+/* Producto que ya tiene un descuento por cantidad (caja x6/x12/x24 o pareja de bolsas): no recibe además el código. */
+function hasVolumeDiscount(item){
+  return (item.appliedTierUnits || 0) > 1 || !!item.appliedPair;
+}
 function discountRateForItem(coupon, item){
+  if(hasVolumeDiscount(item)) return promoRateForItem(item);
   return Math.max(coupon ? coupon.rate : 0, promoRateForItem(item));
 }
 /* Nombre de las promos presentes en el carrito, para las etiquetas de descuento. */
@@ -1981,14 +1991,15 @@ function initCartPage(){
     const subtotal = cartSubtotal(pricedCart);
     // El descuento no afecta el umbral de envío gratis — se calcula sobre
     // el subtotal real, no sobre el subtotal ya rebajado.
-    const discount = cartDiscount(pricedCart, appliedCoupon);
-    if(discountLabelEl) discountLabelEl.textContent = 'Descuento (' + discountLabelFor(getCart(), appliedCoupon) + ')';
+    const effCoupon = couponForCart(pricedCart, appliedCoupon);
+    const discount = cartDiscount(pricedCart, effCoupon);
+    if(discountLabelEl) discountLabelEl.textContent = 'Descuento (' + discountLabelFor(getCart(), effCoupon) + ')';
     if(welcomeBannerEl){
       welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
       // Con productos de Black Friday / Cyber Monday el banner aclara que los descuentos no se suman.
       welcomeBannerEl.innerHTML = pricedCart.some(isEventItem)
-        ? '🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código. Los productos de ' + eventName() + ' mantienen su ' + Math.round(eventRate() * 100) + '%: los descuentos no se suman, en cada producto aplica el mayor.'
-        : '🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código.';
+        ? '🎉 Tu carrito tiene productos de <strong>' + eventName() + '</strong>: aplica solo el <strong>' + Math.round(eventRate() * 100) + '%</strong> en esos productos. Los descuentos no se suman, así que el 10% de primera compra no se usa en este pedido.'
+        : '🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código.' + (pricedCart.some(hasVolumeDiscount) ? ' Los productos con precio por cantidad no llevan además el 10%: los descuentos no se suman.' : '');
     }
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = pago a destino (MRW o Zoom, no se suma al total) | undefined = todavía no elige estado/zona
@@ -2152,7 +2163,7 @@ function initCartPage(){
             appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE };
             if(welcomeBannerEl) welcomeBannerEl.hidden = true;
             const pricedNow = applyFamilyPricing(getCart());
-            showCouponNote('¡Código aplicado! 10% de descuento en tu compra.' + (pricedNow.some(isEventItem) ? ' Los productos de ' + eventName() + ' mantienen su ' + Math.round(eventRate() * 100) + '%: no se suman.' : (pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : '')), 'ok');
+            showCouponNote(pricedNow.some(isEventItem) ? 'Código válido. Tu carrito tiene productos de ' + eventName() + ': aplica solo el ' + Math.round(eventRate() * 100) + '% en esos productos, los descuentos no se suman.' : '¡Código aplicado! 10% de descuento en tu compra.' + ((pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : '')), 'ok');
           } else {
             appliedCoupon = null;
             showCouponNote('Código no válido.', 'error');
@@ -2430,7 +2441,8 @@ function initCheckoutButton(){
     if(deliveryCtx.type === 'pickup') shipping = 0;
     else if(deliveryCtx.isCaracas) shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_COST;
     else shipping = null; // MRW o Zoom, pago a destino
-    const discount = cartDiscount(pricedCart, appliedCoupon);
+    const effCoupon = couponForCart(pricedCart, appliedCoupon);
+    const discount = cartDiscount(pricedCart, effCoupon);
     const discountedSubtotal = subtotal - discount;
     const total = discountedSubtotal + (shipping || 0);
 
@@ -2438,7 +2450,7 @@ function initCheckoutButton(){
     // cada línea, para que el total que se registra en la hoja y en
     // Telegram sea exactamente lo que el cliente debe pagar.
     const items = pricedCart.map(function(item){
-      return { brand: item.brand, product: item.name + (item.kit && item.variant ? ' (' + item.variant + ')' : ''), unitPrice: item.unitPrice * (1 - discountRateForItem(appliedCoupon, item)), quantity: item.quantity };
+      return { brand: item.brand, product: item.name + (item.kit && item.variant ? ' (' + item.variant + ')' : ''), unitPrice: item.unitPrice * (1 - discountRateForItem(effCoupon, item)), quantity: item.quantity };
     });
 
     const orderPayload = {
@@ -2489,7 +2501,7 @@ function initCheckoutButton(){
       '\nC.I.: 9879375';
 
     const discountLine = discount > 0
-      ? '\nDescuento (' + discountLabelFor(getCart(), appliedCoupon) + '): -' + formatPrice(discount) + bsSuffix(discount)
+      ? '\nDescuento: -' + formatPrice(discount) + bsSuffix(discount)
       : '';
 
     const message = 'Hola, quiero hacer este pedido:\n\n' +

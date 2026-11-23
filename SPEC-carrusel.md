@@ -42,6 +42,7 @@ reales, y empezar a medir cuál funciona.
 
 Textos exactos del cupón (tomados del código, no inventados):
 - Código `APEX2026`, 10% de descuento, **solo en la primera compra**. Se verifica con nombre y teléfono contra pedidos anteriores (`app.js`, `WELCOME_COUPON_*`).
+- **Los descuentos NO se suman ni se agregan (regla del dueño, 2026-11-23):** (1) si el carrito tiene un producto de Black Friday / Cyber Monday, aplica solo el descuento del evento (a los productos de la lista) y el 10% de primera compra no se usa en ningún producto; (2) un producto que ya tiene precio por cantidad (caja x6/x12/x24 o pareja de bolsas) no recibe además el 10%. Sin ninguna de esas dos cosas, el 10% de primera compra aplica normal. Código: `couponForCart` y `hasVolumeDiscount` en `app.js`.
 - Se aplica en el carrito; el descuento no afecta el umbral de envío gratis desde $30.
 - Envío gratis: **solo en Caracas** (Distrito Capital y zonas de Miranda reconocidas como Caracas), con subtotal ≥ $30 antes del descuento (`FREE_SHIPPING_AT`). Fuera de Caracas el envío es por MRW y se coordina. El banner debe decir "en Caracas".
 - Con la bolsa de 440 g ($35,55) una sola unidad ya califica: $35,55 − 10% = $32,00, con envío gratis en Caracas.
