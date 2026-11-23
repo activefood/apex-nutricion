@@ -276,7 +276,14 @@
               </select>
             </div>
             <p class="summary-note ok" id="delivery-caracas-note" hidden>Envío estándar: $6,00 (o gratis desde $30).</p>
-            <p class="summary-note" id="delivery-mrw-note" hidden>Fuera de Caracas el envío es por MRW — se coordina el costo por WhatsApp según tu ubicación.</p>
+            <p class="summary-note" id="delivery-mrw-note" hidden>Fuera de Caracas enviamos por MRW o Zoom, tú eliges. El envío es con pago a destino: pagas el flete a la empresa de envío cuando recibes tu pedido.</p>
+            <div class="checkout-field" id="carrier-field" hidden>
+              <span class="checkout-field-label" id="carrier-label">Empresa de envío</span>
+              <div class="delivery-toggle" role="group" aria-labelledby="carrier-label">
+                <button type="button" class="delivery-toggle-btn carrier-btn active" data-carrier="MRW" aria-pressed="true">MRW</button>
+                <button type="button" class="delivery-toggle-btn carrier-btn" data-carrier="Zoom" aria-pressed="false">Zoom</button>
+              </div>
+            </div>
             <div class="checkout-field" id="checkout-zone-field">
               <label for="checkout-zone">Zona de despacho</label>
               <input id="checkout-zone" name="zone" type="text" placeholder="Ej. Caracas - Chacao" autocomplete="address-line1">
@@ -287,8 +294,8 @@
                 <input id="checkout-ci" name="ci" type="text" placeholder="Ej. V-12.345.678" autocomplete="off" autocapitalize="characters" spellcheck="false">
               </div>
               <div class="checkout-field">
-                <label for="checkout-mrw-address">Dirección de la agencia MRW</label>
-                <input id="checkout-mrw-address" name="mrw-address" type="text" placeholder="Nombre y dirección de la agencia MRW donde recibirás el pedido" autocomplete="off">
+                <label for="checkout-mrw-address" id="checkout-agency-label">Dirección de la agencia MRW</label>
+                <input id="checkout-mrw-address" name="mrw-address" type="text" placeholder="Nombre y dirección de la agencia donde recibirás el pedido" autocomplete="off">
               </div>
             </div>
           </div>
@@ -374,6 +381,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=104"></script>
+<script src="app.js?v=105"></script>
 </body>
 </html>

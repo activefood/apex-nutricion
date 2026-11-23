@@ -254,8 +254,11 @@
     if(lugar) meta.appendChild(document.createTextNode(lugar));
     who.appendChild(meta);
     if(o.mrw || o.ci){
-      who.appendChild(el('span', 't-tag', 'Envío MRW'));
-      const m = el('p', 't-meta', (o.ci ? 'C.I. ' + o.ci : '') + (o.ci && o.mrw ? ' · ' : '') + (o.mrw ? 'Agencia: ' + o.mrw : ''));
+      const cm = /^\[(MRW|Zoom)\]\s*/i.exec(o.mrw || '');       // el sitio guarda "[Zoom] dirección"; pedidos viejos = MRW
+      const carrier = cm ? cm[1].toUpperCase() : 'MRW';
+      const agency = cm ? o.mrw.slice(cm[0].length) : o.mrw;
+      who.appendChild(el('span', 't-tag', 'Envío ' + carrier + ' · pago a destino'));
+      const m = el('p', 't-meta', (o.ci ? 'C.I. ' + o.ci : '') + (o.ci && agency ? ' · ' : '') + (agency ? 'Agencia ' + carrier + ': ' + agency : ''));
       who.appendChild(m);
     } else if(/^pickup$/i.test(String(o.zona || '').trim())){
       who.appendChild(el('span', 't-tag', 'Retira en tienda'));
@@ -299,6 +302,8 @@
     const paga = o.paidBy === 'Tienda' || o.paidBy === 'Cliente' ? o.paidBy : (Number(o.total) >= 30 ? 'Tienda' : 'Cliente');
     let valor = o.delivery && !/^pickup$/i.test(String(o.delivery)) ? String(o.delivery).replace(/^\$/, '') : '';
     if(!valor && /^\$6/.test(String(o.suggestion || ''))) valor = '6';
+    // Envío por MRW/Zoom: el flete se paga a destino, lo paga el cliente.
+    if(!pick && (o.mrw || o.ci)) return { tipo: 'delivery', paga: 'Cliente', valor: valor || 'Pago a destino' };
     return { tipo: pick ? 'pickup' : 'delivery', paga: paga, valor: valor };
   }
   // Paso para confirmar: tipo de entrega, quién la paga y el monto, con un solo botón.

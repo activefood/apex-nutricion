@@ -1766,18 +1766,19 @@ function isCaracasZoneText(zoneText){
 
 /* ---------- Tipo de entrega (Pickup / Delivery) ---------- */
 function getDeliveryContext(){
-  const activeBtn = document.querySelector('.delivery-toggle-btn.active');
+  const activeBtn = document.querySelector('.delivery-toggle-btn[data-delivery-type].active');
   const type = activeBtn ? activeBtn.dataset.deliveryType : 'delivery';
   const stateSelect = document.getElementById('checkout-state');
   const state = stateSelect ? stateSelect.value : '';
   const zoneInput = document.getElementById('checkout-zone');
   const zoneText = zoneInput ? zoneInput.value : '';
   const isCaracas = CARACAS_STATES.indexOf(state) !== -1 || (state === 'Miranda' && isCaracasZoneText(zoneText));
-  return { type: type, state: state, isCaracas: isCaracas, zoneText: zoneText };
+  const carrierBtn = document.querySelector('.carrier-btn.active');
+  return { type: type, state: state, isCaracas: isCaracas, zoneText: zoneText, carrier: carrierBtn ? carrierBtn.dataset.carrier : 'MRW' };
 }
 
 function initDeliveryType(){
-  const toggleBtns = Array.from(document.querySelectorAll('.delivery-toggle-btn'));
+  const toggleBtns = Array.from(document.querySelectorAll('.delivery-toggle-btn[data-delivery-type]'));
   if(toggleBtns.length === 0) return;
 
   const pickupInfo = document.getElementById('pickup-info');
@@ -1802,9 +1803,13 @@ function initDeliveryType(){
       if(caracasNote) caracasNote.hidden = !(hasState && ctx.isCaracas);
       if(mrwNote) mrwNote.hidden = !isMrw;
       if(mrwFields) mrwFields.hidden = !isMrw;
+      const carrierField = document.getElementById('carrier-field');
+      if(carrierField) carrierField.hidden = !isMrw;
+      const agencyLabel = document.getElementById('checkout-agency-label');
+      if(agencyLabel) agencyLabel.textContent = 'Dirección de la agencia ' + ctx.carrier;
       if(zoneField) zoneField.hidden = !hasState;
       if(zoneLabel){
-        zoneLabel.textContent = (ctx.isCaracas || isMiranda) ? 'Zona de despacho' : 'Dirección de envío (MRW)';
+        zoneLabel.textContent = (ctx.isCaracas || isMiranda) ? 'Zona de despacho' : 'Dirección de envío (' + ctx.carrier + ')';
       }
       if(zoneInput){
         zoneInput.placeholder = isMiranda ? 'Ej. El Hatillo - Oripoto' : (ctx.isCaracas ? 'Ej. Caracas - Chacao' : 'Dirección completa, punto de referencia');
@@ -1817,6 +1822,17 @@ function initDeliveryType(){
   toggleBtns.forEach(function(btn){
     btn.addEventListener('click', function(){
       toggleBtns.forEach(function(b){
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      refresh();
+    });
+  });
+  // Fuera de Caracas: el cliente escoge MRW o Zoom (envío con pago a destino).
+  const carrierBtns = Array.from(document.querySelectorAll('.carrier-btn'));
+  carrierBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      carrierBtns.forEach(function(b){
         b.classList.toggle('active', b === btn);
         b.setAttribute('aria-pressed', String(b === btn));
       });
@@ -1960,7 +1976,7 @@ function initCartPage(){
     if(discountLabelEl) discountLabelEl.textContent = appliedCoupon ? 'Descuento (primera compra' + (applyFamilyPricing(getCart()).some(isEventItem) ? ' y ' + eventName() : '') + ')' : 'Descuento (' + promoLabelForCart(getCart()) + ')';
     if(welcomeBannerEl) welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
     const deliveryCtx = getDeliveryContext();
-    // shipping: número = monto fijo | null = "a coordinar" (MRW) | undefined = todavía no elige estado/zona
+    // shipping: número = monto fijo | null = pago a destino (MRW o Zoom, no se suma al total) | undefined = todavía no elige estado/zona
     let shipping;
     if(deliveryCtx.type === 'pickup'){
       shipping = 0;
@@ -1969,7 +1985,7 @@ function initCartPage(){
     } else if(deliveryCtx.isCaracas){
       shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_COST;
     } else {
-      shipping = null; // MRW, se coordina
+      shipping = null; // MRW o Zoom, pago a destino
     }
     const pending = shipping === undefined;
     const total = (subtotal - discount) + (shipping || 0);
@@ -1977,7 +1993,7 @@ function initCartPage(){
     if(subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
     if(discountRowEl) discountRowEl.hidden = discount <= 0;
     if(discountEl) discountEl.textContent = '-' + formatPrice(discount);
-    if(shippingEl) shippingEl.textContent = pending ? '—' : (shipping === null ? 'A coordinar' : (shipping === 0 ? 'Gratis' : formatPrice(shipping)));
+    if(shippingEl) shippingEl.textContent = pending ? '—' : (shipping === null ? 'Pago a destino' : (shipping === 0 ? 'Gratis' : formatPrice(shipping)));
     if(totalEl) totalEl.textContent = pending ? formatPrice(subtotal - discount) + ' + envío' : (formatPrice(total) + (shipping === null ? ' + envío' : ''));
     if(shippingNoteEl){
       if(pending){
@@ -1987,7 +2003,7 @@ function initCartPage(){
         shippingNoteEl.textContent = 'Retiro en tienda — sin costo de envío.';
         shippingNoteEl.classList.add('ok');
       } else if(shipping === null){
-        shippingNoteEl.textContent = 'Envío por MRW: el costo se coordina por WhatsApp según tu ubicación.';
+        shippingNoteEl.textContent = 'Envío por ' + deliveryCtx.carrier + ': pago a destino. Pagas el flete a ' + deliveryCtx.carrier + ' cuando recibes tu pedido.';
         shippingNoteEl.classList.remove('ok');
       } else if(shipping === 0){
         shippingNoteEl.textContent = 'Tu pedido califica para envío gratis.';
@@ -2358,7 +2374,7 @@ function initCheckoutButton(){
     else if(deliveryCtx.type === 'delivery' && !deliveryCtx.state){ missingMsg = 'Por favor selecciona tu estado.'; focusEl = stateSelect; }
     else if(deliveryCtx.type === 'delivery' && !location){ missingMsg = deliveryCtx.isCaracas ? 'Por favor completa tu zona de despacho.' : 'Por favor completa tu dirección de envío.'; focusEl = zoneInput; }
     else if(isMrw && !ci){ missingMsg = 'Por favor completa tu cédula de identidad.'; focusEl = ciInput; }
-    else if(isMrw && !mrwAddress){ missingMsg = 'Por favor completa la dirección de la agencia MRW.'; focusEl = mrwAddressInput; }
+    else if(isMrw && !mrwAddress){ missingMsg = 'Por favor completa la dirección de la agencia ' + deliveryCtx.carrier + '.'; focusEl = mrwAddressInput; }
 
     if(missingMsg){
       if(errorEl){
@@ -2398,7 +2414,7 @@ function initCheckoutButton(){
     let shipping = 0;
     if(deliveryCtx.type === 'pickup') shipping = 0;
     else if(deliveryCtx.isCaracas) shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_COST;
-    else shipping = null; // MRW, a coordinar
+    else shipping = null; // MRW o Zoom, pago a destino
     const discount = cartDiscount(pricedCart, appliedCoupon);
     const discountedSubtotal = subtotal - discount;
     const total = discountedSubtotal + (shipping || 0);
@@ -2421,7 +2437,7 @@ function initCheckoutButton(){
     };
     if(isMrw){
       orderPayload.ci = ci;
-      orderPayload.mrwAddress = mrwAddress;
+      orderPayload.mrwAddress = '[' + deliveryCtx.carrier + '] ' + mrwAddress;   // el panel lee la empresa de este prefijo
     }
     const gaIds = getGaIds();
     if(gaIds.gaClientId) orderPayload.gaClientId = gaIds.gaClientId;
@@ -2444,13 +2460,13 @@ function initCheckoutButton(){
     };
     const shippingLine = deliveryCtx.type === 'pickup'
       ? 'Retiro en tienda (sin costo de envío)'
-      : (shipping === null ? 'A coordinar por WhatsApp (MRW)' : (shipping === 0 ? 'Gratis' : formatPrice(shipping) + bsSuffix(shipping)));
+      : (shipping === null ? 'Pago a destino (' + deliveryCtx.carrier + ')' : (shipping === 0 ? 'Gratis' : formatPrice(shipping) + bsSuffix(shipping)));
     const deliveryLine = deliveryCtx.type === 'pickup'
       ? '\n\nTipo de entrega: Pickup\nUbicación: https://maps.app.goo.gl/TbLsaqxRNXJYe4zb9'
       : '\n\nTipo de entrega: Delivery' +
         '\nEstado: ' + deliveryCtx.state +
         '\n' + (deliveryCtx.isCaracas ? 'Zona' : 'Dirección') + ': ' + location +
-        (isMrw ? '\nC.I.: ' + ci + '\nAgencia MRW: ' + mrwAddress : '');
+        (isMrw ? '\nEmpresa de envío: ' + deliveryCtx.carrier + '\nC.I.: ' + ci + '\nAgencia ' + deliveryCtx.carrier + ': ' + mrwAddress : '');
 
     const paymentLine = '\n\nDatos para pago móvil:' +
       '\nBanco: Banesco' +
@@ -2466,7 +2482,7 @@ function initCheckoutButton(){
       '\n\nSubtotal: ' + formatPrice(subtotal) + bsSuffix(subtotal) +
       discountLine +
       '\nEnvío: ' + shippingLine +
-      '\nTotal: ' + formatPrice(total) + bsSuffix(total) + (shipping === null ? ' + envío' : '') +
+      '\nTotal: ' + formatPrice(total) + bsSuffix(total) + (shipping === null ? ' + envío (pago a destino)' : '') +
       (bcvRate != null ? '\n\nTasa BCV: Bs ' + formatBsNumber(1) : '') +
       '\n\nNombre: ' + customerName +
       '\nTeléfono: ' + phone +
