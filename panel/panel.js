@@ -47,7 +47,7 @@
   function showApp(){
     $('login').hidden = true; $('app').hidden = false;
     fixStickyOffset(); requestWake();
-    refresh().then(startPolling);
+    refresh().then(startPolling); pruebaCorreo();
     tick(); setInterval(tick, 30000);
   }
   function fixStickyOffset(){
@@ -73,6 +73,19 @@
     try { await api('/api/panel/logout', { method: 'POST', body: '{}' }); } catch(e){}
     showLogin();
   });
+
+  // Prueba del correo recordatorio (oculta, solo para soporte): abrir /panel.html?prueba=correo con la sesión iniciada.
+  function pruebaCorreo(){
+    if(DEMO) return;
+    try {
+      const q = new URLSearchParams(location.search);
+      if(q.get('prueba') !== 'correo') return;
+      history.replaceState(null, '', location.pathname);   // para que recargar no mande otro
+    } catch(e){ return; }
+    api('/api/panel/recordatorio-prueba', { method: 'POST', body: '{}' }).then(function(r){
+      toast('Correo de prueba enviado' + (r.pendientes != null ? ' (' + r.pendientes + ' pendientes)' : '') + '. Revisa Recibidos, Spam y Papelera.');
+    }).catch(function(err){ toast((err && err.message) || 'No se pudo enviar el correo de prueba.', true); });
+  }
 
   /* ---------- Carga y repintado ---------- */
   async function refresh(){
@@ -423,7 +436,7 @@
       clockSkew = (data.now || Date.now()) - Date.now();
       orders = data.orders || [];
       $('login').hidden = true; $('app').hidden = false;
-      fixStickyOffset(); requestWake(); setLive(true); detectNew(); render(); startPolling(); tick(); setInterval(tick, 30000);
+      fixStickyOffset(); requestWake(); setLive(true); detectNew(); render(); startPolling(); tick(); setInterval(tick, 30000); pruebaCorreo();
     }).catch(function(err){
       showLogin(err.auth ? '' : (err.message || 'No se pudo conectar con el panel.'));
     });
