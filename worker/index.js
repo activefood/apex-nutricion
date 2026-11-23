@@ -25,6 +25,9 @@ export default {
     if (url.pathname === '/api/telegram-webhook') {
       return handleTelegramWebhook(request, env);
     }
+    if (url.pathname === '/api/promos') {
+      return handlePromos(request, env);
+    }
     if (url.pathname.indexOf('/api/panel/') === 0) {
       return handlePanel(request, env, url, ctx);
     }
@@ -925,6 +928,103 @@ async function handlePanel(request, env, url, ctx) {
   }
 
   return panelJson({ ok: false, error: 'Not found' }, 404);
+}
+
+/* ---------- /api/promos: descuentos con fecha, leídos de la hoja de Google ----------
+   La hoja "APEX - Cargar descuentos" (pestaña DESCUENTOS) se publica como CSV (Archivo > Compartir > Publicar en la web) y su
+   dirección va en la variable PROMOS_CSV_URL (wrangler.jsonc). Solo se aceptan las filas con ESTADO = LISTO. El sitio (app.js) usa
+   esta respuesta para calcular los descuentos del carrito, las etiquetas y la barra de anuncio. Sin la variable o con la hoja
+   caída responde error y el sitio usa su última copia guardada. Solo lectura: nunca escribe nada. Sin datos de clientes. */
+const PROMOS_CACHE_MS = 5 * 60 * 1000;
+let promosCache = null;   // { t, promos }
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else { quoted = false; } }
+      else field += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') { row.push(field); field = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      rows.push(row); row = [];
+    } else field += ch;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function promoFechaIso(s) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s || '').trim());
+  if (!m) return null;
+  const d = Number(m[1]), mo = Number(m[2]), y = Number(m[3]);
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+
+function promosDesdeCsv(text) {
+  const rows = parseCsv(text);
+  const start = rows.findIndex(function (r) { return /^1\.\s*Promoci/i.test(String(r[0] || '').trim()); });
+  if (start < 0) throw new Error('No se encontró el encabezado de la hoja');
+  const promos = [];
+  const descartadas = [];
+  rows.slice(start + 1).forEach(function (r) {
+    if (!String(r[0] || '').trim()) return;
+    if (String(r[7] || '').trim() !== 'LISTO') { descartadas.push(String(r[0]).trim() + ' / ' + String(r[1] || '').trim()); return; }
+    const rate = Number(String(r[2] || '').replace('%', '').replace(',', '.').trim()) / 100;
+    const desde = promoFechaIso(r[3]);
+    const hasta = promoFechaIso(r[4]);
+    const min = Math.max(1, Math.floor(Number(String(r[5] || '1').trim()) || 1));
+    if (!(rate > 0 && rate <= 0.9) || !desde || !hasta || desde > hasta) { descartadas.push(String(r[0]).trim() + ' / ' + String(r[1] || '').trim()); return; }
+    promos.push({
+      nombre: String(r[0]).trim().slice(0, 60),
+      producto: String(r[1] || '').trim().slice(0, 120),
+      rate: Math.round(rate * 10000) / 10000,
+      desde: desde,
+      hasta: hasta,
+      min: min,
+      base: min > 1 ? 'caja' : 'normal'   // con caja (12, 24...) el % se calcula sobre el precio de la caja; con 1 unidad, sobre el normal
+    });
+  });
+  return { promos: promos, descartadas: descartadas.length };
+}
+
+async function handlePromos(request, env) {
+  const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+  if (request.method !== 'GET') return new Response(JSON.stringify({ ok: false, error: 'Method not allowed' }), { status: 405, headers: headers });
+  if (!env.PROMOS_CSV_URL) {
+    headers['Cache-Control'] = 'no-store';
+    return new Response(JSON.stringify({ ok: false, error: 'La hoja de descuentos todavía no está publicada' }), { status: 503, headers: headers });
+  }
+  if (promosCache && Date.now() - promosCache.t < PROMOS_CACHE_MS) {
+    headers['Cache-Control'] = 'public, max-age=60';
+    return new Response(JSON.stringify({ ok: true, promos: promosCache.promos, descartadas: promosCache.descartadas }), { headers: headers });
+  }
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(function () { ctl.abort(); }, 8000);
+    let res;
+    try { res = await fetch(env.PROMOS_CSV_URL, { signal: ctl.signal, redirect: 'follow' }); } finally { clearTimeout(timer); }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const parsed = promosDesdeCsv(await res.text());
+    promosCache = { t: Date.now(), promos: parsed.promos, descartadas: parsed.descartadas };
+    headers['Cache-Control'] = 'public, max-age=60';
+    return new Response(JSON.stringify({ ok: true, promos: parsed.promos, descartadas: parsed.descartadas }), { headers: headers });
+  } catch (err) {
+    console.error('[promos] ' + String(err));
+    // Si la hoja falla pero hay una copia anterior en memoria, se entrega esa.
+    if (promosCache) {
+      headers['Cache-Control'] = 'no-store';
+      return new Response(JSON.stringify({ ok: true, promos: promosCache.promos, descartadas: promosCache.descartadas, vieja: true }), { headers: headers });
+    }
+    headers['Cache-Control'] = 'no-store';
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo leer la hoja de descuentos' }), { status: 502, headers: headers });
+  }
 }
 
 /* ---------- /api/telegram-webhook ---------- */

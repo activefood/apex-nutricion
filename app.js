@@ -54,75 +54,187 @@ const PROBAR_PROMO_LAST_DAY = '2026-11-08';
 const PROMO_BADGE_SELECTOR = '[data-bag-promo],[data-probar-promo]';
 const PROMO_BADGE_SVG = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>10% OFF';
 
-/* Black Friday 2026 (Venezuela): 25% en tres productos, del 23 al 29 de noviembre (hora de Caracas, inclusive):
-   - Proteína en Polvo Chocolate — 600 g Going
-   - Sport Hydration Drink Mix Skratch Labs en bolsa de 440 g (los dos sabores)
-   - Hidratante Going en caja x24 (mezclando sabores; la caja ya trae su -10%, el 25% va sobre ese precio)
-   El 25% no se suma al 10% de primera compra: si el carrito tiene un producto de Black Friday aplica SOLO el 25% (a los de la lista) y el 10% no se usa en el resto (couponForCart). El banner del inicio
-   (data-promo-from / data-promo-until en index.html) debe tener las mismas fechas que estas dos. */
-const BF_RATE = 0.25;
-const BF_FIRST_DAY = '2026-11-23';
-const BF_LAST_DAY = '2026-11-29';
-function bfActive(){
-  const today = todayCaracas();
-  return today >= BF_FIRST_DAY && today <= BF_LAST_DAY;
+/* ---------- Promociones con fecha (Black Friday, Cyber Monday y las que vengan) ----------
+   Los porcentajes, fechas, productos y cantidades mínimas salen de la hoja de Google "APEX - Cargar descuentos":
+   el Worker (/api/promos) lee la hoja publicada y entrega las filas con ESTADO = LISTO. Si el Worker no responde se usa la
+   última copia guardada en este navegador (hasta 3 días) y, si no hay, PROMOS_RESPALDO (fechas dentro: si ya vencieron, no aplican).
+   Regla del dueño: los descuentos NO se suman. Con un producto en promo en el carrito aplica SOLO el descuento de la promo
+   (couponForCart) y un producto con precio por cantidad no recibe además el 10% de primera compra (hasVolumeDiscount).
+   Las imágenes de los banners y las tarjetas de la página de ofertas siguen siendo manuales (index.html / ofertas.html). */
+const PROMO_COUPON_NAME = 'Primera compra (siempre)';
+const PROMOS_CACHE_KEY = 'apex_promos_v1';
+const PROMOS_FRESH_MS = 10 * 60 * 1000;
+const PROMOS_STALE_MAX_MS = 3 * 24 * 60 * 60 * 1000;
+
+/* Producto de la hoja -> cómo se reconoce en el carrito, en las tarjetas y en la ficha.
+   m = patrones que TODOS deben cumplirse; x = patrones que NINGUNO debe cumplirse; fn = regla propia. */
+function protRule(flavor, size600){
+  return function(item){
+    const text = (item.name || '') + ' ' + (item.variant || '');
+    if(!new RegExp('prote[ií]na en polvo ' + flavor, 'i').test(text)) return false;
+    const is600 = /600 g/i.test(text) || /proteina-tarro/i.test(item.photo || '') || /producto-going-proteina-tarro/.test(item.family || '');
+    return size600 ? is600 : !is600;
+  };
 }
-function isBfProductName(name){
-  name = name || '';
-  return /prote[ií]na en polvo chocolate\s*—\s*600 g/i.test(name) || (/bolsa 440 g/i.test(name) && /skratch/i.test(name));
-}
-function isBfHydrationFamily(family){
-  return /producto-going-hidratante(\.html)?$/.test(family || '');
-}
-/* Desde la ficha, el título del tarro de proteína queda "Proteína en Polvo Chocolate Going" (sin los 600 g):
-   los 600 g se reconocen por la presentación ("presentación de 600 g") o por la foto del tarro. */
-function isBfProtein600Item(item){
-  return /prote[ií]na en polvo chocolate/i.test(item.name || '') &&
-    (/600 g/i.test((item.name || '') + ' ' + (item.variant || '')) || /proteina-tarro-chocolate/i.test(item.photo || ''));
-}
-/* "item" viene del carrito ya con los precios por volumen (applyFamilyPricing): appliedTierUnits dice si llegó a la caja x24. */
-function isBfItem(item){
-  if(!bfActive()) return false;
-  return isBfProductName(item.name) || isBfProtein600Item(item) || (isBfHydrationFamily(item.family) && (item.appliedTierUnits || 0) >= 24);
+const PROMO_CATALOG = {
+  'Going · Gel Energético Café': { m: [/gel energ[eé]tico caf[eé]/i] },
+  'Going · Gel Energético Fresa Banano': { m: [/gel energ[eé]tico fresa banano/i] },
+  'Going · Gel Energético Granada (sin cafeína)': { m: [/gel energ[eé]tico granada/i] },
+  'Going · Gel Energético Guayaba': { m: [/gel energ[eé]tico guayaba/i] },
+  'Going · Barra Endurance Chocolate': { m: [/barra endurance chocolate/i] },
+  'Going · Barra Endurance Frutos Rojos': { m: [/barra endurance frutos rojos/i] },
+  'Going · Hidratante Uva (sobres)': { m: [/hidratante uva/i], x: [/300 g/i] },
+  'Going · Hidratante Coco (sobres)': { m: [/hidratante coco/i], x: [/300 g/i] },
+  'Going · Hidratante Pitaya (sobres)': { m: [/hidratante pitaya/i], x: [/300 g/i] },
+  'Going · Hidratante Uva 300 g (tarro)': { m: [/hidratante uva/i, /300 g/i] },
+  'Going · Hidratante Coco 300 g (tarro)': { m: [/hidratante coco/i, /300 g/i] },
+  'Going · Hidratante Pitaya 300 g (tarro)': { m: [/hidratante pitaya/i, /300 g/i] },
+  'Going · Proteína Chocolate 600 g': { fn: protRule('chocolate', true) },
+  'Going · Proteína Vainilla 600 g': { fn: protRule('vainilla', true) },
+  'Going · Proteína Chocolate sobre 30 g': { fn: protRule('chocolate', false) },
+  'Going · Proteína Vainilla sobre 30 g': { fn: protRule('vainilla', false) },
+  'Going · Kit Carrera 10K': { m: [/kit carrera 10k/i] },
+  'Going · Kit Media Maratón 21K': { m: [/kit media marat[oó]n 21k/i] },
+  'Going · Kit Maratón 42K': { m: [/kit marat[oó]n 42k/i], x: [/media/i] },
+  'Going · Kit Gran Fondo': { m: [/kit gran fondo/i] },
+  'Going · Kit Recharge': { m: [/kit recharge/i] },
+  'Honey Stinger · Gel Acai Pomegranate': { m: [/gel energ[eé]tico org[aá]nico acai pomegranate/i] },
+  'Honey Stinger · Gel Fruit Smoothie': { m: [/gel energ[eé]tico org[aá]nico fruit smoothie/i] },
+  'Honey Stinger · Gel Gold': { m: [/gel energ[eé]tico org[aá]nico gold/i] },
+  'Honey Stinger · Gel con cafeína Strawberry Kiwi': { m: [/gel energ[eé]tico org[aá]nico.*strawberry kiwi/i] },
+  'Honey Stinger · Gomitas Citrus Splash': { m: [/gomitas energ[eé]ticas org[aá]nicas citrus splash/i] },
+  'Honey Stinger · Gomitas Fruit Smoothie': { m: [/gomitas energ[eé]ticas org[aá]nicas fruit smoothie/i] },
+  'Honey Stinger · Waffle Chocolate': { m: [/waffle energ[eé]tico org[aá]nico chocolate/i] },
+  'Honey Stinger · Waffle Miel': { m: [/waffle energ[eé]tico org[aá]nico miel/i] },
+  'Honey Stinger · Waffle Vainilla': { m: [/waffle energ[eé]tico org[aá]nico vainilla/i] },
+  'Probar · Barra Cookie Dough': { m: [/barra de prote[ií]na cookie dough/i] },
+  'Probar · Barra Peanut Butter Chocolate': { m: [/barra de prote[ií]na peanut butter chocolate/i] },
+  'Probar · Barra Sea Salt Caramel': { m: [/barra de prote[ií]na sea salt caramel/i] },
+  'Probar · Gomas Bolt Fresa': { m: [/gomas energ[eé]ticas bolt fresa/i] },
+  'Probar · Gomas Bolt Naranja': { m: [/gomas energ[eé]ticas bolt naranja/i] },
+  'SaltStick · Cápsulas de Electrolitos': { m: [/c[aá]psulas de electrolitos/i] },
+  'SaltStick · FastChews Frutos Rojos': { m: [/fastchews frutos rojos/i] },
+  'SaltStick · FastChews Limonada Rosada': { m: [/fastchews limonada rosada/i] },
+  'SaltStick · FastChews Limón Lima': { m: [/fastchews lim[oó]n lima/i] },
+  'SaltStick · FastChews Naranja': { m: [/fastchews naranja/i] },
+  'Skratch Labs · Bolsa 440 g Fresa Limonada': { m: [/fresa limonada/i, /bolsa 440 g/i] },
+  'Skratch Labs · Bolsa 440 g Limón Lima': { m: [/lim[oó]n lima/i, /bolsa 440 g/i], x: [/fastchews/i] },
+  'Skratch Labs · Sobres Fresa Limonada': { m: [/skratch/i, /fresa limonada/i], x: [/bolsa 440/i] },
+  'Skratch Labs · Sobres Limón Lima': { m: [/skratch/i, /lim[oó]n lima/i], x: [/bolsa 440/i, /fastchews/i] },
+  'Todos los productos': { fn: function(){ return true; } }
+};
+function promoProductMatches(key, item){
+  const rule = PROMO_CATALOG[key];
+  if(!rule) return false;
+  if(rule.fn) return rule.fn(item);
+  const text = (item.brand || '') + ' ' + (item.name || '') + ' ' + (item.variant || '');
+  return (rule.m || []).every(function(re){ return re.test(text); }) && !(rule.x || []).some(function(re){ return re.test(text); });
 }
 
-/* Cyber Monday 2026 (Venezuela): 50% en hidratación, un solo día: lunes 30 de noviembre (hora de Caracas):
-   - Skratch Labs Sport Hydration en bolsa de 440 g (los dos sabores)
-   - Skratch Labs Hydration en sobres: caja x12 (o más, mezclando sabores)
-   - SaltStick FastChews: display x12 (o más, mezclando sabores)
-   - SaltStick cápsulas de electrolitos: caja x24
-   Igual que Black Friday: con un producto de Cyber Monday en el carrito aplica SOLO el 50% (el 10% de primera compra no se usa) y el descuento lo
-   calcula el carrito. El banner del inicio (data-promo-from / data-promo-until en index.html) lleva las mismas fechas. */
-const CM_RATE = 0.50;
-const CM_FIRST_DAY = '2026-11-30';
-const CM_LAST_DAY = '2026-11-30';
-function cmActive(){
-  const today = todayCaracas();
-  return today >= CM_FIRST_DAY && today <= CM_LAST_DAY;
+/* Copia de respaldo (la misma de la hoja el 2026-11-23): solo se usa si no hay hoja ni copia guardada. */
+function respaldoFila(nombre, producto, pct, desde, hasta, min, base){
+  return { nombre: nombre, producto: producto, rate: pct / 100, desde: desde, hasta: hasta, min: min, base: base };
 }
-function isSkratchBag440(name){
-  return /bolsa 440 g/i.test(name || '') && /skratch/i.test(name || '');
+const PROMOS_RESPALDO = [
+  respaldoFila('Black Friday', 'Going · Proteína Chocolate 600 g', 25, '2026-11-23', '2026-11-29', 1, 'normal'),
+  respaldoFila('Black Friday', 'Skratch Labs · Bolsa 440 g Fresa Limonada', 25, '2026-11-23', '2026-11-29', 1, 'normal'),
+  respaldoFila('Black Friday', 'Skratch Labs · Bolsa 440 g Limón Lima', 25, '2026-11-23', '2026-11-29', 1, 'normal'),
+  respaldoFila('Black Friday', 'Going · Hidratante Uva (sobres)', 25, '2026-11-23', '2026-11-29', 24, 'caja'),
+  respaldoFila('Black Friday', 'Going · Hidratante Coco (sobres)', 25, '2026-11-23', '2026-11-29', 24, 'caja'),
+  respaldoFila('Black Friday', 'Going · Hidratante Pitaya (sobres)', 25, '2026-11-23', '2026-11-29', 24, 'caja'),
+  respaldoFila('Cyber Monday', 'Skratch Labs · Bolsa 440 g Fresa Limonada', 50, '2026-11-30', '2026-11-30', 1, 'normal'),
+  respaldoFila('Cyber Monday', 'Skratch Labs · Bolsa 440 g Limón Lima', 50, '2026-11-30', '2026-11-30', 1, 'normal'),
+  respaldoFila('Cyber Monday', 'Skratch Labs · Sobres Fresa Limonada', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
+  respaldoFila('Cyber Monday', 'Skratch Labs · Sobres Limón Lima', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Frutos Rojos', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Limonada Rosada', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Limón Lima', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Naranja', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · Cápsulas de Electrolitos', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
+  respaldoFila(PROMO_COUPON_NAME, 'Todos los productos', 10, '2026-01-01', '2030-12-31', 1, 'normal')
+];
+
+function readPromosCache(maxAgeMs){
+  try {
+    const raw = localStorage.getItem(PROMOS_CACHE_KEY);
+    if(!raw) return null;
+    const o = JSON.parse(raw);
+    if(!o || !Array.isArray(o.promos) || !(Date.now() - o.t <= maxAgeMs)) return null;
+    return o;
+  } catch(e){ return null; }
 }
-/* Fichas con presentaciones por caja que entran en Cyber Monday, y desde cuántas unidades (la caja). */
-function cmMinUnits(family){
-  family = family || '';
-  if(/producto-skratch(\.html)?$/.test(family)) return 12;
-  if(/producto-saltstick(\.html)?$/.test(family)) return 12;
-  if(/producto-saltstick-capsulas(\.html)?$/.test(family)) return 24;
-  return 0;
+let PROMOS = (function(){
+  const c = readPromosCache(PROMOS_STALE_MAX_MS);
+  return c ? c.promos : PROMOS_RESPALDO;
+})();
+/* Pide las promos al Worker (como mucho cada 10 minutos). Si cambiaron, el carrito se repinta y las demás páginas se recargan una vez. */
+function refreshPromos(){
+  if(readPromosCache(PROMOS_FRESH_MS)) return;
+  fetch('/api/promos', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+    if(!d || d.ok !== true || !Array.isArray(d.promos)) return;
+    const changed = JSON.stringify(d.promos) !== JSON.stringify(PROMOS);
+    try { localStorage.setItem(PROMOS_CACHE_KEY, JSON.stringify({ t: Date.now(), promos: d.promos })); } catch(e){}
+    if(!changed) return;
+    PROMOS = d.promos;
+    if(typeof window.__apexCartRerender === 'function'){ window.__apexCartRerender(); return; }
+    try {
+      if(sessionStorage.getItem('apex_promos_reload')) return;
+      sessionStorage.setItem('apex_promos_reload', '1');
+    } catch(e){ return; }
+    location.reload();
+  }).catch(function(){});
 }
-function isCmItem(item){
-  if(!cmActive()) return false;
-  if(isSkratchBag440(item.name)) return true;
-  const min = cmMinUnits(item.family);
-  return min > 0 && (item.appliedTierUnits || 0) >= min;
+
+function promoActive(p){
+  const t = todayCaracas();
+  return t >= p.desde && t <= p.hasta;
 }
-/* Black Friday y Cyber Monday no se cruzan (fechas distintas): estas funciones sirven a cualquiera de los dos. */
-function eventActive(){ return bfActive() || cmActive(); }
-function eventRate(){ return cmActive() ? CM_RATE : BF_RATE; }
-function eventName(){ return cmActive() ? 'Cyber Monday' : 'Black Friday'; }
-function isEventItem(item){ return isBfItem(item) || isCmItem(item); }
-function isEventProductName(name){ return cmActive() ? isSkratchBag440(name) : isBfProductName(name); }
+function activePromos(){
+  return PROMOS.filter(function(p){ return p.nombre !== PROMO_COUPON_NAME && promoActive(p); });
+}
+function promoNameActive(nombre){
+  return activePromos().some(function(p){ return p.nombre === nombre; });
+}
+function bfActive(){ return promoNameActive('Black Friday'); }
+function cmActive(){ return promoNameActive('Cyber Monday'); }
+function eventActive(){ return activePromos().length > 0; }
+/* Tasa del código de primera compra: la de la hoja (fila "Primera compra (siempre)") o 10%. */
+function welcomeRate(){
+  const p = PROMOS.find(function(x){ return x.nombre === PROMO_COUPON_NAME && promoActive(x); });
+  return p ? p.rate : WELCOME_COUPON_RATE;
+}
+/* ¿Alcanza la cantidad mínima? Con precios por cantidad la mínima es la caja (appliedTierUnits); sin ellos, las unidades del carrito. */
+function promoUnitsOk(promo, item){
+  const min = promo.min || 1;
+  if(min <= 1) return true;
+  return (item.appliedTierUnits || 0) >= min || (!item.family && (item.quantity || 0) >= min);
+}
+/* La promo vigente que le toca a este producto (si hay varias, la de mayor porcentaje). */
+function promoForItem(item){
+  let best = null;
+  activePromos().forEach(function(p){
+    if(!promoUnitsOk(p, item) || !promoProductMatches(p.producto, item)) return;
+    if(!best || p.rate > best.rate) best = p;
+  });
+  return best;
+}
+/* Porcentaje que efectivamente se rebaja sobre el precio que ya trae el carrito. "Precio normal" parte del precio de 1 unidad; "Precio de la caja", del precio por cantidad ya aplicado. */
+function promoEffectiveRate(item, promo){
+  let basePrice = item.unitPrice;
+  if(promo.base === 'normal' && item.tiers && item.tiers.length) basePrice = Math.max(item.unitPrice, item.tiers[0].unitPrice);
+  const finalUnit = Math.min(item.unitPrice, basePrice * (1 - promo.rate));
+  return item.unitPrice > 0 ? 1 - finalUnit / item.unitPrice : 0;
+}
+function isEventItem(item){ return !!promoForItem(item); }
+function uniq(list){ return list.filter(function(v, i){ return list.indexOf(v) === i; }); }
+/* Nombres y porcentajes de las promos que tocan los productos de este carrito, para las etiquetas. */
+function promoNamesFor(items){
+  return uniq(items.map(promoForItem).filter(Boolean).map(function(p){ return p.nombre; }));
+}
+function promoPctFor(items){
+  const rates = uniq(items.map(promoForItem).filter(Boolean).map(function(p){ return Math.round(p.rate * 100); })).sort(function(a, b){ return a - b; });
+  return rates.join('/') + '%';
+}
 
 function bagPromoActive(){
   return todayCaracas() <= BAG_PROMO_LAST_DAY;
@@ -206,34 +318,51 @@ function initBagPromoBadges(){
 /* ---------- Black Friday: etiqueta "25% OFF" y precio tachado ----------
    Se agregan por nombre del producto (como las barras Probar), en tarjetas de cualquier página y en la ficha.
    El carrito sigue recibiendo el precio normal: el 25% lo aplica el carrito (promoRateForItem). */
-function bfBadge(inline){
+function bfBadge(inline, rate){
   const badge = document.createElement('span');
   badge.className = 'tag tag--discount' + (inline ? ' tag--inline' : '');
   badge.setAttribute('data-bf-badge', '');
-  badge.innerHTML = PROMO_BADGE_SVG.replace('10% OFF', Math.round(eventRate() * 100) + '% OFF');
+  badge.innerHTML = PROMO_BADGE_SVG.replace('10% OFF', Math.round(rate * 100) + '% OFF');
   return badge;
 }
-function bfPdpRate(){
+/* Producto de la ficha como si fuera una línea del carrito: sabor y presentación elegidos (la caja es la presentación activa). */
+function pdpItem(units){
   const title = document.getElementById('pdp-main-title');
-  if(!title || !eventActive()) return 0;
-  if(cmActive()){
-    if(isSkratchBag440(title.textContent)) return CM_RATE;
-    const min = cmMinUnits(location.pathname);
-    const activePill = document.querySelector('[data-pill-group="presentation"] .pill--active');
-    return min > 0 && activePill && pillUnits(activePill) >= min ? CM_RATE : 0;
-  }
-  if(isBfProductName(title.textContent)) return BF_RATE;
-  if(/producto-going-proteina-tarro(\.html)?$/.test(location.pathname) && /chocolate/i.test(title.textContent)) return BF_RATE;
-  const active = document.querySelector('[data-pill-group="presentation"] .pill--active');
-  if(isBfHydrationFamily(location.pathname) && active && pillUnits(active) >= 24) return BF_RATE;
-  return 0;
+  if(!title) return null;
+  const pill = document.querySelector('[data-pill-group="presentation"] .pill--active');
+  const photo = document.getElementById('pdp-main-photo');
+  return {
+    name: title.textContent,
+    brand: '',
+    photo: photo ? (photo.getAttribute('src') || '') : '',
+    variant: pill ? pill.textContent.trim() : '',
+    family: location.pathname,
+    quantity: 1,
+    appliedTierUnits: units != null ? units : (pill ? pillUnits(pill) : 0)
+  };
+}
+/* La promo que le toca a la ficha con lo que está elegido ahora (o null). */
+function pdpPromo(){
+  const item = pdpItem();
+  return item ? promoForItem(item) : null;
+}
+/* Promo de la ficha que solo se activa con una caja (min > 1) y todavía no está elegida: para avisar dónde está el descuento. */
+function pdpBoxPromoHint(){
+  let found = null;
+  activePromos().forEach(function(p){
+    if((p.min || 1) <= 1) return;
+    const item = pdpItem(p.min);
+    if(item && promoUnitsOk(p, item) && promoProductMatches(p.producto, item) && (!found || p.rate > found.rate)) found = p;
+  });
+  return found;
 }
 /* Ficha de producto: se llama al cargar y cada vez que cambia el sabor o la presentación. */
 function applyBfPdp(){
   const row = document.querySelector('.pdp-price-row');
   const priceEl = document.getElementById('pdp-price');
   if(!row || !priceEl) return;
-  const rate = bfPdpRate();
+  const promo = pdpPromo();
+  const rate = promo ? promo.rate : 0;
   const oldSale = row.querySelector('.pdp-price-sale[data-bf]');
   const oldBadge = row.querySelector('[data-bf-badge]');
   const hint = document.querySelector('[data-bf-hint]');
@@ -241,15 +370,15 @@ function applyBfPdp(){
     if(oldSale) oldSale.remove();
     if(oldBadge) oldBadge.remove();
     if(oldSale){ row.classList.remove('on-sale'); delete row.dataset.saleRate; }
-    // En la ficha del hidratante en sobres, mientras no esté elegida la caja x24, se avisa dónde está el descuento.
-    const hintUnits = cmActive() ? cmMinUnits(location.pathname) : (bfActive() && isBfHydrationFamily(location.pathname) ? 24 : 0);
-    if(hintUnits){
+    // Si el descuento es por caja y todavía no está elegida, se avisa dónde está el descuento.
+    const boxPromo = pdpBoxPromoHint();
+    if(boxPromo){
       if(!hint){
         const p = document.createElement('p');
         p.className = 'pdp-bf-hint';
         p.setAttribute('data-bf-hint', '');
         const mezcla = /capsulas/.test(location.pathname) ? '' : ' (puedes mezclar sabores)';
-        p.innerHTML = '<strong>' + eventName() + ':</strong> elige la <strong>Caja x' + hintUnits + '</strong>' + mezcla + ' y llévala con ' + Math.round(eventRate() * 100) + '% OFF.';
+        p.innerHTML = '<strong>' + boxPromo.nombre + ':</strong> elige la <strong>Caja x' + boxPromo.min + '</strong>' + mezcla + ' y llévala con ' + Math.round(boxPromo.rate * 100) + '% OFF.';
         row.parentNode.insertBefore(p, row.nextSibling);
       }
     }
@@ -266,7 +395,7 @@ function applyBfPdp(){
     row.insertBefore(sale, priceEl);
   }
   sale.textContent = formatPrice(original * (1 - rate));
-  if(!oldBadge) row.appendChild(bfBadge(true));
+  if(!oldBadge) row.appendChild(bfBadge(true, rate));
   row.classList.add('on-sale');
   row.dataset.saleRate = String(rate);
   injectPdpBsPrice();
@@ -277,15 +406,19 @@ function initBlackFridayPrices(){
     const nameEl = card.querySelector('.product-name');
     const media = card.querySelector('.product-media');
     const priceEl = card.querySelector('.product-price');
-    if(!nameEl || !media || !priceEl || !isEventProductName(nameEl.textContent) || card.querySelector('[data-bf-badge]')) return;
+    if(!nameEl || !media || !priceEl || card.querySelector('[data-bf-badge]')) return;
+    const brandEl = card.querySelector('.product-brand');
+    const cardPromo = promoForItem({ name: nameEl.textContent, brand: brandEl ? brandEl.textContent : '', variant: '', photo: '', family: '', quantity: 1, appliedTierUnits: 0 });
+    if(!cardPromo) return;
+    const cardRate = cardPromo.rate;
     // La tarjeta ya trae una promo de 10% de otra fecha (apagada): se muestra solo el 25%.
     const old = card.querySelector(PROMO_BADGE_SELECTOR);
     if(old) old.remove();
-    media.insertBefore(bfBadge(false), media.firstChild);
+    media.insertBefore(bfBadge(false, cardRate), media.firstChild);
     const original = priceEl.dataset.originalUsd ? parseFloat(priceEl.dataset.originalUsd) : parsePriceText(priceEl.textContent);
     if(original == null) return;
     priceEl.dataset.originalUsd = String(original);
-    priceEl.dataset.saleRate = String(eventRate());
+    priceEl.dataset.saleRate = String(cardRate);
     priceEl.classList.add('on-sale');
     let usdSpan = priceEl.querySelector('.product-price-usd');
     if(!usdSpan){
@@ -294,7 +427,7 @@ function initBlackFridayPrices(){
       usdSpan.className = 'product-price-usd';
       priceEl.appendChild(usdSpan);
     }
-    usdSpan.innerHTML = '<span>' + formatPrice(original * (1 - eventRate())) + '</span><span class="was">' + formatPrice(original) + '</span>';
+    usdSpan.innerHTML = '<span>' + formatPrice(original * (1 - cardRate)) + '</span><span class="was">' + formatPrice(original) + '</span>';
   });
   const title = document.getElementById('pdp-main-title');
   if(title){
@@ -338,7 +471,8 @@ function itemPromoActive(item){
 }
 /* Descuento automático del producto (sin código): Black Friday 25%, o el 10% de las promos con fecha. */
 function promoRateForItem(item){
-  if(isEventItem(item)) return eventRate();
+  const promo = promoForItem(item);
+  if(promo) return promoEffectiveRate(item, promo);
   return itemPromoActive(item) ? PRODUCT_PROMO_RATE : 0;
 }
 /* Con un producto de Black Friday / Cyber Monday en el carrito aplica SOLO el descuento del evento (a los productos de la lista):
@@ -359,7 +493,7 @@ function discountRateForItem(coupon, item){
 function promoLabelForCart(cart){
   const priced = applyFamilyPricing(cart);
   const names = [];
-  if(priced.some(isEventItem)) names.push(eventName());
+  promoNamesFor(priced).forEach(function(n){ names.push(n); });
   if(priced.some(function(i){ return bagPromoActive() && isBagHydrationItem(i); })) names.push('hidratantes en bolsa');
   if(priced.some(function(i){ return probarPromoActive() && isProbarBarItem(i); })) names.push('barras Probar');
   return names.join(' y ') || 'promoción';
@@ -376,11 +510,11 @@ function discountLabelFor(cart, coupon){
   if(coupon){
     // Los descuentos no se suman: en cada producto aplica solo el mayor (el del evento o el 10% de primera compra).
     const base = 'primera compra ' + Math.round(coupon.rate * 100) + '%';
-    const pct = Math.round(eventRate() * 100) + '%';
+    const pct = promoPctFor(ev);
+    const evName = promoNamesFor(ev).join(' y ');
     let txt;
     if(!ev.length) txt = base;
-    else if(ev.length === priced.length) txt = eventName() + ' ' + pct + ', no se suma a la primera compra';
-    else txt = eventName() + ' ' + pct + ' y ' + base + ' (no se suman: aplica el mayor por producto)';
+    else txt = evName + ' ' + pct + ', no se suma a la primera compra';
     return txt + (coupon.auto ? '' : ' · código ' + coupon.code);
   }
   const rates = [];
@@ -405,12 +539,23 @@ function markWelcomeCouponUsed(){
 function initAnnounceBar(){
   const el = document.querySelector('.announce p');
   if(!el) return;
-  if(bfActive()){
-    el.innerHTML = '🔥 <strong>BLACK FRIDAY: 25% OFF</strong> en productos seleccionados, hasta el 29 de nov';
-    return;
-  }
-  if(cmActive()){
-    el.innerHTML = '💧 <strong>CYBER MONDAY: 50% OFF</strong> en hidratación, solo hoy lunes 30 de nov';
+  const vigentes = activePromos();
+  if(vigentes.length){
+    // Una sola promo en la barra: la de mayor porcentaje (si empatan, la primera de la hoja).
+    const top = vigentes.reduce(function(m, p){ return p.rate > m.rate ? p : m; }, vigentes[0]);
+    const mismas = vigentes.filter(function(p){ return p.nombre === top.nombre; });
+    const rates = uniq(mismas.map(function(p){ return Math.round(p.rate * 100); }));
+    const pct = Math.max.apply(null, rates);
+    const hasta = mismas.reduce(function(m, p){ return p.hasta > m ? p.hasta : m; }, mismas[0].hasta);
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const d = new Date(hasta + 'T12:00:00');
+    const fecha = d.getDate() + ' de ' + meses[d.getMonth()];
+    const desde = mismas.reduce(function(m, p){ return p.desde < m ? p.desde : m; }, mismas[0].desde);
+    const cuando = desde === hasta ? 'solo hoy ' + dias[d.getDay()] + ' ' + fecha : 'hasta el ' + fecha;
+    const emoji = top.nombre === 'Cyber Monday' ? '💧' : (top.nombre === 'Black Friday' ? '🔥' : '🏷️');
+    const que = top.nombre === 'Cyber Monday' ? 'en hidratación' : 'en productos seleccionados';
+    el.innerHTML = emoji + ' <strong>' + top.nombre.toUpperCase() + ': ' + pct + '% OFF</strong> ' + que + ', ' + cuando;
     return;
   }
   if(!hasUsedWelcomeCoupon()){
@@ -1998,7 +2143,7 @@ function initCartPage(){
       welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
       // Con productos de Black Friday / Cyber Monday el banner aclara que los descuentos no se suman.
       welcomeBannerEl.innerHTML = pricedCart.some(isEventItem)
-        ? '🎉 Tu carrito tiene productos de <strong>' + eventName() + '</strong>: aplica solo el <strong>' + Math.round(eventRate() * 100) + '%</strong> en esos productos. Los descuentos no se suman, así que el 10% de primera compra no se usa en este pedido.'
+        ? '🎉 Tu carrito tiene productos de <strong>' + promoNamesFor(pricedCart).join(' y ') + '</strong>: aplica solo el <strong>' + promoPctFor(pricedCart) + '</strong> en esos productos. Los descuentos no se suman, así que el 10% de primera compra no se usa en este pedido.'
         : '🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código.' + (pricedCart.some(hasVolumeDiscount) ? ' Los productos con precio por cantidad no llevan además el 10%: los descuentos no se suman.' : '');
     }
     const deliveryCtx = getDeliveryContext();
@@ -2160,10 +2305,10 @@ function initCartPage(){
         .then(function(res){ return res.json(); })
         .then(function(data){
           if(data && data.ok && data.eligible){
-            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE };
+            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: welcomeRate() };
             if(welcomeBannerEl) welcomeBannerEl.hidden = true;
             const pricedNow = applyFamilyPricing(getCart());
-            showCouponNote(pricedNow.some(isEventItem) ? 'Código válido. Tu carrito tiene productos de ' + eventName() + ': aplica solo el ' + Math.round(eventRate() * 100) + '% en esos productos, los descuentos no se suman.' : '¡Código aplicado! 10% de descuento en tu compra.' + ((pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : '')), 'ok');
+            showCouponNote(pricedNow.some(isEventItem) ? 'Código válido. Tu carrito tiene productos de ' + promoNamesFor(pricedNow).join(' y ') + ': aplica solo el ' + promoPctFor(pricedNow) + ' en esos productos, los descuentos no se suman.' : '¡Código aplicado! 10% de descuento en tu compra.' + ((pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : '')), 'ok');
           } else {
             appliedCoupon = null;
             showCouponNote('Código no válido.', 'error');
@@ -2187,7 +2332,7 @@ function initCartPage(){
      Si el servicio no responde se deja el descuento: no castigamos a un cliente
      nuevo por una falla nuestra. */
   if(!hasUsedWelcomeCoupon() && !appliedCoupon){
-    appliedCoupon = { code: WELCOME_COUPON_CODE, rate: WELCOME_COUPON_RATE, auto: true, verified: false };
+    appliedCoupon = { code: WELCOME_COUPON_CODE, rate: welcomeRate(), auto: true, verified: false };
   }
 
   let welcomeCheck = null; // { key, promise }
@@ -2898,6 +3043,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initHeroCarousel();
   initReviewForm();
 
+  refreshPromos();
   fetchBcvRate().then(function(){
     injectProductCardBsPrices();
     injectPdpBsPrice();

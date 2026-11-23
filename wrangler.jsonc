@@ -26,7 +26,9 @@
     "SUPABASE_URL": "https://ngbrcbweduazaoidavza.supabase.co",
     "SUPABASE_KEY": "sb_publishable_7wtBmKVZmCDBa1dgi5yLvA_bHBeG5sK",
     "PEDIDOS_BACKEND": "supabase",
-    "GA4_MEASUREMENT_ID": "G-CKJ8VQSLLE"
+    "GA4_MEASUREMENT_ID": "G-CKJ8VQSLLE",
+    // Dirección CSV de la hoja "APEX - Cargar descuentos" (pestaña DESCUENTOS, publicada en la web). Vacía = el sitio usa su copia de respaldo.
+    "PROMOS_CSV_URL": ""
   },
   // Cada hora (minuto 17): manda a GA4 las ventas confirmadas que no se hayan enviado. Lunes 8:00 y viernes 16:00 (hora
   // de Caracas, UTC-4; con nombre de día porque en Cloudflare 1 = domingo) el recordatorio de pedidos pendientes por correo, con un reintento una hora después. Solo actúan con "supabase".
