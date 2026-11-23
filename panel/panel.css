@@ -62,29 +62,19 @@ button{ cursor:pointer; }
 .tool[aria-pressed="true"]{ background:#2a2723; border-color:var(--accent); }
 .notice{ padding:10px 16px; background:var(--warn-sf); color:var(--warn); font-weight:600; font-size:14px; }
 
-/* ---------- Pestañas (celular) ---------- */
-.tabs{ position:sticky; top:var(--bar-h,64px); z-index:9; display:grid; grid-template-columns:repeat(3,1fr); background:var(--paper); border-bottom:2px solid var(--ink); }
-.tab{ min-height:52px; padding:0 4px; white-space:nowrap; border:0; background:var(--paper); font-weight:800; font-size:13px; letter-spacing:.02em; text-transform:uppercase; color:var(--ink-2); border-bottom:4px solid transparent; }
-.tab.is-active{ color:var(--ink); border-bottom-color:var(--ink); background:var(--paper-2); }
 .count{ display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; padding:0 7px; margin-left:4px; border-radius:13px; background:var(--ink); color:#fff; font:700 13px var(--mono); }
-.tab[data-col="new"] .count.has{ background:var(--accent); color:var(--ink); }
-.tab .count.has{ animation:none; }
+.count.has{ background:var(--accent); color:var(--ink); }
 
-/* ---------- Tablero ---------- */
-.board{ flex:1; padding:12px 12px calc(24px + env(safe-area-inset-bottom)); }
-.col{ display:none; }
-.col.is-active{ display:block; }
-.col > h2{ display:none; }
+/* ---------- Lista única de pedidos ---------- */
+.board{ flex:1; width:100%; max-width:760px; margin:0 auto; padding:12px 12px calc(24px + env(safe-area-inset-bottom)); }
+.board-title{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin:4px 0 12px; font:400 28px/1 var(--head); text-transform:uppercase; letter-spacing:.02em; }
+.board-title small{ font:600 13px var(--body); letter-spacing:0; text-transform:none; color:var(--ink-3); }
 .list{ display:grid; gap:12px; align-content:start; }
 .empty{ padding:36px 16px; text-align:center; color:var(--ink-3); font-weight:600; border:2px dashed var(--line); border-radius:2px; background:var(--paper); }
 
 @media (min-width: 900px){
-  .tabs{ display:none; }
-  .board{ display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,.85fr); gap:16px; padding:16px 16px 32px; align-items:start; }
-  .col, .col.is-active{ display:block; }
-  .col > h2{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin:0 0 12px; font:400 28px/1 var(--head); text-transform:uppercase; letter-spacing:.02em; }
-  .col > h2 small{ font:600 13px var(--body); letter-spacing:0; text-transform:none; color:var(--ink-3); }
-  .col[data-col="new"] > h2 .count.has{ background:var(--accent); color:var(--ink); }
+  .list{ grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; }
+  .board{ max-width:1100px; padding:16px 16px 32px; }
 }
 
 /* ---------- Ticket de pedido ---------- */
@@ -125,3 +115,13 @@ button{ cursor:pointer; }
 .toast.is-error{ background:var(--sale); }
 
 @media (prefers-reduced-motion: reduce){ .ticket.is-fresh{ animation:none; outline:4px solid var(--accent); } }
+
+/* Corregir la entrega de un pedido ya confirmado */
+.btn--link{ width:100%; background:transparent; border-color:var(--line); color:var(--ink); font-weight:600; font-size:14px; }
+.t-edit{ display:grid; gap:10px; padding:12px; background:var(--paper-2); border:1px solid var(--ink); }
+.t-edit-title{ margin:0; font-weight:800; font-size:14px; }
+.t-choice{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.t-choice-label{ grid-column:1 / -1; font-size:13px; font-weight:700; color:#514D48; }
+.t-edit input{ width:100%; min-height:44px; padding:0 12px; font:inherit; border:1px solid var(--ink); background:#fff; }
+.t-opt{ width:100%; background:#fff; }
+.t-opt.is-on{ background:var(--ink); color:#fff; }

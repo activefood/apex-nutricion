@@ -36,39 +36,20 @@
       <span class="clock" id="clock" aria-hidden="true"></span>
     </div>
     <div class="bar-tools">
-      <button type="button" class="tool" id="tool-sound" aria-pressed="true">Sonido: sí</button>
-      <button type="button" class="tool" id="tool-awake" aria-pressed="false" title="Mantiene la pantalla prendida mientras el panel está abierto">Pantalla: no</button>
-      <button type="button" class="tool" id="tool-mail" title="Manda ahora un correo de prueba con los pedidos pendientes">Correo de prueba</button>
       <button type="button" class="tool" id="tool-exit">Salir</button>
     </div>
   </header>
 
   <p class="notice" id="sound-notice" hidden>El sonido está bloqueado por el navegador. <button type="button" class="linkbtn" id="sound-enable">Tocar aquí para activarlo</button></p>
 
-  <nav class="tabs" role="tablist" aria-label="Etapas del pedido">
-    <button role="tab" class="tab is-active" id="tab-new" data-col="new" aria-selected="true" aria-controls="col-new">Nuevos <span class="count" data-count="new">0</span></button>
-    <button role="tab" class="tab" id="tab-delivery" data-col="delivery" aria-selected="false" aria-controls="col-delivery">Entrega <span class="count" data-count="delivery">0</span></button>
-    <button role="tab" class="tab" id="tab-done" data-col="done" aria-selected="false" aria-controls="col-done">Resueltos <span class="count" data-count="done">0</span></button>
-  </nav>
-
   <main class="board">
-    <section class="col is-active" id="col-new" data-col="new" aria-labelledby="h-new">
-      <h2 id="h-new">Nuevos <span class="count" data-count="new">0</span><small>por confirmar</small></h2>
-      <div class="list" data-list="new"></div>
-    </section>
-    <section class="col" id="col-delivery" data-col="delivery" aria-labelledby="h-delivery">
-      <h2 id="h-delivery">Entrega <span class="count" data-count="delivery">0</span><small>confirmados, falta cómo se entregó</small></h2>
-      <div class="list" data-list="delivery"></div>
-    </section>
-    <section class="col" id="col-done" data-col="done" aria-labelledby="h-done">
-      <h2 id="h-done">Resueltos <span class="count" data-count="done">0</span><small>últimas 48 h</small></h2>
-      <div class="list" data-list="done"></div>
-    </section>
+    <h2 class="board-title" id="h-list">Pedidos <span class="count" data-count="all">0</span><small>por atender</small></h2>
+    <div class="list" data-list="all" aria-labelledby="h-list"></div>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="panel/panel.js?v=3"></script>
+<script src="panel/panel.js?v=5"></script>
 </body>
 </html>

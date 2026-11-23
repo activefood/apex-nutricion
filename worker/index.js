@@ -750,7 +750,7 @@ async function vigilarBlackFriday(env) {
    sesiones abiertas dejan de valer. Intentos de entrada: los limita guardPublicApi (5 por minuto por IP). */
 const PANEL_COOKIE = 'apex_panel';
 const PANEL_SESSION_SECONDS = 14 * 24 * 3600;
-const PANEL_ACTIONS = ['completed', 'canceled', 'pickup', 'delivery', 'delivery_price'];
+const PANEL_ACTIONS = ['completed', 'canceled', 'pickup', 'delivery', 'delivery_price', 'confirm_delivery'];
 const PANEL_LIST_CACHE_MS = 4000;   // varias pantallas abiertas comparten la misma lectura de la hoja
 let panelListCache = null;          // { t, orders }
 
@@ -869,6 +869,33 @@ async function handlePanel(request, env, url, ctx) {
     if (!/^\d{1,8}$/.test(orderId)) return panelJson({ ok: false, error: 'Número de pedido inválido' }, 400);
     if (PANEL_ACTIONS.indexOf(action) === -1) return panelJson({ ok: false, error: 'Acción no permitida' }, 400);
     if (action === 'delivery_price' && (!value || value.length > 80)) return panelJson({ ok: false, error: 'Escribe el monto del delivery (o una nota corta).' }, 400);
+    // Confirmar + registrar la entrega en un solo paso: tipo (delivery / pickup), quién paga y monto.
+    // También sirve para cerrar la entrega de un pedido que ya estaba confirmado pero sin entrega.
+    if (action === 'confirm_delivery') {
+      const tipo = body && body.tipo;
+      const paga = body && body.paga;
+      if (tipo !== 'delivery' && tipo !== 'pickup') return panelJson({ ok: false, error: 'Elige Delivery o Pick up.' }, 400);
+      if (tipo === 'delivery' && paga !== 'Cliente' && paga !== 'Tienda') return panelJson({ ok: false, error: 'Elige quién paga el delivery.' }, 400);
+      if (tipo === 'delivery' && (!value || value.length > 80)) return panelJson({ ok: false, error: 'Escribe el monto del delivery (o una nota corta).' }, 400);
+      if (!usaSupabase(env)) return panelJson({ ok: false, error: 'Este paso solo funciona con Supabase.' }, 400);
+      panelListCache = null;
+      let conf;
+      try { conf = await supabaseRpc(env, 'tienda_panel_accion', { p_oc: orderId, p_accion: 'completed', p_valor: null }); }
+      catch (err) { console.error('[panel] Supabase (confirmar): ' + String(err)); conf = { ok: false, error: 'No se pudo guardar. Intenta otra vez.' }; }
+      if (!conf || conf.ok !== true) { panelListCache = null; return panelJson({ ok: false, error: (conf && conf.error) || 'No se pudo guardar. Intenta otra vez.' }, 400); }
+      // Pedido confirmado = venta: se manda a GA4 en segundo plano (un fallo no afecta al panel).
+      if (conf.enviar_ga4) {
+        const envio = enviarCompraGa4(env, orderId);
+        if (ctx && ctx.waitUntil) ctx.waitUntil(envio); else await envio;
+      }
+      let r;
+      try { r = await supabaseRpc(env, 'tienda_panel_editar_entrega', { p_oc: orderId, p_tipo: tipo, p_paga: tipo === 'delivery' ? paga : null, p_valor: tipo === 'delivery' ? value : null }); }
+      catch (err) { console.error('[panel] Supabase (entrega): ' + String(err)); r = { ok: false, error: 'No se pudo guardar la entrega.' }; }
+      panelListCache = null;
+      // Si la entrega falló, el pedido ya quedó confirmado y sigue en la lista pidiendo la entrega.
+      if (!r || r.ok !== true) return panelJson({ ok: false, error: 'El pedido quedó confirmado, pero falta guardar la entrega: ' + ((r && r.error) || 'intenta otra vez.') }, 400);
+      return panelJson({ ok: true });
+    }
     panelListCache = null;
     let result;
     if (usaSupabase(env)) {

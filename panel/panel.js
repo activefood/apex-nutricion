@@ -1,6 +1,6 @@
 /* Panel de pedidos (panel.html). Reemplaza a los botones de Telegram: muestra los pedidos por etapa y
-   permite confirmar, cancelar y registrar cómo se entregó, con los mismos pasos que tenía Telegram:
-     Nuevos (por confirmar) → Confirmar → Entrega (Delivery o Pick up; con Delivery, el monto) → Resueltos.
+   permite confirmar, cancelar y registrar cómo se entregó. Una sola lista: cada pedido se atiende en su tarjeta
+   (Confirmar → se elige Delivery o Pick up, quién paga y el monto → el pedido sale de la lista).
    Habla solo con el Worker (/api/panel/*), que exige el código de acceso. El estado de cada pedido vive en
    la hoja de cálculo; aquí no se guarda nada salvo preferencias del aparato (sonido, pantalla encendida).
    Modo demostración (?demo=1, solo en localhost): datos de mentira para revisar el diseño. */
@@ -16,11 +16,9 @@
   let orders = [];
   let seenNew = null;             // ids de pedidos "nuevos" ya vistos (null = aún no hay primera carga)
   let clockSkew = 0;              // diferencia entre el reloj del servidor y el de este aparato
-  let activeCol = 'new';
-  let soundOn = pref('sound', '1') === '1';
-  let awakeOn = false, wakeLock = null;
+  let wakeLock = null;
   let audio = null, pollTimer = null, remindTimer = null, toastTimer = null, loading = false;
-  const ui = {};                  // estado de pantalla por pedido: { otro: true } mientras escribe un monto
+  const ui = {};                  // estado de pantalla por pedido: { otro: true } mientras escribe un monto; { confirm: {...} } mientras elige la entrega
 
   function pref(k, d){ try { const v = localStorage.getItem('apex_panel_' + k); return v === null ? d : v; } catch(e){ return d; } }
   function setPref(k, v){ try { localStorage.setItem('apex_panel_' + k, v); } catch(e){} }
@@ -48,7 +46,7 @@
   }
   function showApp(){
     $('login').hidden = true; $('app').hidden = false;
-    fixStickyOffset();
+    fixStickyOffset(); requestWake();
     refresh().then(startPolling);
     tick(); setInterval(tick, 30000);
   }
@@ -70,17 +68,6 @@
       showLogin(err.auth ? 'Código incorrecto.' : (err.message || 'No se pudo entrar. Intenta otra vez.'));
     }
     btn.disabled = false;
-  });
-  $('tool-mail').addEventListener('click', async function(){
-    const b = $('tool-mail'); b.disabled = true;
-    try {
-      const r = await api('/api/panel/recordatorio-prueba', { method: 'POST', body: '{}' });
-      toast('Correo de prueba enviado' + (r.pendientes != null ? ' (' + r.pendientes + ' pendientes)' : '') + '. Revisa tu bandeja y el spam.');
-    } catch(err){
-      if(err.auth){ showLogin('Tu sesión terminó. Entra otra vez.'); }
-      else toast(err.message || 'No se pudo enviar el correo de prueba.', true);
-    }
-    b.disabled = false;
   });
   $('tool-exit').addEventListener('click', async function(){
     try { await api('/api/panel/logout', { method: 'POST', body: '{}' }); } catch(e){}
@@ -111,7 +98,7 @@
   }
   function stopPolling(){ clearInterval(pollTimer); clearInterval(remindTimer); }
   document.addEventListener('visibilitychange', function(){
-    if(!document.hidden && !$('app').hidden){ refresh(); if(awakeOn) requestWake(); }
+    if(!document.hidden && !$('app').hidden){ refresh(); requestWake(); }
   });
 
   function setLive(ok, msg){
@@ -161,7 +148,6 @@
     } catch(e){}
   }
   function beep(){
-    if(!soundOn) return;
     try {
       unlockAudio();
       if(!audio) return;
@@ -180,27 +166,9 @@
   }
   $('sound-enable').addEventListener('click', function(){ unlockAudio(); beep(); setTimeout(function(){ $('sound-notice').hidden = !audio || audio.state === 'running'; }, 300); });
 
-  $('tool-sound').addEventListener('click', function(){
-    soundOn = !soundOn; setPref('sound', soundOn ? '1' : '0');
-    paintTools();
-    if(soundOn) beep();
-  });
-  $('tool-awake').addEventListener('click', async function(){
-    awakeOn = !awakeOn;
-    if(awakeOn) await requestWake(); else releaseWake();
-    paintTools();
-  });
+  // La pantalla se mantiene encendida sola mientras el panel está abierto (si el navegador lo permite).
   async function requestWake(){
-    try {
-      if(!('wakeLock' in navigator)){ awakeOn = false; toast('Este navegador no puede mantener la pantalla encendida.', true); paintTools(); return; }
-      wakeLock = await navigator.wakeLock.request('screen');
-    } catch(e){ awakeOn = false; paintTools(); }
-  }
-  function releaseWake(){ try { if(wakeLock) wakeLock.release(); } catch(e){} wakeLock = null; }
-  function paintTools(){
-    const s = $('tool-sound'), a = $('tool-awake');
-    s.textContent = 'Sonido: ' + (soundOn ? 'sí' : 'no'); s.setAttribute('aria-pressed', String(soundOn));
-    a.textContent = 'Pantalla: ' + (awakeOn ? 'encendida' : 'normal'); a.setAttribute('aria-pressed', String(awakeOn));
+    try { if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
   }
 
   /* ---------- Pintar los pedidos ---------- */
@@ -227,21 +195,14 @@
     const a = document.activeElement;
     if(a && a.tagName === 'INPUT' && a.closest('.board')) return;
 
-    const groups = { new: [], delivery: [], done: [] };
-    orders.forEach(function(o){ (o.stage === 'new' ? groups.new : o.stage === 'done' ? groups.done : groups.delivery).push(o); });
-    groups.new.sort(function(x, y){ return x.createdMs - y.createdMs; });          // el más viejo primero
-    groups.delivery.sort(function(x, y){ return x.createdMs - y.createdMs; });
-    groups.done.sort(function(x, y){ return y.createdMs - x.createdMs; });         // el más reciente primero
-
-    Object.keys(groups).forEach(function(k){
-      const list = document.querySelector('[data-list="' + k + '"]');
-      list.textContent = '';
-      if(!groups[k].length){
-        list.appendChild(el('p', 'empty', k === 'new' ? 'No hay pedidos nuevos.' : k === 'delivery' ? 'No hay entregas pendientes.' : 'Todavía no hay pedidos resueltos.'));
-      } else groups[k].forEach(function(o){ list.appendChild(ticket(o)); });
-      document.querySelectorAll('[data-count="' + k + '"]').forEach(function(c){ c.textContent = groups[k].length; c.classList.toggle('has', groups[k].length > 0 && k !== 'done'); });
-    });
-    const n = groups.new.length;
+    // Una sola lista con lo que falta atender: pedidos nuevos y confirmados sin entrega. Lo resuelto ya no se muestra.
+    const list = orders.filter(function(o){ return o.stage !== 'done'; }).sort(function(x, y){ return x.createdMs - y.createdMs; });   // el más viejo primero
+    const box = document.querySelector('[data-list="all"]');
+    box.textContent = '';
+    if(!list.length) box.appendChild(el('p', 'empty', 'No hay pedidos por atender.'));
+    else list.forEach(function(o){ box.appendChild(ticket(o)); });
+    document.querySelectorAll('[data-count="all"]').forEach(function(c){ c.textContent = list.length; c.classList.toggle('has', list.length > 0); });
+    const n = newOnes().length;
     document.title = (n ? '(' + n + ') ' : '') + 'Pedidos · Apex';
     tick();
   }
@@ -301,40 +262,69 @@
     total.appendChild(el('strong', null, usd(o.total)));
     body.appendChild(total);
 
-    if(o.stage === 'new'){
+    if(o.stage === 'new' && !(ui[o.id] && ui[o.id].confirm)){
       const acts = el('div', 't-actions');
-      const ok = button('Confirmar', 'btn btn--ok', function(b){ act(o, 'completed', null, b); });
+      const ok = button('Confirmar', 'btn btn--ok', function(){ ui[o.id] = { confirm: startConfirm(o) }; render(); });
       const no = button('Cancelar', 'btn btn--danger', function(b){ armCancel(o, b); });
       acts.appendChild(ok); acts.appendChild(no);
       body.appendChild(acts);
-    } else if(o.stage === 'delivery'){
-      body.appendChild(el('p', 't-state t-state--ok', 'Confirmado. ¿Cómo se entregó el pedido?'));
-      const acts = el('div', 't-actions');
-      acts.appendChild(button('Delivery', 'btn btn--primary', function(b){ act(o, 'delivery', null, b); }));
-      acts.appendChild(button('Pick up', 'btn', function(b){ act(o, 'pickup', null, b); }));
-      body.appendChild(acts);
-    } else if(o.stage === 'amount'){
-      body.appendChild(el('p', 't-state', 'Pagado por: ' + (o.paidBy || '—') + (o.freeDelivery ? ' (envío gratis, pedido desde $30)' : '') + '. Sugerencia: ' + (o.suggestion || '—') + '.'));
-      if(ui[o.id] && ui[o.id].otro){
-        const f = el('form', 't-form');
-        const inp = el('input'); inp.type = 'text'; inp.inputMode = 'decimal'; inp.placeholder = 'Monto (8) o nota'; inp.maxLength = 80; inp.setAttribute('aria-label', 'Monto del delivery o una nota');
-        f.appendChild(inp);
-        const save = el('button', 'btn btn--primary', 'Guardar'); save.type = 'submit';
-        f.appendChild(save);
-        f.addEventListener('submit', function(e){ e.preventDefault(); const v = inp.value.trim(); if(!v){ inp.focus(); return; } act(o, 'delivery_price', v, save); });
-        body.appendChild(f);
-        setTimeout(function(){ if(document.body.contains(inp)) inp.focus(); }, 0);
-      } else {
-        const acts = el('div', 't-actions');
-        acts.appendChild(button('$6', 'btn btn--ok', function(b){ act(o, 'delivery_price', '6', b); }));
-        acts.appendChild(button('Otro', 'btn', function(){ ui[o.id] = { otro: true }; render(); }));
-        body.appendChild(acts);
-      }
     } else {
-      body.appendChild(el('p', 't-state t-state--ok', /^pickup$/i.test(String(o.delivery)) ? 'Retiro en tienda (Pick up)' : 'Delivery: ' + money(o.delivery) + (o.paidBy ? ' · Pagado por: ' + o.paidBy : '')));
+      if(o.stage !== 'new') body.appendChild(el('p', 't-state t-state--ok', 'Confirmado. Falta registrar la entrega.'));
+      if(!(ui[o.id] && ui[o.id].confirm)) ui[o.id] = { confirm: startConfirm(o) };
+      body.appendChild(editor(o));
     }
     card.appendChild(body);
     return card;
+  }
+
+  const payerLabel = function(p){ return p === 'Tienda' ? 'Apex (la compañía)' : p; };
+  // Valores iniciales de la entrega: Pick up si el cliente retira; si no, Delivery con las reglas de siempre
+  // (paga Apex desde $30; $6 sugerido en zona de Caracas). Todo se puede cambiar antes de confirmar.
+  function startConfirm(o){
+    const pick = /^pickup$/i.test(String(o.zona || '').trim()) || /^pickup$/i.test(String(o.delivery));
+    const paga = o.paidBy === 'Tienda' || o.paidBy === 'Cliente' ? o.paidBy : (Number(o.total) >= 30 ? 'Tienda' : 'Cliente');
+    let valor = o.delivery && !/^pickup$/i.test(String(o.delivery)) ? String(o.delivery).replace(/^\$/, '') : '';
+    if(!valor && /^\$6/.test(String(o.suggestion || ''))) valor = '6';
+    return { tipo: pick ? 'pickup' : 'delivery', paga: paga, valor: valor };
+  }
+  // Paso para confirmar: tipo de entrega, quién la paga y el monto, con un solo botón.
+  function editor(o){
+    const st = ui[o.id].confirm;
+    const box = el('form', 't-edit');
+    box.appendChild(el('p', 't-edit-title', o.stage === 'new' ? 'Confirmar pedido ' + o.id + ': ¿cómo se entrega?' : 'Entrega del pedido ' + o.id));
+    function choice(label, opts, current, onPick){
+      const row = el('div', 't-choice'); row.setAttribute('role', 'radiogroup'); row.setAttribute('aria-label', label);
+      row.appendChild(el('span', 't-choice-label', label));
+      opts.forEach(function(op){
+        const b = el('button', 'btn t-opt' + (current === op[0] ? ' is-on' : ''), op[1]); b.type = 'button';
+        b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(current === op[0]));
+        b.addEventListener('click', function(){ onPick(op[0]); render(); });
+        row.appendChild(b);
+      });
+      return row;
+    }
+    box.appendChild(choice('Entrega', [['delivery', 'Delivery'], ['pickup', 'Pick up']], st.tipo, function(v){ st.tipo = v; }));
+    let inp = null;
+    if(st.tipo === 'delivery'){
+      box.appendChild(choice('Lo paga', [['Cliente', 'El cliente'], ['Tienda', 'Apex (la compañía)']], st.paga, function(v){ st.paga = v; }));
+      const lab = el('label', 't-choice-label', 'Monto del delivery (o una nota)'); lab.htmlFor = 'edit-valor-' + o.id;
+      inp = el('input'); inp.type = 'text'; inp.id = 'edit-valor-' + o.id; inp.inputMode = 'decimal'; inp.maxLength = 80; inp.placeholder = '6, 0 o una nota'; inp.value = st.valor;
+      inp.addEventListener('input', function(){ st.valor = inp.value; });
+      box.appendChild(lab); box.appendChild(inp);
+      if(o.suggestion) box.appendChild(el('p', 't-meta', 'Sugerencia: ' + o.suggestion + '.'));
+    }
+    const acts = el('div', 't-actions');
+    const save = el('button', 'btn btn--ok', o.stage === 'new' ? 'Confirmar pedido' : 'Guardar entrega'); save.type = 'submit';
+    acts.appendChild(save);
+    if(o.stage === 'new') acts.appendChild(button('Volver', 'btn', function(){ delete ui[o.id]; render(); }));
+    box.appendChild(acts);
+    box.addEventListener('submit', function(e){
+      e.preventDefault();
+      const v = st.valor.trim();
+      if(st.tipo === 'delivery' && !v){ if(inp) inp.focus(); toast('Escribe el monto del delivery (0 si no se cobra).', true); return; }
+      act(o, 'confirm_delivery', st.tipo === 'delivery' ? v : null, save, { tipo: st.tipo, paga: st.tipo === 'delivery' ? st.paga : null });
+    });
+    return box;
   }
 
   function button(label, cls, onClick){
@@ -351,16 +341,16 @@
     clearTimeout(armTimer);
     armTimer = setTimeout(function(){ b.classList.remove('is-armed'); b.textContent = 'Cancelar'; }, 4000);
   }
-  async function act(o, action, value, btn){
+  async function act(o, action, value, btn, extra){
     const label = btn.textContent;
     btn.disabled = true; btn.textContent = 'Guardando…';
     try {
-      await api('/api/panel/action', { method: 'POST', body: JSON.stringify({ orderId: o.id, action: action, value: value }) });
+      await api('/api/panel/action', { method: 'POST', body: JSON.stringify(Object.assign({ orderId: o.id, action: action, value: value }, extra || {})) });
       delete ui[o.id];
       if(document.activeElement && document.activeElement.blur) document.activeElement.blur();   // si no, el campo enfocado frena el repintado
       loading = false;
       await refresh();
-      toast(action === 'canceled' ? 'Pedido ' + o.id + ' cancelado.' : action === 'completed' ? 'Pedido ' + o.id + ' confirmado.' : 'Pedido ' + o.id + ' actualizado.');
+      toast(action === 'confirm_delivery' ? 'Pedido ' + o.id + ' confirmado.' : action === 'canceled' ? 'Pedido ' + o.id + ' cancelado.' : action === 'completed' ? 'Pedido ' + o.id + ' confirmado.' : 'Pedido ' + o.id + ' actualizado.');
     } catch(err){
       if(err.auth){ showLogin('Tu sesión terminó. Entra otra vez.'); return; }
       btn.disabled = false; btn.textContent = label;
@@ -372,15 +362,6 @@
     t.textContent = msg; t.classList.toggle('is-error', !!isError); t.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, 3200);
   }
-
-  /* ---------- Pestañas (celular) ---------- */
-  document.querySelectorAll('.tab').forEach(function(tab){
-    tab.addEventListener('click', function(){
-      activeCol = tab.dataset.col;
-      document.querySelectorAll('.tab').forEach(function(x){ const on = x === tab; x.classList.toggle('is-active', on); x.setAttribute('aria-selected', String(on)); });
-      document.querySelectorAll('.col').forEach(function(c){ c.classList.toggle('is-active', c.dataset.col === activeCol); });
-    });
-  });
 
   /* ---------- Demostración (solo localhost con ?demo=1) ---------- */
   function demoApi(path, opts){
@@ -396,6 +377,7 @@
           else if(body.action === 'canceled') demo.splice(demo.indexOf(o), 1);
           else if(body.action === 'pickup') o.delivery = 'Pickup';
           else if(body.action === 'delivery') o.paidBy = o.total >= 30 ? 'Tienda' : 'Cliente';
+          else if(body.action === 'confirm_delivery'){ o.status = 'Completed'; if(body.tipo === 'pickup'){ o.delivery = 'Pickup'; delete o.paidBy; } else { o.paidBy = body.paga; o.delivery = /^\d+([.,]\d+)?$/.test(body.value) ? '$' + body.value.replace(',', '.') : body.value; } }
           else if(body.action === 'delivery_price') o.delivery = /^\d+([.,]\d+)?$/.test(body.value) ? '$' + body.value.replace(',', '.') : body.value;
           return resolve({ ok: true });
         }
@@ -429,7 +411,6 @@
   }
 
   /* ---------- Arranque ---------- */
-  paintTools();
   if(DEMO){
     document.body.classList.add('is-demo');
     showApp();
@@ -442,7 +423,7 @@
       clockSkew = (data.now || Date.now()) - Date.now();
       orders = data.orders || [];
       $('login').hidden = true; $('app').hidden = false;
-      fixStickyOffset(); setLive(true); detectNew(); render(); startPolling(); tick(); setInterval(tick, 30000);
+      fixStickyOffset(); requestWake(); setLive(true); detectNew(); render(); startPolling(); tick(); setInterval(tick, 30000);
     }).catch(function(err){
       showLogin(err.auth ? '' : (err.message || 'No se pudo conectar con el panel.'));
     });
