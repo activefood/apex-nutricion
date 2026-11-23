@@ -82,9 +82,10 @@
       if(q.get('prueba') !== 'correo') return;
       history.replaceState(null, '', location.pathname);   // para que recargar no mande otro
     } catch(e){ return; }
+    toast('Enviando correo de prueba…', false, 60000);
     api('/api/panel/recordatorio-prueba', { method: 'POST', body: '{}' }).then(function(r){
-      toast('Correo de prueba enviado' + (r.pendientes != null ? ' (' + r.pendientes + ' pendientes)' : '') + '. Revisa Recibidos, Spam y Papelera.');
-    }).catch(function(err){ toast((err && err.message) || 'No se pudo enviar el correo de prueba.', true); });
+      toast('Correo de prueba enviado' + (r.pendientes != null ? ' (' + r.pendientes + ' pendientes)' : '') + '. Revisa Recibidos, Spam y Papelera.', false, 20000);
+    }).catch(function(err){ toast('No se pudo enviar el correo de prueba: ' + ((err && err.message) || 'error desconocido'), true, 30000); });
   }
 
   /* ---------- Carga y repintado ---------- */
@@ -370,10 +371,10 @@
       toast(err.message || 'No se pudo guardar. Intenta otra vez.', true);
     }
   }
-  function toast(msg, isError){
+  function toast(msg, isError, ms){
     const t = $('toast');
     t.textContent = msg; t.classList.toggle('is-error', !!isError); t.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, 3200);
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, ms || 3200);
   }
 
   /* ---------- Demostración (solo localhost con ?demo=1) ---------- */
