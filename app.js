@@ -54,14 +54,14 @@ const PROBAR_PROMO_LAST_DAY = '2026-11-08';
 const PROMO_BADGE_SELECTOR = '[data-bag-promo],[data-probar-promo]';
 const PROMO_BADGE_SVG = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/></svg>10% OFF';
 
-/* Black Friday 2026 (Venezuela): 25% en tres productos, del 24 al 29 de noviembre (hora de Caracas, inclusive):
+/* Black Friday 2026 (Venezuela): 25% en tres productos, del 23 al 29 de noviembre (hora de Caracas, inclusive):
    - Proteína en Polvo Chocolate — 600 g Going
    - Sport Hydration Drink Mix Skratch Labs en bolsa de 440 g (los dos sabores)
    - Hidratante Going en caja x24 (mezclando sabores; la caja ya trae su -10%, el 25% va sobre ese precio)
    El 25% no se suma al 10% de primera compra: cada producto se queda con el mayor. El banner del inicio
    (data-promo-from / data-promo-until en index.html) debe tener las mismas fechas que estas dos. */
 const BF_RATE = 0.25;
-const BF_FIRST_DAY = '2026-11-24';
+const BF_FIRST_DAY = '2026-11-23';
 const BF_LAST_DAY = '2026-11-29';
 function bfActive(){
   const today = todayCaracas();
