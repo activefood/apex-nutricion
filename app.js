@@ -2639,10 +2639,9 @@ function initCheckoutButton(){
     }
 
     // 2) Abrir WhatsApp de inmediato, sin esperar la respuesta del registro.
-    // Cada producto con descuento muestra su precio original tachado y el nuevo al lado. El tachado se hace con el carácter
-    // Unicode "tachado" (U+0336) tras cada símbolo, así se ve tachado desde el cuadro de mensaje de WhatsApp, antes de enviar
-    // (el formato ~texto~ de WhatsApp solo se ve tachado después de enviarlo).
-    const strike = function(txt){ return txt.split('').map(function(ch){ return ch + '\u0336'; }).join(''); };
+    // Cada producto con descuento muestra su precio original tachado y el nuevo al lado. El tachado es el de WhatsApp (~texto~):
+    // una línea real sobre el precio una vez enviado el mensaje (se prueba con el carácter Unicode U+0336 y se ve mal en los teléfonos).
+    const strike = function(txt){ return '~' + txt + '~'; };
     const lines = pricedCart.map(function(item){
       const original = item.unitPrice * item.quantity;
       const rate = discountRateForItem(effCoupon, item);
