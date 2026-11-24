@@ -151,7 +151,7 @@ const PROMOS_RESPALDO = [
   respaldoFila('Cyber Monday', 'SaltStick · FastChews Limón Lima', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
   respaldoFila('Cyber Monday', 'SaltStick · FastChews Naranja', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
   respaldoFila('Cyber Monday', 'SaltStick · Cápsulas de Electrolitos', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
-  respaldoFila(PROMO_COUPON_NAME, 'Todos los productos', 10, '2026-01-01', '2030-12-31', 1, 'normal')
+  respaldoFila(PROMO_COUPON_NAME, 'Todos los productos', 10, '2026-11-30', '2030-12-31', 1, 'normal')
 ];
 
 function readPromosCache(maxAgeMs){
@@ -199,9 +199,17 @@ function bfActive(){ return promoNameActive('Black Friday'); }
 function cmActive(){ return promoNameActive('Cyber Monday'); }
 function eventActive(){ return activePromos().length > 0; }
 /* Tasa del código de primera compra: la de la hoja (fila "Primera compra (siempre)") o 10%. */
+function welcomePromo(){
+  return PROMOS.find(function(x){ return x.nombre === PROMO_COUPON_NAME; }) || null;
+}
+/* El 10% de primera compra se puede pausar desde la hoja: fila "Primera compra (siempre)" con fechas. Sin la fila, está activo. */
+function welcomeActive(){
+  const p = welcomePromo();
+  return !p || promoActive(p);
+}
 function welcomeRate(){
-  const p = PROMOS.find(function(x){ return x.nombre === PROMO_COUPON_NAME && promoActive(x); });
-  return p ? p.rate : WELCOME_COUPON_RATE;
+  const p = welcomePromo();
+  return p && promoActive(p) ? p.rate : WELCOME_COUPON_RATE;
 }
 /* ¿Alcanza la cantidad mínima? Con precios por cantidad la mínima es la caja (appliedTierUnits); sin ellos, las unidades del carrito. */
 function promoUnitsOk(promo, item){
@@ -478,7 +486,7 @@ function promoRateForItem(item){
 /* Con un producto de Black Friday / Cyber Monday en el carrito aplica SOLO el descuento del evento (a los productos de la lista):
    el 10% de primera compra no se suma ni se usa en los demás productos. Sin evento, el código vale como siempre. */
 function couponForCart(pricedCart, coupon){
-  return coupon && !pricedCart.some(isEventItem) ? coupon : null;
+  return coupon && welcomeActive() && !pricedCart.some(isEventItem) ? coupon : null;
 }
 /* El código de primera compra y la promo del producto no se suman: gana el mayor. */
 /* Producto que ya tiene un descuento por cantidad (caja x6/x12/x24 o pareja de bolsas): no recibe además el código. */
@@ -536,6 +544,10 @@ function markWelcomeCouponUsed(){
 /* Barra negra de anuncio (arriba del header, en todas las páginas): a quien
    todavía no haya usado el código de bienvenida le suma ese mensaje al de
    envío gratis (que queda fijo, siempre visible). */
+/* Textos fijos que hablan del 10% de primera compra ([data-welcome-only]): se ocultan mientras la hoja lo tenga pausado. */
+function initWelcomeCopy(){
+  document.querySelectorAll('[data-welcome-only]').forEach(function(el){ el.hidden = !welcomeActive(); });
+}
 function initAnnounceBar(){
   const el = document.querySelector('.announce p');
   if(!el) return;
@@ -558,7 +570,7 @@ function initAnnounceBar(){
     el.innerHTML = emoji + ' <strong>' + top.nombre.toUpperCase() + ': ' + pct + '% OFF</strong> ' + que + ', ' + cuando;
     return;
   }
-  if(!hasUsedWelcomeCoupon()){
+  if(!hasUsedWelcomeCoupon() && welcomeActive()){
     el.innerHTML = '🎉 <strong>10% OFF</strong> automático en tu primera compra &nbsp;·&nbsp; Envío gratis desde <strong>$30</strong> en Caracas';
   }
 }
@@ -2140,7 +2152,7 @@ function initCartPage(){
     const discount = cartDiscount(pricedCart, effCoupon);
     if(discountLabelEl) discountLabelEl.textContent = 'Descuento (' + discountLabelFor(getCart(), effCoupon) + ')';
     if(welcomeBannerEl){
-      welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto);
+      welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto && welcomeActive());
       // Con productos de Black Friday / Cyber Monday el banner aclara que los descuentos no se suman.
       welcomeBannerEl.innerHTML = pricedCart.some(isEventItem)
         ? '🎉 Tu carrito tiene productos de <strong>' + promoNamesFor(pricedCart).join(' y ') + '</strong>: aplica solo el <strong>' + promoPctFor(pricedCart) + '</strong> en esos productos. Los descuentos no se suman, así que el 10% de primera compra no se usa en este pedido.'
@@ -2274,6 +2286,10 @@ function initCartPage(){
         showCouponNote('Código no válido.', 'error');
         return;
       }
+      if(!welcomeActive()){
+        showCouponNote('El descuento de primera compra no está activo por ahora.', 'error');
+        return;
+      }
 
       // El código es de "primera compra" de verdad: se cruza nombre +
       // teléfono contra pedidos anteriores en el backend, no solo si este
@@ -2331,7 +2347,7 @@ function initCartPage(){
      (nombre + teléfono) en cuanto el cliente los escribe, o al pulsar Comprar.
      Si el servicio no responde se deja el descuento: no castigamos a un cliente
      nuevo por una falla nuestra. */
-  if(!hasUsedWelcomeCoupon() && !appliedCoupon){
+  if(welcomeActive() && !hasUsedWelcomeCoupon() && !appliedCoupon){
     appliedCoupon = { code: WELCOME_COUPON_CODE, rate: welcomeRate(), auto: true, verified: false };
   }
 
@@ -2623,8 +2639,15 @@ function initCheckoutButton(){
     }
 
     // 2) Abrir WhatsApp de inmediato, sin esperar la respuesta del registro.
+    // Cada producto con descuento muestra su precio original tachado y el nuevo al lado. El tachado se hace con el carácter
+    // Unicode "tachado" (U+0336) tras cada símbolo, así se ve tachado desde el cuadro de mensaje de WhatsApp, antes de enviar
+    // (el formato ~texto~ de WhatsApp solo se ve tachado después de enviarlo).
+    const strike = function(txt){ return txt.split('').map(function(ch){ return ch + '\u0336'; }).join(''); };
     const lines = pricedCart.map(function(item){
-      return '• ' + item.name + ' x' + item.quantity + ' — ' + formatPrice(item.unitPrice * item.quantity);
+      const original = item.unitPrice * item.quantity;
+      const rate = discountRateForItem(effCoupon, item);
+      const base = '• ' + item.name + ' x' + item.quantity + ' — ';
+      return rate > 0 ? base + strike(formatPrice(original)) + ' ' + formatPrice(original * (1 - rate)) : base + formatPrice(original);
     });
     const bsSuffix = function(usd){
       const bs = formatBsNumber(usd);
@@ -2645,15 +2668,9 @@ function initCheckoutButton(){
       '\nTeléfono: 0414-2333620' +
       '\nC.I.: 9879375';
 
-    const discountLine = discount > 0
-      ? '\nDescuento: -' + formatPrice(discount) + bsSuffix(discount)
-      : '';
-
     const message = 'Hola, quiero hacer este pedido:\n\n' +
       lines.join('\n') +
-      '\n\nSubtotal: ' + formatPrice(subtotal) + bsSuffix(subtotal) +
-      discountLine +
-      '\nEnvío: ' + shippingLine +
+      '\n\nEnvío: ' + shippingLine +
       '\nTotal: ' + formatPrice(total) + bsSuffix(total) + (shipping === null ? ' + envío (pago a destino)' : '') +
       (bcvRate != null ? '\n\nTasa BCV: Bs ' + formatBsNumber(1) : '') +
       '\n\nNombre: ' + customerName +
@@ -3012,6 +3029,7 @@ function initProductReviews(){
 document.addEventListener('DOMContentLoaded', function(){
   initLiveRegion();
   initAnnounceBar();
+  initWelcomeCopy();
   initCartCount();
   initMegaMenu();
   initMobileMenu();
