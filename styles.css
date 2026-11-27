@@ -738,8 +738,8 @@ button.pill:hover{ border-color: var(--ink); }
   font-family: var(--font-head); font-size: 24px; line-height: 1; border-radius: var(--r-control); }
 .promo-steps strong{ display: block; font-size: 16px; line-height: 1.2; color: var(--ink); }
 .promo-steps li > span > span{ display: block; margin-top: 2px; font-size: 13.5px; line-height: 1.3; color: var(--ink-2); }
-.promo-media--calc img:nth-child(2){ height: 100%; max-width: 38%; }
-.promo-media--calc img:nth-child(1), .promo-media--calc img:nth-child(3){ height: 84%; max-width: 26%; }
+.promo-media--calc img:nth-child(2), .promo-media--bolsas img:nth-child(2){ height: 100%; max-width: 38%; }
+.promo-media--calc img:nth-child(1), .promo-media--calc img:nth-child(3), .promo-media--bolsas img:nth-child(1), .promo-media--bolsas img:nth-child(3){ height: 84%; max-width: 26%; }
 .hero-slide--promo .btn--primary{ background: var(--accent); color: var(--ink); }
 .hero-slide--promo .btn--primary:hover{ background: var(--accent-dk); }
 .hero-slide--promo .btn--ghost{ color: var(--ink); border-color: var(--ink); }

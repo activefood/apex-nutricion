@@ -41,8 +41,8 @@ const CALC_PRODUCTOS = {
     serv: 'sobre en 750 mL', sell: 'sobre', perSell: 1,
     price: 1.79, boxes: { 6: 10.08, 12: 19.80, 24: 38.64 },
     // 1 sobre de 10 g en 750 mL = 351 mg de sodio (confirmado por el fabricante; el sobre dice 115 mg en 250 mL)
-    tienda: { pagina: '/producto-going-hidratante.html', marca: 'Going Nutrición', titulo: 'Hidratante {sabor} Going', sabores: ['Uva', 'Coco', 'Pitaya'], foto: 'assets/going/hidratante-sobre-uva.webp',
-              fotos: { 'Uva': ['assets/going/hidratante-sobre-uva.webp', 'assets/calculadora/going-hidr-uva.webp'], 'Coco': ['assets/going/hidratante-sobre-coco.webp', 'assets/calculadora/going-hidr-coco.webp'], 'Pitaya': ['assets/going/hidratante-sobre-pitaya.webp', 'assets/calculadora/going-hidr-pitaya.webp'] } }
+    tienda: { pagina: '/producto-going-hidratante.html', marca: 'Going Nutrición', titulo: 'Hidratante {sabor} Going', sabores: ['Uva', 'Coco', 'Pitaya'], foto: 'assets/going/hidratante-sobre-uva.webp?v=2',
+              fotos: { 'Uva': ['assets/going/hidratante-sobre-uva.webp?v=2', 'assets/calculadora/going-hidr-uva.webp'], 'Coco': ['assets/going/hidratante-sobre-coco.webp?v=2', 'assets/calculadora/going-hidr-coco.webp'], 'Pitaya': ['assets/going/hidratante-sobre-pitaya.webp?v=2', 'assets/calculadora/going-hidr-pitaya.webp'] } }
   },
   skratch: {
     name: 'Skratch Hydration', brand: 'skratch', mini: 'assets/calculadora/skratch.webp',

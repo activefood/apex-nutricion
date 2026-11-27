@@ -1,8 +1,8 @@
 // Sitio de prueba de la calculadora (prueba.apexnutricionve.com), protegido con
 // Cloudflare Access. Es un Worker aparte del sitio real ("apex-nutricion", en
 // wrangler.jsonc): mismo código, pero
-//   - sin APPS_SCRIPT_URL ni secretos de Telegram, así que un pedido de prueba
-//     no llega a la hoja VENTA ni al bot;
+//   - sin los secretos de Supabase (SUPABASE_RPC_TOKEN), así que un pedido de prueba
+//     no se guarda en la base de pedidos reales;
 //   - con la base D1 "apex-calculadora", donde /api/calculadora guarda las
 //     respuestas (solo con consentimiento).
 // Se publica desde la rama "calculadora" con:

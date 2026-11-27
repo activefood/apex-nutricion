@@ -1,4 +1,4 @@
-/* Panel de pedidos (panel.html). Reemplaza a los botones de Telegram: muestra los pedidos por etapa y
+/* Panel de pedidos (panel.html). Muestra los pedidos por etapa y
    permite confirmar, cancelar y registrar cómo se entregó. Una sola lista: cada pedido se atiende en su tarjeta
    (Confirmar → se elige Delivery o Pick up, quién paga y el monto → el pedido sale de la lista).
    Habla solo con el Worker (/api/panel/*), que exige el código de acceso. El estado de cada pedido vive en

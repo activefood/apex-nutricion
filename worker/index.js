@@ -157,8 +157,7 @@ async function handleCalculadora(request, env) {
 }
 
 /* ---------- Protección contra pedidos falsos / abuso ----------
-   Cada llamada a Apps Script cuesta cuota de Google y cada pedido escribe
-   en la base de datos, así que /api/* público necesita freno.
+   Cada pedido escribe en la base de datos, así que /api/* público necesita freno.
    Capas: (1) el envío tiene que venir de nuestro propio sitio, (2) límite
    por IP con el rate limiter de Cloudflare, (3) el pedido se valida con
    topes razonables antes de reenviarlo. Un cliente real nunca queda sin
@@ -443,7 +442,7 @@ async function cuponSupabase(env, name, phone) {
 }
 
 /* ---------- GA4: venta confirmada = evento "purchase" (Measurement Protocol) ----------
-   Mismas reglas que tenía el Apps Script: un purchase por pedido (la base lo "reclama" y nadie más lo manda), fechado el
+   Reglas: un purchase por pedido (la base lo "reclama" y nadie más lo manda), fechado el
    día en que el cliente pidió si es reciente (GA4 acepta hasta 72 h), con la sesión y fuente del visitante si se guardaron;
    si no, un identificador anónimo derivado del teléfono (o del nombre). Los teléfonos del equipo no identifican a nadie. */
 const GA4_TELEFONOS_EQUIPO = ['4141742967'];
@@ -1055,15 +1054,27 @@ function mktCookie(value, maxAge) {
 
 function ymd(d) { return d.toISOString().slice(0, 10); }
 
+// La llave de Windsor tal como quedó guardada en Cloudflare, ya limpia: sin espacios ni saltos de línea, y si pegaron la URL completa o
+// "api_key=..." se queda solo con el valor. (Una llave con un espacio o un salto de línea al final es la causa más común de "API key inválida".)
+function windsorKey(env) {
+  let k = String(env.WINDSOR_API_KEY || '').trim();
+  const m = k.match(/api_key=([^&\s"']+)/);
+  if (m) k = m[1];
+  return k.replace(/^["']+|["']+$/g, '').trim();
+}
+
 // Pide una tabla a Windsor (GA4). Devuelve la lista de filas o lanza error (con el motivo que dé Windsor).
 async function windsorGa4(env, campos, desde, hasta) {
   const ctl = new AbortController();
   const timer = setTimeout(function () { ctl.abort(); }, 25000);
   try {
-    const u = MKT_GA4_BASE + '?api_key=' + encodeURIComponent(env.WINDSOR_API_KEY) + '&fields=' + campos.join(',') + '&date_from=' + desde + '&date_to=' + hasta;
+    const u = MKT_GA4_BASE + '?api_key=' + encodeURIComponent(windsorKey(env)) + '&fields=' + campos.join(',') + '&date_from=' + desde + '&date_to=' + hasta;
     const res = await fetch(u, { signal: ctl.signal });
     const text = await res.text();
-    if (!res.ok) throw new Error('Windsor HTTP ' + res.status + ' ' + text.replace(/api_key=[^&"\s]+/g, 'api_key=***').slice(0, 160));
+    if (!res.ok) {
+      const pista = /api key/i.test(text) ? ' [llave: ' + windsorKey(env).length + ' caracteres]' : '';
+      throw new Error('Windsor HTTP ' + res.status + ' ' + text.replace(/api_key=[^&"\s]+/g, 'api_key=***').slice(0, 120) + pista);
+    }
     const body = text ? JSON.parse(text) : {};
     return Array.isArray(body) ? body : (body && Array.isArray(body.data) ? body.data : []);
   } finally {
@@ -1146,7 +1157,10 @@ async function sincronizarMarketing(env, forzar, dias) {
       }
     }
     await supabaseRpc(env, 'marketing_registrar_sync', { p_estado: fallos.length ? (total ? 'parcial' : 'error') : 'ok', p_filas: total, p_detalle: fallos.length ? 'Fallaron: ' + fallos.join('; ') : desde + ' a ' + hasta });
-    if (!total) return { ok: false, error: 'No se pudo traer los datos de Google Analytics.' };
+    if (!total) {
+      const llave = fallos.length && fallos.every(function (f) { return /api key/i.test(f); });
+      return { ok: false, error: llave ? 'Windsor no aceptó la llave. Hay que volver a copiarla en el secreto WINDSOR_API_KEY de Cloudflare.' : 'No se pudo traer los datos de Google Analytics.' };
+    }
     return { ok: true, filas: total, fallos: fallos.length };
   } catch (err) {
     console.error('[marketing] Sincronización: ' + String(err));

@@ -17,9 +17,8 @@
       "database_id": "2f86abbf-8cfb-46fc-ba2f-b2f246fbbf3b"
     }
   ],
-  // Supabase = donde viven los pedidos (reemplaza al Apps Script y a la hoja de Google). PEDIDOS_BACKEND decide
-  // quién atiende los pedidos, el panel, el cupón y las reseñas: "appsscript" (como hasta ahora) o "supabase".
-  // Para volver atrás basta con poner "appsscript" y subir el cambio. SUPABASE_KEY es la llave PÚBLICA (la de la
+  // Supabase = donde viven los pedidos, el panel, el cupón, las reseñas y los datos de marketing.
+  // PEDIDOS_BACKEND debe quedar en "supabase" (es el único backend que existe). SUPABASE_KEY es la llave PÚBLICA (la de la
   // página, sin permisos sobre los datos de clientes); los secretos SUPABASE_RPC_TOKEN y GA4_API_SECRET se ponen en
   // Cloudflare (Variables and Secrets), nunca aquí.
   "vars": {

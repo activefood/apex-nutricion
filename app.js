@@ -1901,8 +1901,7 @@ const FREE_SHIPPING_AT = 30;
 const SHIPPING_COST = 6;
 const CARACAS_STATES = ['Distrito Capital'];
 // Miranda cuenta como "envío estándar $6" si la zona escrita cae dentro del
-// área metropolitana de Caracas — mismo criterio y misma lista que usa el
-// bot de Telegram (CARACAS_ZONE_KEYWORDS en Code.gs); mantener ambas iguales.
+// área metropolitana de Caracas (lista de zonas de abajo).
 // Cubre los 4 municipios de Miranda que forman la Gran Caracas junto con
 // Libertador/Distrito Capital (que ya cuenta aparte, por estado, arriba).
 const CARACAS_ZONE_KEYWORDS = [
@@ -2481,8 +2480,8 @@ function initPhoneMask(){
 }
 
 /* ---------- Identificadores de GA4 del visitante ----------
-   Se mandan con el pedido para que, cuando se confirme la venta (botón "Completed" de Telegram), el
-   Apps Script la atribuya a la sesión y a la fuente de tráfico de este visitante en GA4. Se leen de las
+   Se mandan con el pedido para que, cuando se confirme la venta en el panel de pedidos, el
+   Worker la atribuya a la sesión y a la fuente de tráfico de este visitante en GA4. Se leen de las
    cookies de GA4 (_ga y _ga_<ID>); si están bloqueadas, quedan vacíos y el pedido sigue igual. */
 function readCookie(name){
   const parts = document.cookie ? document.cookie.split('; ') : [];
@@ -2608,8 +2607,8 @@ function initCheckoutButton(){
     const total = discountedSubtotal + (shipping || 0);
 
     // El descuento se reparte proporcionalmente en el precio unitario de
-    // cada línea, para que el total que se registra en la hoja y en
-    // Telegram sea exactamente lo que el cliente debe pagar.
+    // cada línea, para que el total que se guarda en el pedido
+    // sea exactamente lo que el cliente debe pagar.
     const items = pricedCart.map(function(item){
       return { brand: item.brand, product: item.name + (item.kit && item.variant ? ' (' + item.variant + ')' : ''), unitPrice: item.unitPrice * (1 - discountRateForItem(effCoupon, item)), quantity: item.quantity };
     });
@@ -2827,9 +2826,8 @@ function initHeroCarousel(){
 }
 
 /* ---------- Formulario real de calificación y reseña de producto ----------
-   Reemplaza los ratings/reseñas inventados. Cada envío se manda a la función
-   de Netlify submit-review, que lo reenvía a Google Apps Script para que quede
-   guardado en una hoja de cálculo — no se muestra en el sitio todavía. */
+   Reemplaza los ratings/reseñas inventados. Cada envío se manda a /api/submit-review (el Worker),
+   que lo guarda en Supabase — no se muestra en el sitio todavía. */
 function initReviewForm(){
   document.querySelectorAll('[data-review-form]').forEach(function(form){
     const starButtons = Array.from(form.querySelectorAll('.star-btn'));
