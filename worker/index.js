@@ -348,7 +348,7 @@ async function handleNewsletter(request, env, ctx) {
     const r = await supabaseRpc(env, 'newsletter_suscribir', { p_email: email, p_origen: 'inicio' });
     if (!r || r.ok !== true) return json({ ok: false, error: (r && r.error === 'Correo inválido') ? 'Escribe un correo válido.' : 'No se pudo guardar. Intenta otra vez.' }, 400);
     // La clave solo se entrega cuando la suscripción es nueva: el navegador la recuerda para registrar lo que mira el suscriptor.
-    if (r.clave) {   // suscripción nueva: bienvenida con el 5% (en segundo plano; un fallo no afecta a quien se suscribe)
+    if (r.clave) {   // suscripción nueva: bienvenida (en segundo plano; un fallo no afecta a quien se suscribe)
       const envio = enviarBienvenida(env, email, r.clave);
       if (ctx && ctx.waitUntil) ctx.waitUntil(envio);
     }
@@ -366,7 +366,6 @@ async function handleNewsletter(request, env, ctx) {
    Remitente: NEWSLETTER_DESDE (por defecto Apex Nutrición <hola@apexnutricionve.com>). Secreto de envío: RESEND_API_KEY (el mismo de los recordatorios). */
 const SITIO = 'https://apexnutricionve.com';
 const NEWSLETTER_HORA_UTC = 14;   // 10:00 en Caracas
-const NEWS_CODIGO = 'APEX5';       // código del 5% del correo de bienvenida (debe ser el mismo que NEWS_COUPON_CODE en app.js)
 // Productos que no se anuncian por estar agotados (ruta o nombre).
 const AVISO_AGOTADO = [/proteina-tarro[^"]*flavor=vainilla/i, /vainilla[^"]*600/i, /600[^"]*vainilla/i];
 
@@ -447,22 +446,20 @@ function correoProductosSemana(items, clave, prueba) {
   return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Los productos estrella de la semana en Apex', html: html, texto: texto, baja: baja };
 }
 
-// Correo de bienvenida: el código del 5% (APEX5 en el carrito; app.js).
+// Correo de bienvenida (sin descuento). Corto y en tono de mensaje personal: menos "aire de promoción" para que Gmail lo mande menos a la pestaña Promociones.
 function correoBienvenida(clave, prueba) {
   const baja = SITIO + '/api/suscripcion/baja?c=' + clave;
   const enlace = SITIO + '/?utm_source=newsletter&utm_medium=email&utm_campaign=bienvenida';
-  const html = CORREO_ABRE + '<h1 style="margin:0 0 10px;font-size:26px;line-height:1.15">Bienvenido al newsletter de Apex</h1>' +
-    '<p style="margin:0 0 18px;font-size:16px;line-height:1.5">Gracias por suscribirte. Aquí tienes tu <b>5% de descuento</b> en tu compra:</p>' +
-    '<p style="margin:0 0 18px;text-align:center"><span style="display:inline-block;border:2px dashed #14120F;background:#F7F5F1;padding:14px 28px;font:800 28px monospace;letter-spacing:.14em">' + NEWS_CODIGO + '</span></p>' +
-    '<p style="margin:0 0 6px;font-size:15px;line-height:1.5"><b>Cómo usarlo:</b> agrega tus productos al carrito, escribe el código en "Código de descuento" y toca Aplicar.</p>' +
-    '<p style="margin:0 0 22px;font-size:13px;line-height:1.5;color:#514D48">Se usa una vez y no se suma a otras promociones (Black Friday, Cyber Monday, precios por cantidad ni el 10% de primera compra).</p>' +
-    '<p style="margin:0"><a href="' + enlace + '" style="display:inline-block;background:#14120F;color:#fff;padding:14px 22px;text-decoration:none;font-weight:700">Ir a la tienda</a></p>' +
-    '<p style="margin:18px 0 0;font-size:14px;color:#514D48">También te escribiremos con ofertas, lanzamientos y los productos estrella de la semana.</p>' + correoPie(baja);
-  const texto = 'Bienvenido al newsletter de Apex\n\nGracias por suscribirte. Aquí tienes tu 5% de descuento en tu compra: ' + NEWS_CODIGO + '\n\nCómo usarlo: agrega tus productos al carrito, escribe el código en "Código de descuento" y toca Aplicar. Se usa una vez y no se suma a otras promociones (Black Friday, Cyber Monday, precios por cantidad ni el 10% de primera compra).\n\nIr a la tienda: ' + enlace + '\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
-  return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Bienvenido a Apex: aquí está tu 5% de descuento', html: html, texto: texto, baja: baja };
+  const html = CORREO_ABRE + '<h1 style="margin:0 0 12px;font-size:24px;line-height:1.2">Bienvenido al newsletter de Apex</h1>' +
+    '<p style="margin:0 0 14px;font-size:16px;line-height:1.55">Hola, gracias por suscribirte. Te escribiremos cuando haya novedades: productos que llegan, reposiciones y cuáles son los más pedidos de la semana.</p>' +
+    '<p style="margin:0 0 14px;font-size:16px;line-height:1.55">Mientras tanto, aquí puedes ver la tienda: <a href="' + enlace + '" style="color:#14120F;font-weight:700">apexnutricionve.com</a>.</p>' +
+    '<p style="margin:0 0 4px;font-size:16px;line-height:1.55">Si tienes cualquier duda, responde este correo o escríbenos por WhatsApp.</p>' +
+    '<p style="margin:14px 0 0;font-size:16px;line-height:1.55">Equipo Apex Nutrición</p>' + correoPie(baja);
+  const texto = 'Bienvenido al newsletter de Apex\n\nHola, gracias por suscribirte. Te escribiremos cuando haya novedades: productos que llegan, reposiciones y cuáles son los más pedidos de la semana.\n\nMientras tanto, aquí puedes ver la tienda: ' + enlace + '\n\nSi tienes cualquier duda, responde este correo o escríbenos por WhatsApp.\n\nEquipo Apex Nutrición\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
+  return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Bienvenido al newsletter de Apex', html: html, texto: texto, baja: baja };
 }
 
-// Bienvenida automática al suscribirse (solo a suscripciones nuevas). Un fallo se anota y no afecta a quien se suscribió.
+// Bienvenida automática al suscribirse (solo a suscripciones nuevas; sin descuento). Un fallo se anota y no afecta a quien se suscribió.
 async function enviarBienvenida(env, email, clave) {
   try {
     if (!env.RESEND_API_KEY) { console.error('[newsletter] bienvenida omitida: falta RESEND_API_KEY'); return; }
