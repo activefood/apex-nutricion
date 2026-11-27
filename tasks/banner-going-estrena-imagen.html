@@ -1,0 +1,32 @@
+<!--
+  BANNER GUARDADO PARA DESPUÉS: "Going estrena imagen" (nuevo empaque del Hidratante Going, 3 bolsas de 300 g).
+  Se quitó del carrusel de inicio el 2026-11-27 por pedido del dueño. Estaba publicado el 2026-11-27 (commits bfa9120 y 319a8a6).
+
+  Cómo volver a ponerlo:
+  1) Pegar el bloque <div class="hero-slide ..."> de abajo en index.html, dentro de .hero-carousel, DESPUÉS de los banners de evento
+     (Black Friday / Cyber Monday) y ANTES de "geles-going". Si queda como primer banner fijo, dejarle la clase "active".
+  2) Ya existen sus imágenes: assets/banners/going-bolsa-{uva,coco,pitaya}-v3.webp (recortes transparentes de las bolsas nuevas).
+  3) Ya existe su estilo: .promo-media--bolsas en styles.css (mismas proporciones que el banner de la calculadora). Nada más que tocar en el CSS.
+  4) Mostrarlo en pantalla (escritorio y celular) antes de subir. En localhost, ?hoy=AAAA-MM-DD simula la fecha.
+  5) Textos pendientes de confirmar con el dueño: el empaque dice "Limonada de coco" y "Fruto del dragón"; el resto del sitio dice "Coco" y "Pitaya".
+  Mientras no esté en el carrusel, las fotos nuevas de bolsas y sobres sí siguen en las páginas de producto.
+-->
+    <div class="hero-slide hero-slide--promo active" data-promo-id="going-nuevo-empaque" data-promo-name="Going nuevo empaque" data-promo-slot="hero-2">
+      <div class="container">
+        <div class="promo-copy">
+          <p class="eyebrow">Nuevo empaque · Going Nutrición</p>
+          <h2 class="h-46 promo-title">Going estrena imagen</h2>
+          <p class="promo-text">Llegó el Hidratante Going con su nueva imagen. Elige entre Uva, Limonada de coco y Fruto del dragón.</p>
+          <p class="promo-price">Desde $1,79 <span>· caja x24 a $1,61 c/u</span></p>
+          <div class="promo-actions">
+            <a class="btn btn--primary" href="producto-going-hidratante.html" data-promo-creative="boton">Ver hidratante</a>
+          </div>
+        </div>
+        <div class="promo-media promo-media--fila promo-media--bolsas">
+          <img src="assets/banners/going-bolsa-uva-v3.webp" alt="Bolsa de 300 g de Hidratante Going sabor Uva, con el empaque nuevo" width="458" height="640" fetchpriority="low">
+          <img src="assets/banners/going-bolsa-coco-v3.webp" alt="Bolsa de 300 g de Hidratante Going sabor Limonada de coco, con el empaque nuevo" width="464" height="640" fetchpriority="low">
+          <img src="assets/banners/going-bolsa-pitaya-v3.webp" alt="Bolsa de 300 g de Hidratante Going sabor Fruto del dragón, con el empaque nuevo" width="471" height="640" fetchpriority="low">
+        </div>
+      </div>
+    </div>
+
