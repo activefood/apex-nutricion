@@ -161,17 +161,23 @@
     $('ig-live').textContent = '@' + dataIg.usuario + ' · actualizado ' + haceCuanto(dataIg.actualizado);
     const aviso = $('ig-aviso'); aviso.textContent = '';
     const ul = dataIg.ultima_sync;
-    if(!dataIg.actualizado){
-      aviso.hidden = false;
+    clearTimeout(pintarIg.espera);
+    function boton(txt, fn){ const x = el('button', 'linkbtn', txt); x.type = 'button'; x.addEventListener('click', fn); return x; }
+    aviso.hidden = false;
+    if(ul && ul.estado === 'pendiente'){
+      aviso.appendChild(document.createTextNode('Trayendo el historial de Instagram (hasta 100 publicaciones). Tarda unos minutos; esta pantalla se actualiza sola. '));
+      aviso.appendChild(boton('Revisar ahora', function(){ cargarIg(dataIg._r); }));
+      pintarIg.espera = setTimeout(function(){ if(dataIg) cargarIg(dataIg._r); }, 30000);
+    } else if(!dataIg.actualizado){
       aviso.appendChild(document.createTextNode('Todavía no hay datos de Instagram. '));
-      const b = el('button', 'linkbtn', 'Traer Instagram ahora'); b.type = 'button'; b.addEventListener('click', actualizarIg); aviso.appendChild(b);
+      aviso.appendChild(boton('Traer Instagram ahora', function(){ actualizarIg(0); }));
       if(ul && ul.estado === 'error') aviso.appendChild(document.createTextNode(' Último intento: ' + ul.detalle));
-    } else if(ul && ul.estado === 'error'){
-      aviso.hidden = false; aviso.textContent = 'La última actualización de Instagram falló (' + ul.detalle + '). Los números pueden estar atrasados.';
     } else {
-      aviso.hidden = false;
-      aviso.appendChild(document.createTextNode('Se actualiza solo cada día. '));
-      const b = el('button', 'linkbtn', 'Actualizar Instagram ahora'); b.type = 'button'; b.addEventListener('click', actualizarIg); aviso.appendChild(b);
+      if(ul && ul.estado === 'error') aviso.appendChild(document.createTextNode('La última actualización de Instagram falló (' + ul.detalle + '). Los números pueden estar atrasados. '));
+      else aviso.appendChild(document.createTextNode('Se actualiza solo cada día. '));
+      aviso.appendChild(boton('Actualizar Instagram ahora', function(){ actualizarIg(0); }));
+      aviso.appendChild(document.createTextNode(' · '));
+      aviso.appendChild(boton('Traer historial (100 publicaciones, una sola vez)', function(){ actualizarIg(100); }));
     }
     const n = a.publicaciones || 0, conMg = a.con_me_gusta || 0;
     const mgProm = conMg ? a.me_gusta / conMg : 0, cmProm = n ? a.comentarios / n : 0;
@@ -215,12 +221,12 @@
       tt.appendChild(it);
     });
   }
-  async function actualizarIg(){
-    toast('Trayendo Instagram… puede tardar hasta 2 minutos.');
+  async function actualizarIg(limite){
+    toast(limite ? 'Iniciando la carga del historial…' : 'Trayendo Instagram… puede tardar hasta 2 minutos.');
     try {
       if(DEMO) await new Promise(function(ok){ setTimeout(ok, 600); });
-      else await api('instagram-actualizar', { method: 'POST', body: '{}' });
-      toast('Listo, Instagram actualizado.');
+      else await api('instagram-actualizar', { method: 'POST', body: JSON.stringify(limite ? { limite: limite } : {}) });
+      toast(limite ? 'Listo, se inició. Tarda unos minutos y esta pantalla se actualiza sola.' : 'Listo, Instagram actualizado.');
       if(dataIg) await cargarIg(dataIg._r);
     } catch(e){
       if(e.auth) mostrarLogin('La sesión se cerró. Entra otra vez.');

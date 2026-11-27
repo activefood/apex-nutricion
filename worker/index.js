@@ -81,6 +81,7 @@ export default {
       ctx.waitUntil(vigilarBlackFriday(env));
       ctx.waitUntil(sincronizarMarketing(env, false));
       ctx.waitUntil(sincronizarInstagram(env, false));
+      ctx.waitUntil(completarHistorialInstagram(env));
       ctx.waitUntil(relacionarPedidos(env));
     }
   }
@@ -1282,34 +1283,115 @@ function igTipo(item) {
   return 'imagen';
 }
 
+// Convierte lo que devuelve Apify en filas y las guarda (seguidores + publicaciones). Devuelve { posts, seguidores }.
+async function guardarInstagram(env, itemsCrudos) {
+  const items = (itemsCrudos || []).filter(function (i) { return i && i.shortCode; });
+  if (!items.length) throw new Error('Apify no devolvió publicaciones de @' + IG_USUARIO);
+  let seguidores = null;
+  for (let i = 0; i < items.length && seguidores === null; i++) seguidores = igSeguidores(items[i]);
+  if (seguidores === null) {   // algunas versiones del actor no traen el perfil junto a los posts: se pide aparte
+    const det = await apifyInstagram(env, IG_USUARIO, 'details', 1);
+    for (let i = 0; i < det.length && seguidores === null; i++) seguidores = igSeguidores(det[i]);
+  }
+  const posts = items.map(function (i) {
+    return { shortcode: i.shortCode, tipo: igTipo(i), publicado: i.timestamp, me_gusta: typeof i.likesCount === 'number' ? i.likesCount : null, comentarios: num(i.commentsCount),
+      vistas: typeof i.videoViewCount === 'number' ? i.videoViewCount : (typeof i.videoPlayCount === 'number' ? i.videoPlayCount : null),
+      texto: i.caption || '', url: i.url || ('https://www.instagram.com/p/' + i.shortCode + '/') };
+  });
+  for (let k = 0; k < posts.length; k += 50) {
+    const r = await supabaseRpc(env, 'marketing_ig_guardar', { p_usuario: IG_USUARIO, p_seguidores: k === 0 ? seguidores : null, p_posts: posts.slice(k, k + 50) });
+    if (!r || r.ok !== true) throw new Error('No se guardó: ' + (r && r.error));
+  }
+  return { posts: posts.length, seguidores: seguidores };
+}
+
+function mensajeErrorApify(err) {
+  const m = String(err);
+  return /HTTP 40[13]/.test(m) ? 'Apify no aceptó el token (APIFY_TOKEN en Cloudflare).' : (/usage|limit|402/i.test(m) ? 'La cuenta de Apify se quedó sin cupo este mes.' : 'No se pudo traer el Instagram de Apex.');
+}
+
 // Trae seguidores y publicaciones recientes de la cuenta y los guarda. Sin `forzar`, solo corre a las IG_HORAS_SYNC. Devuelve { ok, posts, seguidores, error }.
 async function sincronizarInstagram(env, forzar) {
   try {
     if (!(env.APIFY_TOKEN || env.APIFY_TOKEN_RESPALDO) || !usaSupabase(env)) return { ok: false, error: 'Falta el secreto APIFY_TOKEN en Cloudflare.' };
     const ahora = new Date();
     if (!forzar && (IG_HORAS_SYNC.indexOf(ahora.getUTCHours()) === -1 || ahora.getUTCMinutes() > 30)) return { ok: true, omitido: true };
-    const items = (await apifyInstagram(env, IG_USUARIO, 'posts', IG_LIMITE)).filter(function (i) { return i && i.shortCode; });
-    if (!items.length) throw new Error('Apify no devolvió publicaciones de @' + IG_USUARIO);
-    let seguidores = null;
-    for (let i = 0; i < items.length && seguidores === null; i++) seguidores = igSeguidores(items[i]);
-    if (seguidores === null) {   // algunas versiones del actor no traen el perfil junto a los posts: se pide aparte
-      const det = await apifyInstagram(env, IG_USUARIO, 'details', 1);
-      for (let i = 0; i < det.length && seguidores === null; i++) seguidores = igSeguidores(det[i]);
-    }
-    const posts = items.map(function (i) {
-      return { shortcode: i.shortCode, tipo: igTipo(i), publicado: i.timestamp, me_gusta: typeof i.likesCount === 'number' ? i.likesCount : null, comentarios: num(i.commentsCount),
-        vistas: typeof i.videoViewCount === 'number' ? i.videoViewCount : (typeof i.videoPlayCount === 'number' ? i.videoPlayCount : null),
-        texto: i.caption || '', url: i.url || ('https://www.instagram.com/p/' + i.shortCode + '/') };
-    });
-    const r = await supabaseRpc(env, 'marketing_ig_guardar', { p_usuario: IG_USUARIO, p_seguidores: seguidores, p_posts: posts });
-    if (!r || r.ok !== true) throw new Error('No se guardó: ' + (r && r.error));
-    await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'ok', p_filas: posts.length, p_detalle: (seguidores === null ? 'sin dato de seguidores' : seguidores + ' seguidores') });
-    return { ok: true, posts: posts.length, seguidores: seguidores };
+    const r = await guardarInstagram(env, await apifyInstagram(env, IG_USUARIO, 'posts', IG_LIMITE));
+    await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'ok', p_filas: r.posts, p_detalle: (r.seguidores === null ? 'sin dato de seguidores' : r.seguidores + ' seguidores') });
+    return { ok: true, posts: r.posts, seguidores: r.seguidores };
   } catch (err) {
     console.error('[marketing] Instagram: ' + String(err));
     try { await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'error', p_filas: 0, p_detalle: String(err).replace(/^Error: /, '').slice(0, 300) }); } catch (e2) { /* sin registro */ }
-    const m = String(err);
-    return { ok: false, error: /HTTP 40[13]/.test(m) ? 'Apify no aceptó el token (APIFY_TOKEN en Cloudflare).' : (/usage|limit|402/i.test(m) ? 'La cuenta de Apify se quedó sin cupo este mes.' : 'No se pudo traer el Instagram de Apex.') };
+    return { ok: false, error: mensajeErrorApify(err) };
+  }
+}
+
+/* Carga de historial (100 publicaciones, una sola vez): tarda más de lo que conviene tener una petición abierta, así que va en dos tiempos.
+   1) iniciarHistorialInstagram: arranca la corrida en Apify (sin esperar) y anota en el registro "pendiente" con el número de corrida.
+   2) completarHistorialInstagram: cuando la corrida terminó, baja los resultados y los guarda. Se llama cada hora y cada vez que el portal pide Instagram. */
+const APIFY_RUNS_URL = 'https://api.apify.com/v2/acts/apify~instagram-scraper/runs';
+const IG_HISTORIAL_MAX = 100;
+
+async function iniciarHistorialInstagram(env, limite) {
+  try {
+    if (!(env.APIFY_TOKEN || env.APIFY_TOKEN_RESPALDO) || !usaSupabase(env)) return { ok: false, error: 'Falta el secreto APIFY_TOKEN en Cloudflare.' };
+    const ult = await supabaseRpc(env, 'marketing_ig_ultima', {});
+    if (ult && ult.estado === 'pendiente' && ult.fin && Date.now() - new Date(ult.fin).getTime() < 20 * 60 * 1000) return { ok: true, iniciado: true, yaEnCurso: true };
+    const n = Math.max(IG_LIMITE, Math.min(IG_HISTORIAL_MAX, Math.floor(num(limite)) || IG_HISTORIAL_MAX));
+    const tokens = [env.APIFY_TOKEN, env.APIFY_TOKEN_RESPALDO];
+    let ultimoError = null;
+    for (let slot = 0; slot < tokens.length; slot++) {
+      if (!tokens[slot]) continue;
+      const res = await fetch(APIFY_RUNS_URL, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + String(tokens[slot]).trim(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ directUrls: ['https://www.instagram.com/' + IG_USUARIO + '/'], resultsType: 'posts', resultsLimit: n, addParentData: true })
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        ultimoError = new Error('Apify HTTP ' + res.status + ' ' + text.replace(/\s+/g, ' ').slice(0, 140));
+        if (/HTTP (401|402|403)|usage|limit|quota/i.test(String(ultimoError))) continue;
+        throw ultimoError;
+      }
+      const d = (JSON.parse(text) || {}).data || {};
+      if (!d.id || !d.defaultDatasetId) throw new Error('Apify no devolvió el número de corrida');
+      await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'pendiente', p_filas: 0, p_detalle: 'RUN:' + d.id + '|' + d.defaultDatasetId + '|' + slot + '|' + n });
+      return { ok: true, iniciado: true };
+    }
+    throw ultimoError || new Error('Falta el token de Apify');
+  } catch (err) {
+    console.error('[marketing] Historial Instagram (inicio): ' + String(err));
+    try { await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'error', p_filas: 0, p_detalle: String(err).replace(/^Error: /, '').slice(0, 300) }); } catch (e2) { /* sin registro */ }
+    return { ok: false, error: mensajeErrorApify(err) };
+  }
+}
+
+async function completarHistorialInstagram(env) {
+  try {
+    if (!usaSupabase(env)) return { pendiente: false };
+    const ult = await supabaseRpc(env, 'marketing_ig_ultima', {});
+    if (!ult || ult.estado !== 'pendiente') return { pendiente: false };
+    const m = /RUN:(\S+?)\|(\S+?)\|(\d)\|(\d+)/.exec(ult.detalle || '');
+    if (!m) return { pendiente: false };
+    const token = [env.APIFY_TOKEN, env.APIFY_TOKEN_RESPALDO][Number(m[3])];
+    if (!token) return { pendiente: false };
+    const cab = { 'Authorization': 'Bearer ' + String(token).trim() };
+    const rr = await fetch('https://api.apify.com/v2/actor-runs/' + encodeURIComponent(m[1]), { headers: cab });
+    if (!rr.ok) throw new Error('Apify HTTP ' + rr.status + ' al consultar la corrida');
+    const estado = String((((await rr.json()) || {}).data || {}).status || '');
+    if (estado === 'READY' || estado === 'RUNNING') {
+      if (Date.now() - new Date(ult.fin).getTime() > 25 * 60 * 1000) { await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'error', p_filas: 0, p_detalle: 'La carga de historial tardó demasiado en Apify.' }); return { pendiente: false }; }
+      return { pendiente: true };
+    }
+    if (estado !== 'SUCCEEDED') { await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'error', p_filas: 0, p_detalle: 'La corrida de Apify terminó con estado ' + estado.slice(0, 30) }); return { pendiente: false }; }
+    const dr = await fetch('https://api.apify.com/v2/datasets/' + encodeURIComponent(m[2]) + '/items?clean=true&limit=' + IG_HISTORIAL_MAX, { headers: cab });
+    if (!dr.ok) throw new Error('Apify HTTP ' + dr.status + ' al bajar los resultados');
+    const r = await guardarInstagram(env, await dr.json());
+    await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'ok', p_filas: r.posts, p_detalle: 'Historial: ' + r.posts + ' publicaciones' + (r.seguidores === null ? '' : ', ' + r.seguidores + ' seguidores') });
+    return { pendiente: false, posts: r.posts };
+  } catch (err) {
+    console.error('[marketing] Historial Instagram (cierre): ' + String(err));
+    return { pendiente: true };
   }
 }
 
@@ -1382,6 +1464,7 @@ async function handleMarketing(request, env, url) {
     if (!desde || !hasta) return panelJson({ ok: false, error: 'Faltan las fechas.' }, 400);
     let r, ult = null;
     try {
+      await completarHistorialInstagram(env);   // si hay una carga de historial en marcha y ya terminó, se guarda aquí
       r = await supabaseRpc(env, 'marketing_ig_leer', { p_usuario: IG_USUARIO, p_desde: desde, p_hasta: hasta, p_cdesde: fecha(q.get('cdesde')), p_chasta: fecha(q.get('chasta')) });
       ult = await supabaseRpc(env, 'marketing_ig_ultima', {});
     } catch (err) {
@@ -1397,6 +1480,12 @@ async function handleMarketing(request, env, url) {
     if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
     const blocked = await guardPublicApi(request, env.API_LIMITER, 'marketing-instagram');
     if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    let limite = 0;
+    try { const b = await readJsonBody(request); if (b.payload && b.payload.limite) limite = num(b.payload.limite); } catch (err) { /* normal */ }
+    if (limite > IG_LIMITE) {
+      const h = await iniciarHistorialInstagram(env, limite);
+      return panelJson({ ok: h.ok, iniciado: h.iniciado, error: h.ok ? undefined : h.error }, h.ok ? 200 : 502);
+    }
     const r = await sincronizarInstagram(env, true);
     return panelJson({ ok: r.ok, posts: r.posts, seguidores: r.seguidores, error: r.ok ? undefined : r.error }, r.ok ? 200 : 502);
   }
