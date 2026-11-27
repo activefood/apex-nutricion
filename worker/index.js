@@ -1,6 +1,5 @@
-// Cloudflare Worker: sirve el sitio estático (vía ASSETS) y maneja las rutas /api/* con la
-// misma lógica que las funciones de Netlify (netlify/functions/*.js) — reenvían a Google Apps
-// Script para guardar pedidos y reseñas, y procesan el webhook de Telegram.
+// Cloudflare Worker: sirve el sitio estático (vía ASSETS) y maneja las rutas /api/*. Los pedidos, las reseñas,
+// el cupón, el panel de pedidos y las promos viven en Supabase (ya no hay Google Apps Script ni Telegram).
 
 export default {
   async fetch(request, env, ctx) {
@@ -21,9 +20,6 @@ export default {
     if (url.pathname === '/api/check-welcome-coupon') {
       const blocked = await guardPublicApi(request, env.API_LIMITER, 'check-welcome-coupon');
       return blocked || handleCheckWelcomeCoupon(request, env);
-    }
-    if (url.pathname === '/api/telegram-webhook') {
-      return handleTelegramWebhook(request, env);
     }
     if (url.pathname === '/api/promos') {
       return handlePromos(request, env);
@@ -149,7 +145,7 @@ async function handleCalculadora(request, env) {
 
 /* ---------- Protección contra pedidos falsos / abuso ----------
    Cada llamada a Apps Script cuesta cuota de Google y cada pedido escribe
-   en la hoja y manda un Telegram, así que /api/* público necesita freno.
+   en la base de datos, así que /api/* público necesita freno.
    Capas: (1) el envío tiene que venir de nuestro propio sitio, (2) límite
    por IP con el rate limiter de Cloudflare, (3) el pedido se valida con
    topes razonables antes de reenviarlo. Un cliente real nunca queda sin
@@ -258,10 +254,9 @@ function validateOrder(order) {
 async function handleSubmitOrder(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
-  const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl && !usaSupabase(env)) {
-    console.error('[submit-order] Falta APPS_SCRIPT_URL en variables de entorno');
-    return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
+  if (!usaSupabase(env)) {
+    console.error('[submit-order] Supabase no está configurado (PEDIDOS_BACKEND, SUPABASE_URL, SUPABASE_KEY, SUPABASE_RPC_TOKEN)');
+    return json({ ok: false, error: 'Server misconfiguration: database not configured' }, 500);
   }
 
   let payload;
@@ -279,18 +274,16 @@ async function handleSubmitOrder(request, env) {
     return json({ ok: false, error: 'Invalid order payload' }, 400);
   }
 
-  if (usaSupabase(env)) return crearPedidoSupabase(env, payload);
-  return forwardAndRelay(appsScriptUrl, { source: 'website-order', payload }, '[submit-order]');
+  return crearPedidoSupabase(env, payload);
 }
 
 /* ---------- /api/submit-review ---------- */
 async function handleSubmitReview(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
-  const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl && !usaSupabase(env)) {
-    console.error('[submit-review] Falta APPS_SCRIPT_URL en variables de entorno');
-    return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
+  if (!usaSupabase(env)) {
+    console.error('[submit-review] Supabase no está configurado (PEDIDOS_BACKEND, SUPABASE_URL, SUPABASE_KEY, SUPABASE_RPC_TOKEN)');
+    return json({ ok: false, error: 'Server misconfiguration: database not configured' }, 500);
   }
 
   let payload;
@@ -306,8 +299,7 @@ async function handleSubmitReview(request, env) {
     return json({ ok: false, error: 'Invalid review payload' }, 400);
   }
 
-  if (usaSupabase(env)) return resenaSupabase(env, payload);
-  return forwardAndRelay(appsScriptUrl, { source: 'website-review', payload }, '[submit-review]');
+  return resenaSupabase(env, payload);
 }
 
 /* ---------- /api/get-reviews ----------
@@ -317,10 +309,9 @@ async function handleSubmitReview(request, env) {
 async function handleGetReviews(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
-  const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl && !usaSupabase(env)) {
-    console.error('[get-reviews] Falta APPS_SCRIPT_URL en variables de entorno');
-    return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
+  if (!usaSupabase(env)) {
+    console.error('[get-reviews] Supabase no está configurado (PEDIDOS_BACKEND, SUPABASE_URL, SUPABASE_KEY, SUPABASE_RPC_TOKEN)');
+    return json({ ok: false, error: 'Server misconfiguration: database not configured' }, 500);
   }
 
   let payload;
@@ -331,22 +322,20 @@ async function handleGetReviews(request, env) {
   }
 
   const product = payload && typeof payload.product === 'string' ? payload.product.trim() : '';
-  if (usaSupabase(env)) return listarResenasSupabase(env, product);
-  return forwardAndRelay(appsScriptUrl, { source: 'get-reviews', payload: { product: product } }, '[get-reviews]');
+  return listarResenasSupabase(env, product);
 }
 
 /* ---------- /api/check-welcome-coupon ----------
    Consulta de solo lectura: cruza nombre + teléfono contra pedidos
-   anteriores en la hoja para decidir si el código de bienvenida (10% en la
-   primera compra) es válido para esta persona. No escribe nada ni manda
-   Telegram — es independiente del flujo de registrar un pedido. */
+   anteriores en la base de datos para decidir si el código de bienvenida (10% en la
+   primera compra) es válido para esta persona. No escribe nada:
+   es independiente del flujo de registrar un pedido. */
 async function handleCheckWelcomeCoupon(request, env) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
 
-  const appsScriptUrl = env.APPS_SCRIPT_URL;
-  if (!appsScriptUrl && !usaSupabase(env)) {
-    console.error('[check-welcome-coupon] Falta APPS_SCRIPT_URL en variables de entorno');
-    return json({ ok: false, error: 'Server misconfiguration: APPS_SCRIPT_URL missing' }, 500);
+  if (!usaSupabase(env)) {
+    console.error('[check-welcome-coupon] Supabase no está configurado (PEDIDOS_BACKEND, SUPABASE_URL, SUPABASE_KEY, SUPABASE_RPC_TOKEN)');
+    return json({ ok: false, error: 'Server misconfiguration: database not configured' }, 500);
   }
 
   let payload;
@@ -362,43 +351,13 @@ async function handleCheckWelcomeCoupon(request, env) {
     return json({ ok: false, error: 'Missing name or phone' }, 400);
   }
 
-  if (usaSupabase(env)) return cuponSupabase(env, name, phone);
-  return forwardAndRelay(appsScriptUrl, { source: 'check-welcome-coupon', payload: { name, phone } }, '[check-welcome-coupon]');
+  return cuponSupabase(env, name, phone);
 }
 
-async function forwardAndRelay(appsScriptUrl, body, logTag) {
-  try {
-    const response = await fetch(appsScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body)
-    });
-
-    const text = await response.text();
-    let result;
-    try {
-      result = JSON.parse(text);
-    } catch (err) {
-      console.error(logTag + ' Apps Script returned non-JSON: ' + text.slice(0, 300));
-      return json({ ok: false, error: 'Google Apps Script returned an unexpected response' }, 502);
-    }
-
-    if (!response.ok || result.ok === false) {
-      console.error(logTag + ' Apps Script error: ' + JSON.stringify(result));
-      return json({ ok: false, error: result.error || ('Google Apps Script returned HTTP ' + response.status) }, 502);
-    }
-
-    return json(result, 200);
-  } catch (err) {
-    console.error(logTag + ' Fetch to Apps Script failed: ' + String(err));
-    return json({ ok: false, error: 'Could not reach Google Apps Script' }, 502);
-  }
-}
-
-/* ---------- Supabase: el lugar donde viven los pedidos (reemplaza a Apps Script y a la hoja) ----------
+/* ---------- Supabase: el lugar donde viven los pedidos ----------
    Variables: SUPABASE_URL y SUPABASE_KEY (llave pública, van en wrangler.jsonc), SUPABASE_RPC_TOKEN (secreto: el código
-   que abre las funciones tienda_* de la base), PEDIDOS_BACKEND = "supabase" para encenderlo (cualquier otro valor usa el
-   Apps Script de siempre), y para GA4: GA4_API_SECRET (secreto), GA4_MEASUREMENT_ID, GA4_DEBUG ("1" = solo validar).
+   que abre las funciones tienda_* de la base), PEDIDOS_BACKEND = "supabase" (obligatorio: ya no existe otro
+   respaldo), y para GA4: GA4_API_SECRET (secreto), GA4_MEASUREMENT_ID, GA4_DEBUG ("1" = solo validar).
    La base asigna el número de pedido (OC), guarda el pedido como Pending y, al confirmarlo en el panel, pasa a venta. */
 function usaSupabase(env) {
   return env.PEDIDOS_BACKEND === 'supabase' && !!env.SUPABASE_URL && !!env.SUPABASE_KEY && !!env.SUPABASE_RPC_TOKEN;
@@ -745,17 +704,15 @@ async function vigilarBlackFriday(env) {
 }
 
 /* ---------- Panel de pedidos (panel.html) ----------
-   Reemplaza a los botones de Telegram: la persona que recibe los pedidos entra con un código compartido y ve
-   los pedidos por etapa. Este Worker es el único que habla con Apps Script (con PANEL_APPS_KEY); el navegador
-   nunca ve esa clave ni la dirección de Apps Script.
-   Variables del Worker (secretas): PANEL_CODE (el código que se escribe para entrar) y PANEL_APPS_KEY (la misma
-   clave que PANEL_API_KEY en Apps Script). Sin ellas el panel responde 503 y no se expone nada.
+   La persona que recibe los pedidos entra con un código compartido y ve los pedidos por etapa. Este Worker es el único
+   que habla con Supabase (con SUPABASE_RPC_TOKEN); el navegador nunca ve esas claves.
+   Variable del Worker (secreta): PANEL_CODE (el código que se escribe para entrar). Sin ella el panel responde 503 y no se expone nada.
    Sesión: cookie firmada (HMAC con el propio código) que dura 14 días. Si se cambia PANEL_CODE, todas las
    sesiones abiertas dejan de valer. Intentos de entrada: los limita guardPublicApi (5 por minuto por IP). */
 const PANEL_COOKIE = 'apex_panel';
 const PANEL_SESSION_SECONDS = 14 * 24 * 3600;
 const PANEL_ACTIONS = ['completed', 'canceled', 'pickup', 'delivery', 'delivery_price', 'confirm_delivery'];
-const PANEL_LIST_CACHE_MS = 4000;   // varias pantallas abiertas comparten la misma lectura de la hoja
+const PANEL_LIST_CACHE_MS = 4000;   // varias pantallas abiertas comparten la misma lectura de la base
 let panelListCache = null;          // { t, orders }
 
 function panelJson(body, status) {
@@ -801,8 +758,8 @@ function panelCookie(value, maxAge) {
 }
 
 async function handlePanel(request, env, url, ctx) {
-  if (!env.PANEL_CODE || (!usaSupabase(env) && (!env.PANEL_APPS_KEY || !env.APPS_SCRIPT_URL))) {
-    console.error('[panel] Faltan PANEL_CODE (y PANEL_APPS_KEY + APPS_SCRIPT_URL si no se usa Supabase) en las variables del Worker');
+  if (!env.PANEL_CODE || !usaSupabase(env)) {
+    console.error('[panel] Faltan PANEL_CODE o la configuración de Supabase en las variables del Worker');
     return panelJson({ ok: false, error: 'Panel not configured' }, 503);
   }
   const route = url.pathname.slice('/api/panel/'.length);
@@ -840,13 +797,9 @@ async function handlePanel(request, env, url, ctx) {
       return panelJson({ ok: true, now: Date.now(), orders: panelListCache.orders });
     }
     let result;
-    if (usaSupabase(env)) {
-      try { result = await supabaseRpc(env, 'tienda_panel_listar', {}); } catch (err) { console.error('[panel] Supabase (listar): ' + String(err)); result = { ok: false, error: 'No se pudo leer los pedidos' }; }
-    } else {
-      result = await forwardToAppsScript(env.APPS_SCRIPT_URL, { source: 'panel-list', key: env.PANEL_APPS_KEY });
-    }
+    try { result = await supabaseRpc(env, 'tienda_panel_listar', {}); } catch (err) { console.error('[panel] Supabase (listar): ' + String(err)); result = { ok: false, error: 'No se pudo leer los pedidos' }; }
     if (!result || result.ok !== true || !Array.isArray(result.orders)) {
-      console.error('[panel] No se pudo leer la hoja: ' + (result && result.error));
+      console.error('[panel] No se pudo leer los pedidos: ' + (result && result.error));
       return panelJson({ ok: false, error: 'No se pudo leer los pedidos. Intenta otra vez.' }, 502);
     }
     panelListCache = { t: Date.now(), orders: result.orders };
@@ -881,7 +834,6 @@ async function handlePanel(request, env, url, ctx) {
       if (tipo !== 'delivery' && tipo !== 'pickup') return panelJson({ ok: false, error: 'Elige Delivery o Pick up.' }, 400);
       if (tipo === 'delivery' && paga !== 'Cliente' && paga !== 'Tienda') return panelJson({ ok: false, error: 'Elige quién paga el delivery.' }, 400);
       if (tipo === 'delivery' && (!value || value.length > 80)) return panelJson({ ok: false, error: 'Escribe el monto del delivery (o una nota corta).' }, 400);
-      if (!usaSupabase(env)) return panelJson({ ok: false, error: 'Este paso solo funciona con Supabase.' }, 400);
       panelListCache = null;
       let conf;
       try { conf = await supabaseRpc(env, 'tienda_panel_accion', { p_oc: orderId, p_accion: 'completed', p_valor: null }); }
@@ -902,22 +854,16 @@ async function handlePanel(request, env, url, ctx) {
     }
     panelListCache = null;
     let result;
-    if (usaSupabase(env)) {
-      try {
-        result = await supabaseRpc(env, 'tienda_panel_accion', { p_oc: orderId, p_accion: action, p_valor: action === 'delivery_price' ? value : null });
-      } catch (err) {
-        console.error('[panel] Supabase (acción ' + action + '): ' + String(err));
-        result = { ok: false, error: 'No se pudo guardar. Intenta otra vez.' };
-      }
-      // Pedido confirmado = venta: se manda a GA4 (en segundo plano; un fallo no afecta al panel).
-      if (result && result.ok === true && action === 'completed' && result.enviar_ga4) {
-        const envio = enviarCompraGa4(env, orderId);
-        if (ctx && ctx.waitUntil) ctx.waitUntil(envio); else await envio;
-      }
-    } else {
-      result = await forwardToAppsScript(env.APPS_SCRIPT_URL, {
-        source: 'panel-action', key: env.PANEL_APPS_KEY, action: action, orderId: orderId, value: action === 'delivery_price' ? value : null
-      });
+    try {
+      result = await supabaseRpc(env, 'tienda_panel_accion', { p_oc: orderId, p_accion: action, p_valor: action === 'delivery_price' ? value : null });
+    } catch (err) {
+      console.error('[panel] Supabase (acción ' + action + '): ' + String(err));
+      result = { ok: false, error: 'No se pudo guardar. Intenta otra vez.' };
+    }
+    // Pedido confirmado = venta: se manda a GA4 (en segundo plano; un fallo no afecta al panel).
+    if (result && result.ok === true && action === 'completed' && result.enviar_ga4) {
+      const envio = enviarCompraGa4(env, orderId);
+      if (ctx && ctx.waitUntil) ctx.waitUntil(envio); else await envio;
     }
     panelListCache = null;
     if (!result || result.ok !== true) {
@@ -1025,176 +971,4 @@ async function handlePromos(request, env) {
     headers['Cache-Control'] = 'no-store';
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo leer la hoja de descuentos' }), { status: 502, headers: headers });
   }
-}
-
-/* ---------- /api/telegram-webhook ---------- */
-async function handleTelegramWebhook(request, env) {
-  if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-
-  const expectedSecret = env.TELEGRAM_WEBHOOK_SECRET;
-  if (expectedSecret) {
-    const receivedSecret = request.headers.get('x-telegram-bot-api-secret-token');
-    if (receivedSecret !== expectedSecret) {
-      console.error('[telegram-webhook] Invalid or missing secret token');
-      return new Response('Unauthorized', { status: 401 });
-    }
-  }
-
-  const appsScriptUrl = env.APPS_SCRIPT_URL;
-  const botToken = env.TELEGRAM_BOT_TOKEN;
-  if (!appsScriptUrl || !botToken) {
-    console.error('[telegram-webhook] Falta APPS_SCRIPT_URL o TELEGRAM_BOT_TOKEN en variables de entorno');
-    return new Response('ok', { status: 200 });
-  }
-
-  let update;
-  try {
-    update = await request.json();
-  } catch (err) {
-    console.error('[telegram-webhook] Invalid JSON from Telegram: ' + String(err));
-    return new Response('ok', { status: 200 });
-  }
-
-  try {
-    if (update.callback_query) {
-      await handleCallbackQuery(update.callback_query, appsScriptUrl, botToken);
-    } else if (update.message && update.message.reply_to_message) {
-      await handleReplyMessage(update.message, appsScriptUrl, botToken);
-    }
-  } catch (err) {
-    console.error('[telegram-webhook] Error handling update: ' + String(err));
-  }
-
-  return new Response('ok', { status: 200 });
-}
-
-async function handleCallbackQuery(callbackQuery, appsScriptUrl, botToken) {
-  const data = callbackQuery.data || '';
-  const chatId = callbackQuery.message.chat.id;
-  const messageId = callbackQuery.message.message_id;
-  const parts = data.split(':');
-  const action = parts[0];
-  const orderId = parts[1];
-
-  await answerCallbackQuery(botToken, callbackQuery.id);
-
-  // Le quita los botones a ESTE mensaje apenas se presiona uno, para que no se
-  // pueda volver a tocar (ni ese ni el otro botón del mismo mensaje) y así
-  // evitar reprocesar la orden y que se sigan mandando mensajes sobre algo
-  // que ya fue resuelto. Si falla (mensaje muy viejo, etc.) no debe frenar el
-  // resto de la acción, por eso va en su propio try/catch.
-  try {
-    await stripInlineKeyboard(botToken, chatId, messageId);
-  } catch (err) {
-    console.error('[telegram-webhook] stripInlineKeyboard failed: ' + String(err));
-  }
-
-  // 'priceother' también se maneja igual que las demás acciones: Apps Script
-  // es quien decide qué texto/botones va en el mensaje único de la orden (y,
-  // para este caso puntual, también manda el mensaje aparte con force_reply
-  // pidiendo el monto, porque Telegram no permite pedir texto libre editando
-  // un mensaje existente).
-  const body = { source: 'netlify-telegram', action: action, orderId: orderId };
-  if (parts[2] !== undefined) body.value = parts[2];
-
-  const result = await forwardToAppsScript(appsScriptUrl, body);
-  if (!result || result.ok === false) {
-    await sendTelegramMessage(botToken, chatId, '⚠️ Error procesando la acción: ' + (result && result.error), null);
-  }
-}
-
-async function handleReplyMessage(message, appsScriptUrl, botToken) {
-  const originalText = message.reply_to_message.text || '';
-  const match = originalText.match(/para (\S+)/);
-  if (!match) return;
-
-  const orderId = match[1];
-  const value = (message.text || '').trim();
-  const chatId = message.chat.id;
-
-  const result = await forwardToAppsScript(appsScriptUrl, {
-    source: 'netlify-telegram',
-    action: 'delivery_price',
-    orderId: orderId,
-    value: value
-  });
-
-  if (!result || result.ok === false) {
-    await sendTelegramMessage(botToken, chatId, 'No se pudo registrar el monto: ' + (result && result.error), null);
-    return;
-  }
-
-  // Limpieza: borra el mensaje "Escribe el delivery para..." ya que cumplió
-  // su propósito. Así el chat no va acumulando prompts viejos y queda un
-  // solo mensaje vivo por orden.
-  try {
-    await deleteTelegramMessage(botToken, chatId, message.reply_to_message.message_id);
-  } catch (err) {
-    console.error('[telegram-webhook] deleteTelegramMessage failed: ' + String(err));
-  }
-}
-
-async function forwardToAppsScript(appsScriptUrl, body) {
-  try {
-    const response = await fetch(appsScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body)
-    });
-    const text = await response.text();
-    return JSON.parse(text);
-  } catch (err) {
-    console.error('[telegram-webhook] forwardToAppsScript failed: ' + String(err));
-    return { ok: false, error: 'Could not reach Google Apps Script' };
-  }
-}
-
-async function sendTelegramMessage(botToken, chatId, text, replyMarkup) {
-  const params = new URLSearchParams();
-  params.set('chat_id', String(chatId));
-  params.set('text', text);
-  if (replyMarkup) params.set('reply_markup', JSON.stringify(replyMarkup));
-
-  await fetch('https://api.telegram.org/bot' + botToken + '/sendMessage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString()
-  });
-}
-
-async function answerCallbackQuery(botToken, callbackQueryId, text) {
-  const params = new URLSearchParams();
-  params.set('callback_query_id', callbackQueryId);
-  if (text) params.set('text', text);
-
-  await fetch('https://api.telegram.org/bot' + botToken + '/answerCallbackQuery', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString()
-  });
-}
-
-async function deleteTelegramMessage(botToken, chatId, messageId) {
-  const params = new URLSearchParams();
-  params.set('chat_id', String(chatId));
-  params.set('message_id', String(messageId));
-
-  await fetch('https://api.telegram.org/bot' + botToken + '/deleteMessage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString()
-  });
-}
-
-async function stripInlineKeyboard(botToken, chatId, messageId) {
-  const params = new URLSearchParams();
-  params.set('chat_id', String(chatId));
-  params.set('message_id', String(messageId));
-  params.set('reply_markup', JSON.stringify({ inline_keyboard: [] }));
-
-  await fetch('https://api.telegram.org/bot' + botToken + '/editMessageReplyMarkup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString()
-  });
 }

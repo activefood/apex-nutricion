@@ -146,10 +146,10 @@ const PROMOS_RESPALDO = [
   respaldoFila('Cyber Monday', 'Skratch Labs · Bolsa 440 g Limón Lima', 50, '2026-11-30', '2026-11-30', 1, 'normal'),
   respaldoFila('Cyber Monday', 'Skratch Labs · Sobres Fresa Limonada', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
   respaldoFila('Cyber Monday', 'Skratch Labs · Sobres Limón Lima', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
-  respaldoFila('Cyber Monday', 'SaltStick · FastChews Frutos Rojos', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
-  respaldoFila('Cyber Monday', 'SaltStick · FastChews Limonada Rosada', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
-  respaldoFila('Cyber Monday', 'SaltStick · FastChews Limón Lima', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
-  respaldoFila('Cyber Monday', 'SaltStick · FastChews Naranja', 50, '2026-11-30', '2026-11-30', 12, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Frutos Rojos', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Limonada Rosada', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Limón Lima', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
+  respaldoFila('Cyber Monday', 'SaltStick · FastChews Naranja', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
   respaldoFila('Cyber Monday', 'SaltStick · Cápsulas de Electrolitos', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
   respaldoFila(PROMO_COUPON_NAME, 'Todos los productos', 10, '2026-11-30', '2030-12-31', 1, 'normal')
 ];

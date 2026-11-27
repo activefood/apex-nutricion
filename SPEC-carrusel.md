@@ -163,4 +163,4 @@ Durante esos siete días aparece un 4.º banner, el primero, sobre fondo oscuro:
 
 ## Banner temporal: Cyber Monday 2026 (lunes 30 nov)
 
-El 30 de nov aparece un banner oscuro (el primero) con el concepto hidratación: "Cyber Monday 50% OFF" con Skratch Hydration bolsa 440 g ($35,55 → $17,78), Skratch Hydration caja x12 sobres ($38,04 → $19,02), SaltStick FastChews display x12 ($66,12 → $33,06) y SaltStick cápsulas de sal caja x24 ($107,76 → $53,88). Lleva a `ofertas.html`. Se quita solo el 1 de dic. El 50% no se suma al 10% de primera compra (en cada producto aplica el mayor). Las cajas solo entran desde su tamaño (x12; cápsulas x24).
+Del sábado 28 al lunes 30 de nov (`data-promo-from` 2026-11-28, `data-promo-until` 2026-11-30) aparece el banner oscuro de Cyber Monday: el cartel ya diseñado por el dueño (`assets/banners/cyber-monday-cartel.webp`, 3:4, 50% en hidratación, "únicamente aplica para el lunes 30/11"). Escritorio: texto a la izquierda y cartel a la derecha; celular: el cartel ocupa todo el banner. Las FECHAS DEL DESCUENTO no salen de esta página: las manda la hoja "APEX - Cargar descuentos" (el 50% solo se aplica el 30/11).

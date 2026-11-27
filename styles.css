@@ -3311,3 +3311,13 @@ button.pill:hover{ border-color: var(--ink); }
   .hero-slide--cm .bf-sign b{ font-size: 46px; }
   .hero-slide--cm .bf-sign small{ font-size: 16px; }
 }
+
+/* Cyber Monday: aviso de que el 50% solo vale el lunes 30 (el banner se ve desde el sábado 28). Visible también en celular. */
+.cm-note{ display: inline-block; margin-top: var(--sp-3); padding: 4px 10px; background: var(--accent); color: var(--ink); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-radius: var(--r-control); }
+@media (max-width: 640px){
+  /* Cyber Monday en celular: sin la lista de precios (están en la página de ofertas) para que los productos se vean grandes */
+  .hero-slide--cm .bf-list{ display: none; }
+  .hero-slide--cm .cm-note{ margin-top: var(--sp-3); }
+  .hero-slide--cm .bf-sign{ top: 4%; left: 2%; }
+  .hero-slide--cm .promo-actions{ margin-top: var(--sp-3); }
+}

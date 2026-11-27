@@ -125,3 +125,12 @@ button{ cursor:pointer; }
 .t-edit input{ width:100%; min-height:44px; padding:0 12px; font:inherit; border:1px solid var(--ink); background:#fff; }
 .t-opt{ width:100%; background:#fff; }
 .t-opt.is-on{ background:var(--ink); color:#fff; }
+
+/* Ventana de confirmación (cancelar un pedido) */
+.dialog-overlay{ position:fixed; inset:0; z-index:40; display:grid; place-items:center; padding:16px; background:rgba(20,18,15,.62); }
+.dialog{ width:100%; max-width:420px; padding:20px; background:var(--paper); border:2px solid var(--ink); border-radius:2px; display:grid; gap:12px; }
+.dialog-title{ margin:0; font:400 28px/1.05 var(--head); text-transform:uppercase; letter-spacing:.02em; }
+.dialog-text{ margin:0; font-size:16px; line-height:1.4; color:var(--ink-2); }
+.dialog-actions{ display:grid; gap:10px; margin-top:4px; }
+.dialog-actions .btn{ width:100%; }
+.btn--danger-solid{ background:var(--sale); border-color:var(--sale); color:#fff; }

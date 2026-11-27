@@ -282,7 +282,7 @@
     if(o.stage === 'new' && !(ui[o.id] && ui[o.id].confirm)){
       const acts = el('div', 't-actions');
       const ok = button('Confirmar', 'btn btn--ok', function(){ ui[o.id] = { confirm: startConfirm(o) }; render(); });
-      const no = button('Cancelar', 'btn btn--danger', function(b){ armCancel(o, b); });
+      const no = button('Cancelar pedido', 'btn btn--danger', function(b){ askCancel(o, b); });
       acts.appendChild(ok); acts.appendChild(no);
       body.appendChild(acts);
     } else {
@@ -353,12 +353,27 @@
   }
 
   /* ---------- Acciones ---------- */
-  let armTimer = null;
-  function armCancel(o, b){
-    if(b.classList.contains('is-armed')){ clearTimeout(armTimer); act(o, 'canceled', null, b); return; }
-    b.classList.add('is-armed'); b.textContent = '¿Borrar? Toca otra vez';
-    clearTimeout(armTimer);
-    armTimer = setTimeout(function(){ b.classList.remove('is-armed'); b.textContent = 'Cancelar'; }, 4000);
+  /* Cancelar un pedido pide confirmación en una ventana: "¿Seguro que quieres cancelar el pedido 00061 de Ana?" con "Sí, cancelar" y "No, volver". */
+  function askCancel(o, trigger){
+    if(document.getElementById('cancel-dialog')) return;
+    const overlay = el('div', 'dialog-overlay'); overlay.id = 'cancel-dialog';
+    const box = el('div', 'dialog'); box.setAttribute('role', 'alertdialog'); box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'cancel-title'); box.setAttribute('aria-describedby', 'cancel-text');
+    const title = el('h2', 'dialog-title', '¿Cancelar el pedido ' + o.id + '?'); title.id = 'cancel-title';
+    const quien = o.customer ? ' de ' + o.customer : '';
+    const text = el('p', 'dialog-text', '¿Seguro que quieres cancelar el pedido ' + o.id + quien + ' (' + usd(o.total) + ')? Esta acción no se puede deshacer.'); text.id = 'cancel-text';
+    const acts = el('div', 'dialog-actions');
+    const keep = button('No, volver', 'btn', function(){ close(); });
+    const ok = button('Sí, cancelar pedido', 'btn btn--danger-solid', function(b){ close(); act(o, 'canceled', null, trigger); });
+    function close(){ overlay.remove(); document.removeEventListener('keydown', onKey); if(trigger && document.body.contains(trigger)) trigger.focus(); }
+    function onKey(e){ if(e.key === 'Escape') close(); }
+    acts.appendChild(keep); acts.appendChild(ok);
+    box.appendChild(title); box.appendChild(text); box.appendChild(acts);
+    overlay.appendChild(box);
+    overlay.addEventListener('click', function(e){ if(e.target === overlay) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    keep.focus();   // por defecto el foco queda en "No, volver": un toque suelto no cancela nada
   }
   async function act(o, action, value, btn, extra){
     const label = btn.textContent;
