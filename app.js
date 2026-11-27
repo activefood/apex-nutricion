@@ -41,6 +41,11 @@ if (window.visualViewport) {
 const WELCOME_COUPON_CODE = 'APEX2026';
 const WELCOME_COUPON_RATE = 0.10;
 const WELCOME_COUPON_STORAGE_KEY = 'apex_welcome_coupon_used';
+/* Código del newsletter (correo de bienvenida): 5%, se escribe a mano en el carrito. No depende del 10% de primera compra (que se puede pausar),
+   pero igual que él NO se suma a nada: ni a Black Friday / Cyber Monday, ni a las cajas con precio por cantidad, ni al 10% de primera compra. Un uso por navegador. */
+const NEWS_COUPON_CODE = 'APEX5';
+const NEWS_COUPON_RATE = 0.05;
+const NEWS_COUPON_STORAGE_KEY = 'apex_news_coupon_used';
 let appliedCoupon = null; // { code, rate } mientras dure la sesión del carrito, o null
 
 /* Promos automáticas por producto (10%, sin código). No se combinan con el 10% de primera
@@ -486,7 +491,7 @@ function promoRateForItem(item){
 /* Con un producto de Black Friday / Cyber Monday en el carrito aplica SOLO el descuento del evento (a los productos de la lista):
    el 10% de primera compra no se suma ni se usa en los demás productos. Sin evento, el código vale como siempre. */
 function couponForCart(pricedCart, coupon){
-  return coupon && welcomeActive() && !pricedCart.some(isEventItem) ? coupon : null;
+  return coupon && (coupon.news || welcomeActive()) && !pricedCart.some(isEventItem) ? coupon : null;
 }
 /* El código de primera compra y la promo del producto no se suman: gana el mayor. */
 /* Producto que ya tiene un descuento por cantidad (caja x6/x12/x24 o pareja de bolsas): no recibe además el código. */
@@ -516,13 +521,13 @@ function discountLabelFor(cart, coupon){
   const priced = applyFamilyPricing(cart);
   const ev = priced.filter(isEventItem);
   if(coupon){
-    // Los descuentos no se suman: en cada producto aplica solo el mayor (el del evento o el 10% de primera compra).
-    const base = 'primera compra ' + Math.round(coupon.rate * 100) + '%';
+    // Los descuentos no se suman: en cada producto aplica solo el mayor (el del evento o el código: 10% de primera compra o 5% del newsletter).
+    const base = (coupon.news ? 'newsletter ' : 'primera compra ') + Math.round(coupon.rate * 100) + '%';
     const pct = promoPctFor(ev);
     const evName = promoNamesFor(ev).join(' y ');
     let txt;
     if(!ev.length) txt = base;
-    else txt = evName + ' ' + pct + ', no se suma a la primera compra';
+    else txt = evName + ' ' + pct + ', no se suma ' + (coupon.news ? 'al código del newsletter' : 'a la primera compra');
     return txt + (coupon.auto ? '' : ' · código ' + coupon.code);
   }
   const rates = [];
@@ -539,6 +544,13 @@ function hasUsedWelcomeCoupon(){
 }
 function markWelcomeCouponUsed(){
   try { localStorage.setItem(WELCOME_COUPON_STORAGE_KEY, '1'); } catch(e){}
+}
+function hasUsedNewsCoupon(){
+  try { return localStorage.getItem(NEWS_COUPON_STORAGE_KEY) === '1'; }
+  catch(e){ return false; }
+}
+function markNewsCouponUsed(){
+  try { localStorage.setItem(NEWS_COUPON_STORAGE_KEY, '1'); } catch(e){}
 }
 
 /* Barra negra de anuncio (arriba del header, en todas las páginas): a quien
@@ -762,7 +774,7 @@ function isComingSoonItem(item){
 
 /* Agotado por ahora (hay existencias en otros sabores/presentaciones): no se puede agregar. */
 function isOutOfStockItem(item){
-  return /prote[ií]na en polvo vainilla\s*—\s*600 g/i.test(item.name || '');
+  return /prote[ií]na en polvo vainilla\s*—\s*600 g/i.test(item.name || '') || (item.kit === true && /prote[ií]na vainilla 600 g/i.test(item.variant || ''));
 }
 
 function addItemToCart(item){
@@ -1047,15 +1059,15 @@ function initMobileMenu(){
 }
 
 /* ---------- Boletín ----------
-   Formulario del inicio: manda el correo a /api/newsletter (el Worker lo guarda en Supabase). Solo el correo; el campo oculto "website" es una trampa para robots. */
+   Formulario del inicio: manda el correo a /api/suscribir (el Worker lo guarda en Supabase). Solo el correo; el campo oculto "website" es una trampa para robots. */
 function initNewsletterForms(){
-  document.querySelectorAll('[data-newsletter-form]').forEach(function(form){
+  document.querySelectorAll('[data-aviso-form]').forEach(function(form){
     const input = form.querySelector('input[type="email"]');
     const trap = form.querySelector('input[name="website"]');
     const btn = form.querySelector('button[type="submit"]');
-    const box = form.closest('.newsletter') || form.parentNode;
-    const success = box.querySelector('[data-newsletter-success]');
-    const error = box.querySelector('[data-newsletter-error]');
+    const box = form.closest('.aviso-caja') || form.parentNode;
+    const success = box.querySelector('[data-aviso-exito]');
+    const error = box.querySelector('[data-aviso-error]');
     function mostrarError(msg){ if(error){ error.textContent = msg; error.hidden = false; } }
     form.addEventListener('submit', async function(e){
       e.preventDefault();
@@ -1064,10 +1076,11 @@ function initNewsletterForms(){
       if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)){ mostrarError('Escribe un correo válido, por ejemplo nombre@correo.com.'); if(input) input.focus(); return; }
       if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
       try {
-        const res = await fetch('/api/newsletter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, website: trap ? trap.value : '' }) });
+        const res = await fetch('/api/suscribir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, website: trap ? trap.value : '' }) });
         let j = null;
         try { j = await res.json(); } catch(err){}
         if(!res.ok || !j || j.ok !== true) throw new Error((j && j.error) || (res.status === 429 ? 'Demasiados intentos. Espera un minuto y vuelve a probar.' : 'No se pudo guardar. Intenta otra vez.'));
+        if(j.clave && /^[0-9a-f]{32}$/.test(j.clave)){ try { localStorage.setItem('apex_sub', j.clave); } catch(err){} }   // el navegador recuerda al suscriptor (no su correo)
         form.hidden = true;
         if(success) success.classList.add('visible');
         form.dispatchEvent(new CustomEvent('newsletter:ok', { bubbles: true }));
@@ -1081,10 +1094,10 @@ function initNewsletterForms(){
 }
 
 /* ---------- Newsletter: cartelito flotante del inicio ----------
-   Sale a los 12 s o cuando se baja el 35% de la página (lo primero que pase). Si lo cierran no vuelve por 14 días; si se suscriben, nunca más.
+   Sale a los 8 s o cuando se baja el 25% de la página (lo primero que pase). Si lo cierran no vuelve por 14 días; si se suscriben, nunca más.
    Sin animación (solo el carrusel puede animar al entrar) y sin quitarle el foco a nada: no es una ventana modal. */
 function initNewsletterFloat(){
-  const box = document.querySelector('[data-newsletter-float]');
+  const box = document.querySelector('[data-aviso-flotante]');
   if(!box) return;
   const KEY = 'apex_newsletter';
   const LATER = 14 * 24 * 3600 * 1000;
@@ -1101,13 +1114,37 @@ function initNewsletterFloat(){
   }
   function alBajar(){
     const h = document.documentElement.scrollHeight - window.innerHeight;
-    if(h > 0 && window.scrollY / h >= 0.35) mostrar();
+    if(h > 0 && window.scrollY / h >= 0.25) mostrar();
   }
-  timer = setTimeout(mostrar, 12000);
+  timer = setTimeout(mostrar, 8000);
   window.addEventListener('scroll', alBajar, { passive: true });
-  box.querySelector('[data-newsletter-close]').addEventListener('click', function(){ cerrar('cerrado', LATER); });
+  box.querySelector('[data-aviso-cerrar]').addEventListener('click', function(){ cerrar('cerrado', LATER); });
   box.addEventListener('keydown', function(e){ if(e.key === 'Escape') cerrar('cerrado', LATER); });
   box.addEventListener('newsletter:ok', function(){ guardar('suscrito', 0); setTimeout(function(){ box.hidden = true; }, 5000); });
+}
+
+/* ---------- Newsletter: lo que mira un suscriptor ----------
+   Solo si esta persona se suscribió en este navegador (clave guardada al suscribirse) y solo en páginas de producto, categoría o marca: se avisa a
+   /api/suscripcion/vista cuál miró (dirección, nombre y foto). Con eso el newsletter le manda por correo el producto que vio. De quien no se
+   suscribió no se manda ni se guarda nada. */
+function initSeguimientoSuscriptor(){
+  let clave = null;
+  try { clave = localStorage.getItem('apex_sub'); } catch(e){}
+  if(!clave || !/^[0-9a-f]{32}$/.test(clave)) return;
+  if(!/^\/(producto|kit-|caja-|bolsa-|categoria|marca)/.test(location.pathname)) return;
+  setTimeout(function(){
+    if(document.visibilityState !== 'visible') return;
+    const q = new URLSearchParams(location.search);
+    Array.from(q.keys()).forEach(function(k){ if(!/^(flavor|pack|cat|marca)$/.test(k)) q.delete(k); });
+    const ruta = location.pathname + (q.toString() ? '?' + q.toString() : '');
+    const h1 = document.querySelector('h1');
+    const titulo = ((h1 && h1.textContent) || document.title.split('|')[0] || '').replace(/\s+/g, ' ').trim();
+    // La foto es la principal de la ficha (la del sabor que se está viendo); en categorías y marcas no hay una sola foto, y ahí no se manda.
+    const foto = document.getElementById('pdp-main-photo');
+    let imagen = foto && foto.getAttribute('src') || '';
+    try { const u = new URL(imagen, location.href); imagen = u.origin === location.origin ? u.href : ''; } catch(e){ imagen = ''; }
+    try { fetch('/api/suscripcion/vista', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ c: clave, ruta: ruta, titulo: titulo, imagen: imagen }) }).catch(function(){}); } catch(e){}
+  }, 4000);
 }
 
 /* ---------- Botón "Agregar al carrito" del producto destacado del home ---------- */
@@ -2328,6 +2365,24 @@ function initCartPage(){
       const code = couponInput ? couponInput.value.trim() : '';
       if(!code) return;
 
+      if(code.toUpperCase() === NEWS_COUPON_CODE){
+        // Código del newsletter (5%): no necesita nombre ni teléfono. Se rechaza si ya tiene aplicado el 10% de primera compra (es mayor y no se suman).
+        if(hasUsedNewsCoupon()){
+          showCouponNote('Este código ya se usó en este navegador.', 'error');
+          return;
+        }
+        if(appliedCoupon && !appliedCoupon.news){
+          showCouponNote('Ya tienes aplicado el descuento de primera compra (10%). Es mayor y los descuentos no se suman.', 'error');
+          return;
+        }
+        appliedCoupon = { code: NEWS_COUPON_CODE, rate: NEWS_COUPON_RATE, news: true };
+        const pricedNews = applyFamilyPricing(getCart());
+        showCouponNote(pricedNews.some(isEventItem)
+          ? 'Código válido, pero tu carrito tiene productos de ' + promoNamesFor(pricedNews).join(' y ') + ': aplica solo el ' + promoPctFor(pricedNews) + ' en esos productos; los descuentos no se suman.'
+          : 'Código válido: 5% de descuento del newsletter.' + (pricedNews.some(hasVolumeDiscount) ? ' Los productos con precio por cantidad no llevan además este descuento.' : ''), 'ok');
+        render();
+        return;
+      }
       if(code.toUpperCase() !== WELCOME_COUPON_CODE){
         showCouponNote('Código no válido.', 'error');
         return;
@@ -2734,7 +2789,8 @@ function initCheckoutButton(){
     window.location.href = waUrl;
 
     // El código de bienvenida ya se usó en este navegador — no se vuelve a ofrecer.
-    if(appliedCoupon) markWelcomeCouponUsed();
+    if(appliedCoupon && appliedCoupon.news) markNewsCouponUsed();
+    else if(appliedCoupon) markWelcomeCouponUsed();
 
     // Vaciar el carrito ya que el pedido quedó "enviado" hacia WhatsApp.
     saveCart([]);
@@ -3083,6 +3139,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initMobileMenu();
   initNewsletterForms();
   initNewsletterFloat();
+  initSeguimientoSuscriptor();
   initAddToCartButtons();
   initFeatureAddToCart();
   initCardAddToCartButtons();

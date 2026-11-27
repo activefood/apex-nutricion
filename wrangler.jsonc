@@ -25,6 +25,8 @@
     "SUPABASE_URL": "https://ngbrcbweduazaoidavza.supabase.co",
     "SUPABASE_KEY": "sb_publishable_7wtBmKVZmCDBa1dgi5yLvA_bHBeG5sK",
     "PEDIDOS_BACKEND": "supabase",
+    // Avisos del newsletter por correo (el producto que vio el suscriptor). "off" = no se manda nada; pasar a "on" solo con el visto bueno del dueño.
+    "NEWSLETTER_AVISOS": "off",
     "GA4_MEASUREMENT_ID": "G-CKJ8VQSLLE",
     // Dirección CSV de la hoja "APEX - Cargar descuentos" (pestaña DESCUENTOS, publicada en la web). Si falla o está vacía, el sitio usa su copia de respaldo.
     "PROMOS_CSV_URL": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRpGABeVDswHP9EGAwH4fVxTnNg8U3AgJMGEr2j0c6cvwqCIyxHyXOUEjYgPYEv2HxqOvcL6PRC_qVX/pub?gid=0&single=true&output=csv"

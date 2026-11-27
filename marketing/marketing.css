@@ -21,3 +21,4 @@
 .mk-top-item b{ font-size:14px; line-height:1.3; overflow-wrap:anywhere; }
 .mk-top-item small{ font:600 12px var(--mono); color:var(--ink-3); }
 .mk-top-item a{ color:var(--ink); font-weight:700; text-underline-offset:3px; }
+.ventas-fechas select{ min-height:44px; padding:0 10px; border:2px solid var(--ink); border-radius:2px; font-size:16px; background:#fff; }

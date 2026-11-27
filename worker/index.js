@@ -21,9 +21,16 @@ export default {
       const blocked = await guardPublicApi(request, env.API_LIMITER, 'check-welcome-coupon');
       return blocked || handleCheckWelcomeCoupon(request, env);
     }
-    if (url.pathname === '/api/newsletter') {
+    if (url.pathname === '/api/suscripcion/vista') {
+      const blocked = await guardPublicApi(request, env.API_LIMITER, 'suscripcion-vista');
+      return blocked || handleSuscripcionVista(request, env);
+    }
+    if (url.pathname === '/api/suscripcion/baja') {
+      return handleSuscripcionBaja(request, env, url);
+    }
+    if (url.pathname === '/api/newsletter' || url.pathname === '/api/suscribir') {
       const blocked = await guardPublicApi(request, env.API_LIMITER, 'newsletter');
-      return blocked || handleNewsletter(request, env);
+      return blocked || handleNewsletter(request, env, ctx);
     }
     if (url.pathname === '/api/promos') {
       return handlePromos(request, env);
@@ -83,6 +90,7 @@ export default {
       ctx.waitUntil(sincronizarInstagram(env, false));
       ctx.waitUntil(completarHistorialInstagram(env));
       ctx.waitUntil(relacionarPedidos(env));
+      ctx.waitUntil(enviarAvisosNewsletter(env, false));
     }
   }
 };
@@ -324,7 +332,7 @@ async function handleSubmitReview(request, env) {
 /* ---------- /api/newsletter ----------
    Suscripción al newsletter de Apex (formulario del inicio). Guarda solo el correo en Supabase (marketing.newsletter).
    Al cliente siempre se le responde igual (haya o no estado suscrito antes) y el campo oculto "website" atrapa robots. */
-async function handleNewsletter(request, env) {
+async function handleNewsletter(request, env, ctx) {
   if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
   if (!usaSupabase(env)) {
     console.error('[newsletter] Supabase no está configurado');
@@ -339,11 +347,172 @@ async function handleNewsletter(request, env) {
   try {
     const r = await supabaseRpc(env, 'newsletter_suscribir', { p_email: email, p_origen: 'inicio' });
     if (!r || r.ok !== true) return json({ ok: false, error: (r && r.error === 'Correo inválido') ? 'Escribe un correo válido.' : 'No se pudo guardar. Intenta otra vez.' }, 400);
+    // La clave solo se entrega cuando la suscripción es nueva: el navegador la recuerda para registrar lo que mira el suscriptor.
+    if (r.clave) {   // suscripción nueva: bienvenida con el 5% (en segundo plano; un fallo no afecta a quien se suscribe)
+      const envio = enviarBienvenida(env, email, r.clave);
+      if (ctx && ctx.waitUntil) ctx.waitUntil(envio);
+    }
+    return json({ ok: true, clave: r.clave || undefined });
   } catch (err) {
     console.error('[newsletter] Supabase: ' + String(err));
     return json({ ok: false, error: 'No se pudo guardar. Intenta otra vez.' }, 502);
   }
+}
+
+/* ---------- Newsletter personalizado ----------
+   Al suscribirse, el navegador recuerda una clave (no es el correo). Desde entonces, las páginas de producto que mira ese suscriptor se anotan
+   (solo las suyas; de quien no se suscribió no se guarda nada) y, a lo mucho una vez por semana, se le manda por correo el producto que más vio.
+   Cada correo trae su enlace de baja. Los avisos están APAGADOS hasta que la variable NEWSLETTER_AVISOS valga "on" (wrangler.jsonc).
+   Remitente: NEWSLETTER_DESDE (por defecto Apex Nutrición <hola@apexnutricionve.com>). Secreto de envío: RESEND_API_KEY (el mismo de los recordatorios). */
+const SITIO = 'https://apexnutricionve.com';
+const NEWSLETTER_HORA_UTC = 14;   // 10:00 en Caracas
+const NEWS_CODIGO = 'APEX5';       // código del 5% del correo de bienvenida (debe ser el mismo que NEWS_COUPON_CODE en app.js)
+// Productos que no se anuncian por estar agotados (ruta o nombre).
+const AVISO_AGOTADO = [/proteina-tarro[^"]*flavor=vainilla/i, /vainilla[^"]*600/i, /600[^"]*vainilla/i];
+
+async function handleSuscripcionVista(request, env) {
+  if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
+  if (!usaSupabase(env)) return json({ ok: false }, 500);
+  let b;
+  try { b = (await readJsonBody(request)).payload; } catch (err) { return json({ ok: false }, 400); }
+  if (!b || typeof b.c !== 'string' || typeof b.ruta !== 'string') return json({ ok: false }, 400);
+  try {
+    await supabaseRpc(env, 'newsletter_registrar_vista', { p_clave: b.c, p_ruta: b.ruta.slice(0, 220), p_titulo: typeof b.titulo === 'string' ? b.titulo.slice(0, 200) : null, p_imagen: typeof b.imagen === 'string' ? b.imagen.slice(0, 260) : null });
+  } catch (err) { console.error('[suscripcion] vista: ' + String(err)); return json({ ok: false }, 502); }
   return json({ ok: true });
+}
+
+function paginaSimple(titulo, cuerpo) {
+  const h = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' + titulo + ' · Apex Nutrición</title></head>' +
+    '<body style="margin:0;font-family:Arial,Helvetica,sans-serif;background:#F7F5F1;color:#14120F"><main style="max-width:480px;margin:12vh auto;padding:0 20px">' +
+    '<p style="font:700 12px monospace;letter-spacing:.2em;text-transform:uppercase;color:#726E67;margin:0 0 12px">Apex Nutrición</p><h1 style="font-size:28px;margin:0 0 12px">' + titulo + '</h1>' + cuerpo +
+    '<p style="margin-top:28px"><a href="' + SITIO + '" style="color:#14120F;font-weight:700">Volver a la tienda</a></p></main></body></html>';
+  return new Response(h, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+}
+
+// Enlace de baja de cada correo: GET muestra el botón de confirmar (así un programa que "visita" el enlace no da de baja a nadie); POST da de baja
+// (también sirve para el botón "darse de baja" del propio correo, List-Unsubscribe-Post).
+async function handleSuscripcionBaja(request, env, url) {
+  const clave = url.searchParams.get('c') || '';
+  if (!/^[0-9a-f]{32}$/.test(clave)) return paginaSimple('Enlace no válido', '<p>Este enlace de baja no es válido. Si quieres dejar de recibir correos, escríbenos por WhatsApp.</p>');
+  if (request.method === 'GET') {
+    return paginaSimple('¿Quieres darte de baja?', '<p style="line-height:1.5">Dejarás de recibir los correos del newsletter de Apex Nutrición.</p>' +
+      '<form method="post" action="/api/suscripcion/baja?c=' + clave + '"><button type="submit" style="min-height:52px;padding:0 24px;border:2px solid #14120F;background:#14120F;color:#fff;font:800 15px Arial;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Sí, darme de baja</button></form>');
+  }
+  if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
+  try {
+    if (env.API_LIMITER) { const lim = await env.API_LIMITER.limit({ key: 'baja:' + clientIp(request) }); if (!lim.success) return json({ ok: false, error: 'Too many requests' }, 429); }
+  } catch (err) { /* sin limitador: sigue */ }
+  if (!usaSupabase(env)) return json({ ok: false }, 500);
+  try { await supabaseRpc(env, 'newsletter_baja', { p_clave: clave }); }
+  catch (err) { console.error('[suscripcion] baja: ' + String(err)); return paginaSimple('No se pudo', '<p>No pudimos procesar tu baja ahora. Intenta de nuevo en unos minutos o escríbenos por WhatsApp.</p>'); }
+  const accept = request.headers.get('Accept') || '';
+  if (accept.indexOf('text/html') === -1) return json({ ok: true });
+  return paginaSimple('Listo, ya no te escribiremos', '<p style="line-height:1.5">Te diste de baja del newsletter de Apex Nutrición. Si fue un error, puedes volver a suscribirte en la tienda cuando quieras.</p>');
+}
+
+function htmlEscapar(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+// Estilos compartidos de los correos del newsletter (HTML sencillo, a prueba de lectores de correo).
+const CORREO_ABRE = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px 16px;color:#14120F"><p style="margin:0 0 6px;font:700 11px monospace;letter-spacing:.2em;text-transform:uppercase;color:#726E67">Apex Nutrición</p>';
+function correoPie(baja) {
+  return '<hr style="border:0;border-top:1px solid #E4DFD5;margin:24px 0 12px"><p style="margin:0;font-size:12px;line-height:1.5;color:#726E67">Recibes este correo porque te suscribiste al newsletter de Apex en apexnutricionve.com. <a href="' + baja + '" style="color:#726E67">Darme de baja</a>.</p></div>';
+}
+function enlaceSitio(ruta, campana) {
+  const sep = String(ruta).indexOf('?') === -1 ? '?' : '&';
+  return SITIO + ruta + sep + 'utm_source=newsletter&utm_medium=email&utm_campaign=' + campana;
+}
+
+// Correo de la semana: hasta 4 productos (los que más interesaron a ese suscriptor), presentados como "los productos estrella de la semana".
+// No dice que los haya mirado.
+function correoProductosSemana(items, clave, prueba) {
+  const lista = items.slice(0, 4);
+  const baja = SITIO + '/api/suscripcion/baja?c=' + clave;
+  const tarjetas = lista.map(function (it) {
+    const titulo = String(it.titulo || '').trim() || 'Ver en la tienda';
+    const enlace = enlaceSitio(it.ruta, 'productos_semana');
+    const imagen = it.imagen && /^https:\/\/apexnutricionve\.com\//.test(it.imagen) ? it.imagen : null;
+    return '<tr><td style="padding:14px 0;border-top:1px solid #E4DFD5"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
+      (imagen ? '<td width="116" valign="middle" style="padding-right:14px"><a href="' + enlace + '"><img src="' + htmlEscapar(imagen) + '" alt="' + htmlEscapar(titulo) + '" width="104" style="display:block;width:104px;height:auto;border:1px solid #E4DFD5;background:#fff"></a></td>' : '') +
+      '<td valign="middle"><p style="margin:0 0 10px;font-size:16px;line-height:1.3;font-weight:700">' + htmlEscapar(titulo) + '</p>' +
+      '<a href="' + enlace + '" style="display:inline-block;background:#14120F;color:#fff;padding:10px 16px;text-decoration:none;font-weight:700;font-size:14px">' + (/^\/(categoria|marca)/.test(String(it.ruta)) ? 'Ver todos' : 'Ver producto') + '</a></td></tr></table></td></tr>';
+  }).join('');
+  const html = CORREO_ABRE + '<h1 style="margin:0 0 10px;font-size:26px;line-height:1.15">Los productos estrella de la semana</h1>' +
+    '<p style="margin:0 0 18px;font-size:16px;line-height:1.5">Aquí te enviamos una selección de productos de Apex Nutrición para esta semana. Despacho al instante en Caracas y por MRW o Zoom al resto del país.</p>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + tarjetas + '<tr><td style="border-top:1px solid #E4DFD5;font-size:0;line-height:0">&nbsp;</td></tr></table>' +
+    '<p style="margin:18px 0 0"><a href="' + enlaceSitio('/', 'productos_semana') + '" style="color:#14120F;font-weight:700">Ver toda la tienda</a></p>' + correoPie(baja);
+  const texto = 'Los productos estrella de la semana\n\nAquí te enviamos una selección de productos de Apex Nutrición para esta semana.\n\n' +
+    lista.map(function (it) { return (String(it.titulo || '').trim() || 'Ver en la tienda') + ': ' + enlaceSitio(it.ruta, 'productos_semana'); }).join('\n') +
+    '\n\nToda la tienda: ' + SITIO + '\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
+  return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Los productos estrella de la semana en Apex', html: html, texto: texto, baja: baja };
+}
+
+// Correo de bienvenida: el código del 5% (APEX5 en el carrito; app.js).
+function correoBienvenida(clave, prueba) {
+  const baja = SITIO + '/api/suscripcion/baja?c=' + clave;
+  const enlace = SITIO + '/?utm_source=newsletter&utm_medium=email&utm_campaign=bienvenida';
+  const html = CORREO_ABRE + '<h1 style="margin:0 0 10px;font-size:26px;line-height:1.15">Bienvenido al newsletter de Apex</h1>' +
+    '<p style="margin:0 0 18px;font-size:16px;line-height:1.5">Gracias por suscribirte. Aquí tienes tu <b>5% de descuento</b> en tu compra:</p>' +
+    '<p style="margin:0 0 18px;text-align:center"><span style="display:inline-block;border:2px dashed #14120F;background:#F7F5F1;padding:14px 28px;font:800 28px monospace;letter-spacing:.14em">' + NEWS_CODIGO + '</span></p>' +
+    '<p style="margin:0 0 6px;font-size:15px;line-height:1.5"><b>Cómo usarlo:</b> agrega tus productos al carrito, escribe el código en "Código de descuento" y toca Aplicar.</p>' +
+    '<p style="margin:0 0 22px;font-size:13px;line-height:1.5;color:#514D48">Se usa una vez y no se suma a otras promociones (Black Friday, Cyber Monday, precios por cantidad ni el 10% de primera compra).</p>' +
+    '<p style="margin:0"><a href="' + enlace + '" style="display:inline-block;background:#14120F;color:#fff;padding:14px 22px;text-decoration:none;font-weight:700">Ir a la tienda</a></p>' +
+    '<p style="margin:18px 0 0;font-size:14px;color:#514D48">También te escribiremos con ofertas, lanzamientos y los productos estrella de la semana.</p>' + correoPie(baja);
+  const texto = 'Bienvenido al newsletter de Apex\n\nGracias por suscribirte. Aquí tienes tu 5% de descuento en tu compra: ' + NEWS_CODIGO + '\n\nCómo usarlo: agrega tus productos al carrito, escribe el código en "Código de descuento" y toca Aplicar. Se usa una vez y no se suma a otras promociones (Black Friday, Cyber Monday, precios por cantidad ni el 10% de primera compra).\n\nIr a la tienda: ' + enlace + '\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
+  return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Bienvenido a Apex: aquí está tu 5% de descuento', html: html, texto: texto, baja: baja };
+}
+
+// Bienvenida automática al suscribirse (solo a suscripciones nuevas). Un fallo se anota y no afecta a quien se suscribió.
+async function enviarBienvenida(env, email, clave) {
+  try {
+    if (!env.RESEND_API_KEY) { console.error('[newsletter] bienvenida omitida: falta RESEND_API_KEY'); return; }
+    await enviarCorreoNewsletter(env, email, correoBienvenida(clave, false));
+    await supabaseRpc(env, 'newsletter_marcar_envio', { p_email: email, p_ruta: '/', p_estado: 'enviado', p_detalle: null, p_tipo: 'bienvenida' });
+  } catch (err) {
+    console.error('[newsletter] bienvenida: ' + String(err));
+    try { await supabaseRpc(env, 'newsletter_marcar_envio', { p_email: email, p_ruta: '/', p_estado: 'error', p_detalle: String(err).slice(0, 200), p_tipo: 'bienvenida' }); } catch (e2) { /* sin registro */ }
+  }
+}
+
+async function enviarCorreoNewsletter(env, para, c) {
+  if (!env.RESEND_API_KEY) throw new Error('Falta RESEND_API_KEY');
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: env.NEWSLETTER_DESDE || 'Apex Nutrición <hola@apexnutricionve.com>', to: [para], subject: c.asunto, html: c.html, text: c.texto,
+      headers: { 'List-Unsubscribe': '<' + c.baja + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } })
+  });
+  if (!res.ok) throw new Error('Resend HTTP ' + res.status + ' ' + (await res.text()).slice(0, 120));
+}
+
+// Envío diario (10:00 Caracas, desde la revisión horaria). Sin NEWSLETTER_AVISOS="on" no manda nada. A cada suscriptor, un solo correo con hasta 4 productos (los que más le interesaron), como "productos estrella de la semana".
+async function enviarAvisosNewsletter(env, forzar) {
+  try {
+    if (!usaSupabase(env)) return { omitido: 'sin base' };
+    if (env.NEWSLETTER_AVISOS !== 'on') return { omitido: 'avisos apagados' };
+    const ahora = new Date();
+    if (!forzar && (ahora.getUTCHours() !== NEWSLETTER_HORA_UTC || ahora.getUTCMinutes() > 30)) return { omitido: 'no es la hora' };
+    const lista = await supabaseRpc(env, 'newsletter_candidatos', { p_limite: 40 });
+    let enviados = 0, fallos = 0;
+    for (const c of (Array.isArray(lista) ? lista : [])) {
+      const vistas = (c.vistas || []).filter(function (v) { return !AVISO_AGOTADO.some(function (re) { return re.test(String(v.ruta) + ' ' + String(v.titulo || '')); }); });
+      if (!vistas.length) continue;
+      const item = vistas[0];
+      try {
+        await enviarCorreoNewsletter(env, c.email, correoProductosSemana(vistas, c.clave, false));
+        await supabaseRpc(env, 'newsletter_marcar_envio', { p_email: c.email, p_ruta: item.ruta, p_estado: 'enviado', p_detalle: null });
+        enviados++;
+      } catch (err) {
+        fallos++;
+        console.error('[newsletter] envío: ' + String(err));
+        try { await supabaseRpc(env, 'newsletter_marcar_envio', { p_email: c.email, p_ruta: item.ruta, p_estado: 'error', p_detalle: String(err).slice(0, 200) }); } catch (e2) { /* sin registro */ }
+      }
+    }
+    return { enviados: enviados, fallos: fallos };
+  } catch (err) {
+    console.error('[newsletter] avisos: ' + String(err));
+    return { error: true };
+  }
 }
 
 /* ---------- /api/get-reviews ----------
@@ -1488,6 +1657,45 @@ async function handleMarketing(request, env, url) {
     }
     const r = await sincronizarInstagram(env, true);
     return panelJson({ ok: r.ok, posts: r.posts, seguidores: r.seguidores, error: r.ok ? undefined : r.error }, r.ok ? 200 : 502);
+  }
+
+  if (route === 'newsletter') {
+    if (request.method !== 'GET') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const q = url.searchParams;
+    const fecha = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null; };
+    const desde = fecha(q.get('desde')), hasta = fecha(q.get('hasta'));
+    if (!desde || !hasta) return panelJson({ ok: false, error: 'Faltan las fechas.' }, 400);
+    let r;
+    try { r = await supabaseRpc(env, 'newsletter_resumen', { p_desde: desde, p_hasta: hasta }); }
+    catch (err) { console.error('[marketing] Supabase (newsletter): ' + String(err)); return panelJson({ ok: false, error: 'No se pudieron leer los datos del newsletter.' }, 502); }
+    if (!r || typeof r !== 'object') return panelJson({ ok: false, error: 'No se pudieron leer los datos del newsletter.' }, 502);
+    r.ok = true; r.avisos_activos = env.NEWSLETTER_AVISOS === 'on';
+    return panelJson(r);
+  }
+
+  if (route === 'newsletter-prueba') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const blocked = await guardPublicApi(request, env.API_LIMITER, 'marketing-newsletter-prueba');
+    if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    let b;
+    try { b = (await readJsonBody(request)).payload; } catch (err) { return panelJson({ ok: false, error: 'Bad JSON' }, 400); }
+    const para = b && typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';
+    if (!para || para.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(para)) return panelJson({ ok: false, error: 'Escribe un correo válido.' }, 400);
+    const tipo = b && b.tipo === 'bienvenida' ? 'bienvenida' : 'semana';
+    const clavePrueba = '0'.repeat(32);
+    const ejemplo = [
+      { ruta: '/producto-going-hidratante.html', titulo: 'Hidratante Uva Going', imagen: SITIO + '/assets/going/hidratante-sobre-uva.webp?v=2' },
+      { ruta: '/producto-going-proteina-tarro.html', titulo: 'Proteína en Polvo Chocolate — 600 g Going', imagen: SITIO + '/assets/going/proteina-tarro-chocolate.webp' },
+      { ruta: '/categoria.html?cat=hidratacion', titulo: 'Toda la hidratación', imagen: null }
+    ];
+    try {
+      await enviarCorreoNewsletter(env, para, tipo === 'bienvenida' ? correoBienvenida(clavePrueba, true) : correoProductosSemana(ejemplo, clavePrueba, true));
+      try { await supabaseRpc(env, 'newsletter_marcar_envio', { p_email: para, p_ruta: '/', p_estado: 'prueba', p_detalle: tipo, p_tipo: 'prueba' }); } catch (e2) { /* sin registro */ }
+    } catch (err) {
+      console.error('[marketing] correo de prueba: ' + String(err));
+      return panelJson({ ok: false, error: 'No se pudo enviar el correo de prueba.' }, 502);
+    }
+    return panelJson({ ok: true });
   }
 
   return panelJson({ ok: false, error: 'Not found' }, 404);

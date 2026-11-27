@@ -130,6 +130,7 @@
       err.hidden = true;
       pintar();
       cargarIg(r);
+      cargarNews(r);
       setLive(true, 'Al día');
     } catch(e){
       if(e.auth){ mostrarLogin(silencioso ? 'La sesión se cerró. Entra otra vez.' : ''); }
@@ -233,6 +234,60 @@
       else toast(e.message || 'No se pudo actualizar Instagram.', true);
     }
   }
+
+  /* ---------- Newsletter (sección aparte: si falla, el resto del portal sigue igual). Solo cantidades; no muestra correos. ---------- */
+  let dataNews = null;
+  async function cargarNews(r){
+    const err = $('news-error');
+    try {
+      dataNews = DEMO ? demoNews() : await api('newsletter?' + new URLSearchParams({ desde: r.desde, hasta: r.hasta }).toString());
+      dataNews._r = r; err.hidden = true; pintarNews();
+    } catch(e){
+      if(e.auth) return;
+      err.hidden = false; err.textContent = e.message || 'No se pudieron leer los datos del newsletter.';
+    }
+  }
+  function pintarNews(){
+    const d = dataNews, r = d._r;
+    $('news-live').textContent = d.ultimo_aviso ? 'Último aviso enviado ' + haceCuanto(d.ultimo_aviso) : 'Todavía no se ha enviado ningún aviso';
+    const av = $('news-aviso'); av.hidden = false; av.textContent = d.avisos_activos
+      ? 'Los avisos por correo están ACTIVOS: cada día a las 10:00 (Caracas) se le manda a cada suscriptor, como máximo una vez por semana, el producto que más vio.'
+      : 'Los avisos por correo están APAGADOS. Los suscriptores y lo que miran sí se guardan; no se manda ningún correo hasta que se active.';
+    const k = $('news-kpis'); k.textContent = '';
+    k.appendChild(kpi('Suscriptores activos', entero(d.activos), null, 'Personas suscritas hoy que no se han dado de baja.'));
+    k.appendChild(kpi('Nuevos en el periodo', entero(d.nuevos), null));
+    k.appendChild(kpi('Se dieron de baja', entero(d.bajas), null, 'Total, de siempre.'));
+    k.appendChild(kpi('Suscriptores que miraron productos', entero(d.con_vistas), null, 'En el periodo elegido.'));
+    k.appendChild(kpi('Páginas miradas por suscriptores', entero(d.vistas), null));
+    k.appendChild(kpi('Avisos enviados', entero(d.avisos), null, 'Correos de "el producto que viste" en el periodo.'));
+    const box = $('news-top'); box.textContent = '';
+    const top = d.top || [];
+    if(!top.length){ box.appendChild(el('p', 'v-vacio', 'Todavía no hay páginas miradas por suscriptores.')); return; }
+    const max = Math.max.apply(null, top.map(function(t){ return t.vistas; })) || 1;
+    top.forEach(function(t){
+      const row = el('div', 'v-row');
+      row.appendChild(el('b', null, t.titulo || nombrePagina(String(t.ruta).split('?')[0])));
+      row.appendChild(el('span', null, entero(t.vistas)));
+      row.appendChild(el('small', null, entero(t.suscriptores) + (t.suscriptores === 1 ? ' suscriptor' : ' suscriptores') + ' · ' + (t.vistas === 1 ? '1 vista' : entero(t.vistas) + ' vistas')));
+      const m = el('div', 'v-meter'); const f = el('i'); f.style.width = Math.max(2, t.vistas / max * 100) + '%'; m.appendChild(f); row.appendChild(m);
+      box.appendChild(row);
+    });
+  }
+  $('news-prueba-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const em = $('news-prueba-email').value.trim(), b = $('news-prueba-btn');
+    if(!em || !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(em)){ toast('Escribe un correo válido.', true); return; }
+    b.disabled = true;
+    try {
+      if(DEMO) await new Promise(function(ok){ setTimeout(ok, 500); });
+      else await api('newsletter-prueba', { method: 'POST', body: JSON.stringify({ email: em, tipo: ($('news-prueba-tipo') || {}).value || 'semana' }) });
+      toast('Listo, revisa tu correo (y la carpeta de spam).');
+    } catch(err){
+      if(err.auth) mostrarLogin('La sesión se cerró. Entra otra vez.');
+      else toast(err.message || 'No se pudo enviar la prueba.', true);
+    }
+    b.disabled = false;
+  });
 
   function setLive(ok, txt){ $('live').className = 'live ' + (ok ? 'is-ok' : 'is-bad'); $('live-text').textContent = txt; }
 
@@ -441,6 +496,11 @@
   })();
 
   /* ---------- Demostración (solo localhost con ?demo=1) ---------- */
+  function demoNews(){
+    return { ok: true, activos: 42, bajas: 1, nuevos: 17, con_vistas: 11, vistas: 36, avisos: 6, avisos_activos: false, ultimo_aviso: null,
+      top: [{ ruta: '/producto-going-hidratante.html', titulo: 'Hidratante Uva Going', vistas: 12, suscriptores: 7 }, { ruta: '/categoria.html?cat=hidratacion', titulo: 'Hidratación', vistas: 9, suscriptores: 5 }, { ruta: '/producto-saltstick-capsulas.html', titulo: 'Cápsulas de Electrolitos SaltStick', vistas: 4, suscriptores: 3 }] };
+  }
+
   function demoIg(r){
     return new Promise(function(resolve){
       setTimeout(function(){

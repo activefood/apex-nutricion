@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Marketing">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var.woff2" crossorigin>
 <link rel="stylesheet" href="panel/panel.css?v=1">
-<link rel="stylesheet" href="marketing/marketing.css?v=2">
+<link rel="stylesheet" href="marketing/marketing.css?v=3">
 </head>
 <body>
 
@@ -96,11 +96,32 @@
         <section class="v-card"><h3>Mejores publicaciones</h3><div id="ig-top" class="v-dist"></div></section>
       </div>
     </section>
+
+    <section class="mk-ig" aria-labelledby="h-news">
+      <div class="ventas-head">
+        <h2 id="h-news">Newsletter de Apex</h2>
+        <span class="ventas-live" id="news-live" role="status"></span>
+      </div>
+      <p class="ventas-error" id="news-error" role="alert" hidden></p>
+      <p class="mk-aviso" id="news-aviso" hidden></p>
+      <div class="kpis mk-kpis" id="news-kpis"></div>
+      <div class="mk-dos">
+        <section class="v-card"><h3>Qué miran los suscriptores</h3><div id="news-top" class="v-dist"></div></section>
+        <section class="v-card"><h3>Probar el correo</h3>
+          <p class="mk-nota">Te mando un ejemplo del correo (con "[PRUEBA]" en el asunto) para que lo revises: el de bienvenida con el 5% o el de los productos estrella de la semana.</p>
+          <form class="ventas-fechas" id="news-prueba-form" novalidate>
+            <label>Cuál <select id="news-prueba-tipo"><option value="bienvenida">Bienvenida (5%)</option><option value="semana">Productos de la semana</option></select></label>
+            <label>Enviar a <input type="email" id="news-prueba-email" placeholder="tu@correo.com" required maxlength="254" autocomplete="off"></label>
+            <button type="submit" class="btn btn--primary" id="news-prueba-btn">Enviar prueba</button>
+          </form>
+        </section>
+      </div>
+    </section>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="marketing/marketing.js?v=4"></script>
+<script src="marketing/marketing.js?v=6"></script>
 </body>
 </html>
