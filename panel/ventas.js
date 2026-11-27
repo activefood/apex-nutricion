@@ -234,26 +234,192 @@
     box.appendChild(s);
   }
 
-  function pintarDistribucion(){
-    const box = $('v-dist'); box.textContent = '';
+  // Las filas de la distribución (las 10 primeras y "Otros"): las usan la pantalla y la imagen para compartir. null si no hay ventas.
+  function filasDistribucion(){
     const lista = grupo === 'marca' ? (data.marcas || []) : (data.productos || []);
     const total = lista.reduce(function(s, x){ return s + Number(x.ventas); }, 0);
-    if(!lista.length || total <= 0){ box.appendChild(el('p', 'v-vacio', 'Todavía no hay ventas en este periodo.')); return; }
+    if(!lista.length || total <= 0) return null;
     const top = lista.slice(0, 10);
     const resto = lista.slice(10);
     if(resto.length){
       top.push({ producto: 'Otros (' + resto.length + ')', marca: 'Otros (' + resto.length + ')', unidades: resto.reduce(function(s, x){ return s + Number(x.unidades); }, 0), ventas: resto.reduce(function(s, x){ return s + Number(x.ventas); }, 0) });
     }
+    return { top: top, total: total };
+  }
+  function nombreFila(x){ return grupo === 'marca' ? (x.marca.indexOf('Otros') === 0 ? x.marca : marcaNombre(x.marca)) : x.producto; }
+  function detalleFila(x, total){ return entero(x.unidades) + (Number(x.unidades) === 1 ? ' unidad' : ' unidades') + ' · ' + (Math.round(Number(x.ventas) / total * 1000) / 10).toString().replace('.', ',') + '% de las ventas'; }
+
+  function pintarDistribucion(){
+    const box = $('v-dist'); box.textContent = '';
+    const f = filasDistribucion();
+    if(!f){ box.appendChild(el('p', 'v-vacio', 'Todavía no hay ventas en este periodo.')); return; }
+    const top = f.top, total = f.total;
     top.forEach(function(x){
       const pct = Number(x.ventas) / total * 100;
       const row = el('div', 'v-row');
-      row.appendChild(el('b', null, grupo === 'marca' ? (x.marca.indexOf('Otros') === 0 ? x.marca : marcaNombre(x.marca)) : x.producto));
+      row.appendChild(el('b', null, nombreFila(x)));
       row.appendChild(el('span', null, usd(x.ventas)));
-      row.appendChild(el('small', null, entero(x.unidades) + (Number(x.unidades) === 1 ? ' unidad' : ' unidades') + ' · ' + (Math.round(pct * 10) / 10).toString().replace('.', ',') + '% de las ventas'));
+      row.appendChild(el('small', null, detalleFila(x, total)));
       const m = el('div', 'v-meter'); const i = el('i'); i.style.width = Math.max(1, pct) + '%'; m.appendChild(i); row.appendChild(m);
       box.appendChild(row);
     });
   }
+
+  /* ---------- Compartir gráficas ----------
+     El botón "Compartir" de cada gráfica pregunta primero ("Vas a compartir la gráfica de … ¿Estás seguro?", Sí / No). Con el Sí, la gráfica se vuelve una imagen PNG
+     (título, periodo, la gráfica y la marca de Apex) y se abre el menú de compartir del teléfono; si el navegador no puede compartir archivos, se descarga la imagen.
+     La imagen se prepara mientras la persona lee la pregunta, para que compartir ocurra justo después de tocar "Sí" (Safari lo exige). Solo lleva cifras de ventas. */
+  function fechaCorta(s){ const p = partes(s); return String(p.d).padStart(2, '0') + '/' + String(p.m).padStart(2, '0') + '/' + p.y; }
+  function periodoTexto(){ const a = data && data.actual; return a && a.desde && a.hasta ? 'del ' + fechaCorta(a.desde) + ' al ' + fechaCorta(a.hasta) : ''; }
+  function nombreGrafica(tipo){ return tipo === 'dist' ? 'Distribución de productos ' + (grupo === 'marca' ? 'por marca' : 'por producto') : $('v-titulo').textContent; }
+  function avisar(msg, error){
+    const t = $('toast'); if(!t) return;
+    t.textContent = msg; t.classList.toggle('is-error', !!error); t.hidden = false;
+    clearTimeout(avisar.t); avisar.t = setTimeout(function(){ t.hidden = true; }, 4200);
+  }
+
+  // Copia los estilos que dan el aspecto (colores, líneas, letra) a cada elemento de la gráfica: una imagen SVG no ve el CSS de la página.
+  const PROPS_ESTILO = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'paint-order', 'font-family', 'font-size', 'font-weight', 'text-anchor', 'opacity'];
+  function inlinarEstilos(origen, copia){
+    const cs = getComputedStyle(origen);
+    PROPS_ESTILO.forEach(function(p){ const v = cs.getPropertyValue(p); if(v) copia.style.setProperty(p, v); });
+    for(let i = 0; i < origen.children.length && i < copia.children.length; i++) inlinarEstilos(origen.children[i], copia.children[i]);
+  }
+  function texto(x, y, t, attrs){ const n = svg('text', Object.assign({ x: x, y: y }, attrs || {})); n.textContent = t; return n; }
+  function partirLineas(t, max){
+    const out = []; let linea = '';
+    String(t).split(/\s+/).forEach(function(w){ if((linea + ' ' + w).trim().length > max){ out.push(linea); linea = w; } else linea = (linea + ' ' + w).trim(); });
+    if(linea) out.push(linea);
+    return out;
+  }
+  function recortar(t, max){ t = String(t); return t.length > max ? t.slice(0, max - 1) + '…' : t; }
+
+  // Tarjeta completa: barra de tinta, título, periodo, contenido (nodo SVG de ancho W y alto H), nota opcional y pie con la marca.
+  function armarTarjeta(titulo, periodo, W, H, contenido, nota){
+    const M = 24, OW = W + M * 2;
+    const lineasTitulo = partirLineas(titulo, 46).slice(0, 2);
+    const extra = lineasTitulo.length > 1 ? 24 : 0;   // un segundo renglón de título empuja todo hacia abajo
+    const lineasNota = nota ? partirLineas(nota, 100) : [];
+    const yContenido = 100 + extra, yNota = yContenido + H + 24;
+    const OH = yNota + (lineasNota.length ? lineasNota.length * 19 + 6 : 0) + 56;
+    const s = svg('svg', { xmlns: svgNs, width: OW, height: OH, viewBox: '0 0 ' + OW + ' ' + OH });
+    s.appendChild(svg('rect', { x: 0, y: 0, width: OW, height: OH, fill: '#FFFFFF' }));
+    s.appendChild(svg('rect', { x: 0, y: 0, width: OW, height: 10, fill: '#14120F' }));
+    s.appendChild(svg('rect', { x: 0, y: 10, width: OW, height: 5, fill: '#D8F24C' }));
+    lineasTitulo.forEach(function(l, i){ s.appendChild(texto(M, 52 + i * 28, l, { 'font-family': 'Arial, Helvetica, sans-serif', 'font-size': 25, 'font-weight': 800, fill: '#14120F' })); });
+    if(periodo) s.appendChild(texto(M, 80 + extra, periodo, { 'font-family': 'Courier New, monospace', 'font-size': 15, 'font-weight': 700, fill: '#726E67' }));
+    const g = svg('g', { transform: 'translate(' + M + ',' + yContenido + ')' });
+    g.appendChild(contenido);
+    s.appendChild(g);
+    lineasNota.forEach(function(l, i){ s.appendChild(texto(M, yNota + 12 + i * 19, l, { 'font-family': 'Arial, Helvetica, sans-serif', 'font-size': 14, fill: '#514D48' })); });
+    s.appendChild(svg('line', { x1: M, x2: OW - M, y1: OH - 40, y2: OH - 40, stroke: '#E4DFD5', 'stroke-width': 1 }));
+    s.appendChild(texto(M, OH - 16, 'Apex Nutrición · apexnutricionve.com', { 'font-family': 'Arial, Helvetica, sans-serif', 'font-size': 14, 'font-weight': 700, fill: '#14120F' }));
+    s.appendChild(texto(OW - M, OH - 16, 'Generado el ' + fechaCorta(hoyCaracas()), { 'font-family': 'Courier New, monospace', 'font-size': 13, fill: '#726E67', 'text-anchor': 'end' }));
+    return { nodo: s, ancho: OW, alto: OH };
+  }
+
+  function tarjetaGrafica(nombre, periodo){
+    const orig = $('v-chart').querySelector('svg');
+    if(!orig) return null;
+    const vb = orig.viewBox.baseVal;
+    const clon = orig.cloneNode(true);
+    inlinarEstilos(orig, clon);
+    clon.querySelectorAll('title').forEach(function(t){ t.remove(); });
+    clon.removeAttribute('role'); clon.removeAttribute('aria-label');
+    clon.setAttribute('width', vb.width); clon.setAttribute('height', vb.height);
+    const ley = $('v-leyenda');
+    return armarTarjeta(nombre, periodo, vb.width, vb.height, clon, ley.hidden ? '' : ley.textContent.trim());
+  }
+  function tarjetaDistribucion(nombre, periodo){
+    const f = filasDistribucion(); if(!f) return null;
+    const W = 720, FILA = 58;
+    const g = svg('g');
+    f.top.forEach(function(x, i){
+      const y = i * FILA, pct = Number(x.ventas) / f.total * 100;
+      g.appendChild(texto(0, y + 18, recortar(nombreFila(x), 52), { 'font-family': 'Arial, Helvetica, sans-serif', 'font-size': 16, 'font-weight': 700, fill: '#14120F' }));
+      g.appendChild(texto(W, y + 18, usd(x.ventas), { 'font-family': 'Courier New, monospace', 'font-size': 16, 'font-weight': 700, fill: '#14120F', 'text-anchor': 'end' }));
+      g.appendChild(texto(0, y + 36, detalleFila(x, f.total), { 'font-family': 'Arial, Helvetica, sans-serif', 'font-size': 13, fill: '#726E67' }));
+      g.appendChild(svg('rect', { x: 0, y: y + 42, width: W, height: 8, fill: '#EFEBE3' }));
+      g.appendChild(svg('rect', { x: 0, y: y + 42, width: Math.max(2, W * pct / 100), height: 8, fill: '#14120F' }));
+    });
+    return armarTarjeta(nombre, periodo, W, f.top.length * FILA, g, '');
+  }
+
+  // SVG -> imagen PNG (el doble de tamaño para que se lea nítida en el teléfono)
+  function aPng(t){
+    const xml = new XMLSerializer().serializeToString(t.nodo);
+    const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
+    return new Promise(function(resolve, reject){
+      const img = new Image();
+      img.onload = function(){
+        const k = 2, c = document.createElement('canvas'); c.width = t.ancho * k; c.height = t.alto * k;
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(b){ b ? resolve(b) : reject(new Error('png')); }, 'image/png');
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('imagen')); };
+      img.src = url;
+    });
+  }
+  function construirImagen(tipo, nombre, periodo){
+    const t = tipo === 'dist' ? tarjetaDistribucion(nombre, periodo) : tarjetaGrafica(nombre, periodo);
+    return t ? aPng(t) : Promise.reject(new Error('vacía'));
+  }
+  function nombreArchivo(nombre, periodo){
+    const a = data && data.actual;
+    return ('apex-' + nombre + (a ? '-' + a.desde + '-' + a.hasta : '')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.png';
+  }
+  async function enviarImagen(blob, nombre, periodo){
+    const archivo = new File([blob], nombreArchivo(nombre, periodo), { type: 'image/png' });
+    if(navigator.canShare && navigator.canShare({ files: [archivo] })){
+      try { await navigator.share({ files: [archivo], title: nombre, text: nombre + (periodo ? ' ' + periodo : '') }); return 'compartida'; }
+      catch(e){ if(e && e.name === 'AbortError') return 'cancelada'; }   // si falla por otra razón, se descarga
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = archivo.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    return 'descargada';
+  }
+
+  function preguntarCompartir(tipo, disparador){
+    if(!data || document.getElementById('compartir-dialog')) return;
+    const nombre = nombreGrafica(tipo), periodo = periodoTexto();
+    const listo = construirImagen(tipo, nombre, periodo).catch(function(){ return null; });   // se prepara mientras lee la pregunta
+    const pregunta = 'Vas a compartir la gráfica de ' + nombre + (periodo ? ' (' + periodo + ')' : '') + '. ¿Estás seguro?';
+    const overlay = el('div', 'dialog-overlay'); overlay.id = 'compartir-dialog';
+    const box = el('div', 'dialog'); box.setAttribute('role', 'alertdialog'); box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'compartir-titulo'); box.setAttribute('aria-describedby', 'compartir-texto');
+    const titulo = el('h2', 'dialog-title', 'Compartir gráfica'); titulo.id = 'compartir-titulo';
+    const parrafo = el('p', 'dialog-text', pregunta); parrafo.id = 'compartir-texto';
+    const acts = el('div', 'dialog-actions');
+    function cerrar(){ overlay.remove(); document.removeEventListener('keydown', onKey); if(disparador && document.body.contains(disparador)) disparador.focus(); }
+    function onKey(e){ if(e.key === 'Escape') cerrar(); }
+    const no = el('button', 'btn', 'No'); no.type = 'button'; no.addEventListener('click', cerrar);
+    const si = el('button', 'btn btn--primary', 'Sí'); si.type = 'button';
+    si.addEventListener('click', async function(){
+      cerrar();
+      const blob = await listo;
+      if(!blob){ avisar('Esta gráfica no se pudo convertir en imagen. Intenta otra vez.', true); return; }
+      const r = await enviarImagen(blob, nombre, periodo);
+      if(r === 'descargada') avisar('Listo: se descargó la imagen de la gráfica. Compártela desde tus descargas.');
+      else if(r === 'compartida') avisar('Gráfica compartida.');
+    });
+    acts.appendChild(no); acts.appendChild(si);
+    box.appendChild(titulo); box.appendChild(parrafo); box.appendChild(acts);
+    overlay.appendChild(box);
+    overlay.addEventListener('click', function(e){ if(e.target === overlay) cerrar(); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    no.focus();   // por defecto el foco queda en "No": un toque suelto no comparte nada
+  }
+  sec.querySelectorAll('[data-compartir]').forEach(function(b){
+    b.addEventListener('click', function(){
+      const tipo = b.dataset.compartir;
+      const hay = tipo === 'dist' ? !!(data && filasDistribucion()) : !!$('v-chart').querySelector('svg');
+      if(!hay){ avisar('Todavía no hay una gráfica para compartir en este periodo.', true); return; }
+      preguntarCompartir(tipo, b);
+    });
+  });
 
   /* ---------- Controles ---------- */
   function mostrar(v){

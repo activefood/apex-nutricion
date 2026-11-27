@@ -183,3 +183,7 @@ button{ cursor:pointer; }
 .v-leyenda{ font-size:13px; line-height:1.4; color:var(--ink-2); }
 .v-leyenda b{ color:var(--ink); }
 .v-leyenda .sube{ color:var(--ok); font-weight:800; } .v-leyenda .baja{ color:var(--sale); font-weight:800; }
+
+/* Compartir gráficas (botón en cada gráfica; la ventana de confirmación usa .dialog) */
+.chip--compartir{ display:inline-flex; align-items:center; gap:6px; margin-left:auto; min-height:36px; padding:0 12px; font-size:13px; }
+.chip--compartir svg{ width:16px; height:16px; flex:none; }

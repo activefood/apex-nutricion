@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="panel/icon-180.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="panel/icon-192.png?v=2">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var.woff2" crossorigin>
-<link rel="stylesheet" href="panel/panel.css?v=5">
+<link rel="stylesheet" href="panel/panel.css?v=6">
 </head>
 <body>
 
@@ -74,7 +74,8 @@
           <button type="button" class="chip" data-metrica="ventas" aria-pressed="false">Vendido ($)</button>
           <button type="button" class="chip" data-metrica="ticket" aria-pressed="false">Ticket promedio</button>
           <button type="button" class="chip" data-metrica="unidades" aria-pressed="false">Unidades</button>
-        </div></div>
+        </div>
+        <button type="button" class="chip chip--compartir" data-compartir="grafica" aria-label="Compartir esta gráfica"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button></div>
       <div id="v-chart" class="v-chart"></div>
       <p class="v-leyenda" id="v-leyenda" hidden></p>
     </section>
@@ -83,7 +84,8 @@
         <div class="ventas-filtro ventas-filtro--min" role="group" aria-label="Agrupar por">
           <button type="button" class="chip is-on" data-grupo="producto" aria-pressed="true">Por producto</button>
           <button type="button" class="chip" data-grupo="marca" aria-pressed="false">Por marca</button>
-        </div></div>
+        </div>
+        <button type="button" class="chip chip--compartir" data-compartir="dist" aria-label="Compartir la distribución de productos"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button></div>
       <div id="v-dist" class="v-dist"></div>
     </section>
   </section>
@@ -92,6 +94,6 @@
 </div>
 
 <script src="panel/panel.js?v=12"></script>
-<script src="panel/ventas.js?v=9"></script>
+<script src="panel/ventas.js?v=10"></script>
 </body>
 </html>
