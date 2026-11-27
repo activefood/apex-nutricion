@@ -1116,18 +1116,13 @@ function initNewsletterFloat(){
   box.addEventListener('newsletter:ok', function(){ guardar('suscrito', 0); setTimeout(function(){ box.hidden = true; }, 6000); });
 }
 
-/* Franja del newsletter del inicio (tiene su propio campo de correo): a quien ya se suscribió no se le muestra, y al suscribirse desde la franja o desde el cartelito
-   se apaga el otro (el cartelito deja de salir y la franja se esconde a los pocos segundos). */
+/* Franja del newsletter del inicio: solo anuncia el 10% (sin campo ni botón); la suscripción se hace en el cartelito flotante. A quien ya se suscribió no se le muestra,
+   y al suscribirse desde el cartelito se esconde. */
 function initFranjaNewsletter(){
   const franja = document.querySelector('[data-franja-newsletter]');
-  if(franja && avisoSuscrito()) franja.hidden = true;
-  document.addEventListener('newsletter:ok', function(e){
-    try { localStorage.setItem('apex_newsletter', JSON.stringify({ estado: 'suscrito', hasta: 0 })); } catch(err){}
-    const pop = document.querySelector('[data-aviso-flotante]');
-    if(pop && !pop.contains(e.target)) pop.hidden = true;
-    if(franja && !franja.contains(e.target)) franja.hidden = true;
-    else if(franja) setTimeout(function(){ franja.hidden = true; }, 12000);
-  });
+  if(!franja) return;
+  if(avisoSuscrito()) franja.hidden = true;
+  document.addEventListener('newsletter:ok', function(){ setTimeout(function(){ franja.hidden = true; }, 6000); });
 }
 
 /* ---------- Etiqueta "Nueva imagen" en los hidratantes de Going (empaque rediseñado) ----------

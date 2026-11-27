@@ -911,11 +911,6 @@ button.pill:hover{ border-color: var(--ink); }
 .promo-strip .promo-code{ margin-top: var(--sp-3); }
 .promo-strip .btn--primary{ background: var(--accent); color: var(--ink); }
 .promo-strip .btn--primary:hover{ background: var(--accent-dk); }
-.promo-strip-form{ flex: 1 1 340px; max-width: 460px; min-width: 0; }
-.promo-strip-form .aviso-form input[type="email"]{ height: 52px; font-size: 16px; }
-.promo-strip-form .aviso-form .btn{ min-height: 52px; padding: 0 var(--sp-5); white-space: nowrap; }
-.promo-strip-form .aviso-error{ color: var(--sale); background: var(--sale-sf); border-radius: var(--r-control); padding: var(--sp-2) var(--sp-3); margin: var(--sp-2) 0 0; font-size: 13px; }
-.promo-strip-form .aviso-exito{ color: var(--ok); margin: 0; font-weight: 600; }
 .promo-tile{
   position: relative;
   grid-column: span 1;
@@ -1023,9 +1018,7 @@ button.pill:hover{ border-color: var(--ink); }
 }
 @media (max-width: 640px){
   .promo-strip{ padding: var(--sp-5); }
-  .promo-strip-form{ flex-basis: 100%; max-width: none; }
-  .promo-strip-form .aviso-form{ flex-direction: column; }
-  .promo-strip .btn--primary{ width: 100%; }
+      .promo-strip .btn--primary{ width: 100%; }
   .promo-grid{ grid-template-columns: 1fr; grid-auto-rows: min-content; }
   .promo-tile--wide{ grid-column: span 1; }
   .promo-tile{ min-height: 200px; }
