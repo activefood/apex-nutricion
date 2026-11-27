@@ -1101,14 +1101,30 @@ const MKT_TABLAS = {
     fila: function (r) { return { dia: r.date, pais: r.country, ciudad: r.city, sesiones: num(r.sessions) }; } }
 };
 
+// ¿Faltan datos de los últimos 90 días? Si la última carga falló hace menos de 3 horas no insiste (evita repetir cada hora).
+async function marketingNecesitaHistorial(env, ahora) {
+  try {
+    const r = await supabaseRpc(env, 'marketing_leer', { p_desde: ymd(new Date(ahora.getTime() - 89 * 86400000)), p_hasta: ymd(ahora) });
+    if (!r || r.ok !== true) return false;
+    const u = r.ultima_sync;
+    if (u && u.fin && u.estado !== 'ok' && Date.now() - new Date(u.fin).getTime() < 3 * 3600 * 1000) return false;
+    const completo = r.actual && r.actual.dias_con_datos >= 60 && r.fuentes.length && r.dispositivos.length && r.paginas.length && r.ciudades.length;
+    return !completo;
+  } catch (err) {
+    return false;
+  }
+}
+
 // Copia a Supabase los últimos `dias` días de Google Analytics. Sin `forzar`, solo corre en las horas de MKT_HORAS_SYNC.
 // Cada tabla va por separado: si una falla, las demás se guardan igual y el motivo queda en el registro. Devuelve { ok, filas, error }.
 async function sincronizarMarketing(env, forzar, dias) {
   try {
     if (!env.WINDSOR_API_KEY || !usaSupabase(env)) return { ok: false, error: 'Falta WINDSOR_API_KEY o Supabase' };
     const ahora = new Date();
-    if (!forzar && (MKT_HORAS_SYNC.indexOf(ahora.getUTCHours()) === -1 || ahora.getUTCMinutes() > 30)) return { ok: true, omitido: true };
-    const n = Math.max(1, Math.min(90, Math.floor(num(dias)) || 3));
+    // Si todavía falta historial (primera vez o una tabla vacía), la revisión horaria lo trae sola: nadie tiene que pulsar nada.
+    const historial = !forzar && await marketingNecesitaHistorial(env, ahora);
+    if (!forzar && !historial && (MKT_HORAS_SYNC.indexOf(ahora.getUTCHours()) === -1 || ahora.getUTCMinutes() > 30)) return { ok: true, omitido: true };
+    const n = historial ? 90 : Math.max(1, Math.min(90, Math.floor(num(dias)) || 3));
     const hasta = ymd(ahora);
     const desde = ymd(new Date(ahora.getTime() - (n - 1) * 86400000));
     let total = 0;

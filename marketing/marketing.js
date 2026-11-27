@@ -330,6 +330,11 @@
   });
   $('mk-fechas').addEventListener('submit', function(e){ e.preventDefault(); cargar(); });
 
+  /* Instalable en Android: el service worker no guarda nada, solo habilita "Instalar app" */
+  if(!DEMO && 'serviceWorker' in navigator){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('/marketing-sw.js', { scope: '/marketing.html' }).catch(function(){}); });
+  }
+
   /* ---------- Inicio: si ya hay sesión, entra directo ---------- */
   (async function(){
     if(DEMO){ mostrarApp(); return; }
