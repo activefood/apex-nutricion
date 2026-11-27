@@ -1116,19 +1116,17 @@ function initNewsletterFloat(){
   box.addEventListener('newsletter:ok', function(){ guardar('suscrito', 0); setTimeout(function(){ box.hidden = true; }, 6000); });
 }
 
-/* Botón "Quiero mi 10%" de la franja del inicio: abre el cartelito del newsletter (aunque se haya cerrado). A quien ya se suscribió no se le muestra la franja. */
-function initAbrirAviso(){
-  const botones = document.querySelectorAll('[data-abrir-aviso]');
-  if(!botones.length) return;
-  if(avisoSuscrito()){ botones.forEach(function(b){ const f = b.closest('.promo-strip'); if(f) f.hidden = true; }); return; }
-  botones.forEach(function(b){
-    b.addEventListener('click', function(){
-      const box = document.querySelector('[data-aviso-flotante]');
-      if(!box) return;
-      box.hidden = false;
-      const campo = box.querySelector('input[name="email"]');
-      if(campo) campo.focus();
-    });
+/* Franja del newsletter del inicio (tiene su propio campo de correo): a quien ya se suscribió no se le muestra, y al suscribirse desde la franja o desde el cartelito
+   se apaga el otro (el cartelito deja de salir y la franja se esconde a los pocos segundos). */
+function initFranjaNewsletter(){
+  const franja = document.querySelector('[data-franja-newsletter]');
+  if(franja && avisoSuscrito()) franja.hidden = true;
+  document.addEventListener('newsletter:ok', function(e){
+    try { localStorage.setItem('apex_newsletter', JSON.stringify({ estado: 'suscrito', hasta: 0 })); } catch(err){}
+    const pop = document.querySelector('[data-aviso-flotante]');
+    if(pop && !pop.contains(e.target)) pop.hidden = true;
+    if(franja && !franja.contains(e.target)) franja.hidden = true;
+    else if(franja) setTimeout(function(){ franja.hidden = true; }, 12000);
   });
 }
 
@@ -3173,7 +3171,7 @@ document.addEventListener('DOMContentLoaded', function(){
   crearAvisoFlotante();
   initNewsletterForms();
   initNewsletterFloat();
-  initAbrirAviso();
+  initFranjaNewsletter();
   initSeguimientoSuscriptor();
   initEtiquetaNuevaImagen();
   initAddToCartButtons();

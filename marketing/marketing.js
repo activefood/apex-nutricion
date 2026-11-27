@@ -312,6 +312,8 @@
     k.appendChild(kpi('Clientes ligados a un pedido', entero(d.ligados), null, 'Suscriptores activos de los que sabemos cuál fue su compra.'));
     k.appendChild(kpi('Con su carrito guardado', entero(d.con_carrito), null, 'Solo se puede rearmar el carrito de pedidos hechos desde que existe esta función.'));
     k.appendChild(kpi('Listos para recibir el correo', entero(d.listos), null, 'Con pedido confirmado y sin reposición en los últimos 14 días.'));
+    if(d.ciclo_mediana_dias != null) k.appendChild(kpi('Cada cuántos días vuelven a comprar', String(d.ciclo_mediana_dias).replace('.', ',') + ' días', null, 'Mediana entre compras de un mismo cliente' + (d.ciclo_promedio_dias != null ? ' (promedio ' + String(d.ciclo_promedio_dias).replace('.', ',') + ' días)' : '') + '. Con ' + entero(d.recompras) + (d.recompras === 1 ? ' recompra' : ' recompras') + ' de ' + entero(d.clientes) + ' clientes: mientras haya pocas, es solo una guía.'));
+    if(d.pedidos_con_correo != null) k.appendChild(kpi('Pedidos con correo', entero(d.pedidos_con_correo), null, 'Pedidos (nuevos y viejos de la misma persona) que ya tienen su correo.'));
     k.appendChild(kpi('Correos enviados (30 días)', entero(d.enviados_30d), null));
     k.appendChild(kpi('Abrieron su carrito', entero(d.abiertos_30d), null, 'Entraron con el botón del correo.'));
     const b = $('repo-enviar'); b.disabled = !d.listos; b.textContent = d.listos ? 'Enviar reposición a ' + entero(d.listos) + (d.listos === 1 ? ' persona' : ' personas') : 'No hay a quién enviar todavía';
