@@ -318,7 +318,7 @@
   }
   $('repo-enviar').addEventListener('click', async function(){
     const n = dataRepo ? dataRepo.listos : 0; if(!n) return;
-    if(!window.confirm('Se le mandará el correo "Ya tenemos tu reposición hecha" a ' + n + (n === 1 ? ' persona' : ' personas') + '. ¿Enviar ahora?')) return;
+    if(!window.confirm('Se le mandará el correo "¡Tenemos tu reposición lista!" a ' + n + (n === 1 ? ' persona' : ' personas') + '. ¿Enviar ahora?')) return;
     const b = this; b.disabled = true; toast('Enviando…');
     try {
       const r = DEMO ? { enviados: n, fallos: 0 } : await api('reposicion-enviar', { method: 'POST', body: JSON.stringify({ confirmar: true }) });

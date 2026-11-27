@@ -571,7 +571,7 @@ async function enviarAvisosNewsletter(env, forzar) {
 
 /* ---------- Reposición: carrito guardado y enlace del correo ----------
    Cada pedido nuevo guarda su carrito base (productos y cantidades) y, si el cliente es suscriptor (clave del navegador) o escribió su correo y aceptó
-   recibir correos, queda ligado a ese suscriptor (tienda_guardar_extra). Cuando llega la mercancía se le manda "ya tenemos tu reposición hecha" con un
+   recibir correos, queda ligado a ese suscriptor (tienda_guardar_extra). Cuando llega la mercancía se le manda "¡Tenemos tu reposición lista!" con un
    enlace personal: abre el carrito con ese pedido armado y sus datos de entrega puestos (editables). El enlace vale 45 días. */
 function limpiarItemCarrito(i) {
   if (!i || typeof i !== 'object' || typeof i.name !== 'string' || !i.name) return null;
@@ -602,6 +602,12 @@ async function guardarExtraPedido(env, oc, x) {
   }
 }
 
+const REPOSICION_ENLACE_EJEMPLO = '0'.repeat(32);
+const REPOSICION_CARRITO_EJEMPLO = [
+  { name: 'Hidratante Uva Going', brand: 'Going', variant: '', photo: SITIO + '/assets/going/hidratante-sobre-uva.webp?v=2', unitPrice: 1.61, quantity: 12, family: '/producto-going-hidratante.html', tiers: [{ units: 1, unitPrice: 1.79 }, { units: 6, unitPrice: 1.68 }, { units: 12, unitPrice: 1.65 }, { units: 24, unitPrice: 1.61 }], kit: false },
+  { name: 'Hidratante Coco Going', brand: 'Going', variant: '', photo: SITIO + '/assets/going/hidratante-sobre-coco.webp?v=2', unitPrice: 1.61, quantity: 12, family: '/producto-going-hidratante.html', tiers: [{ units: 1, unitPrice: 1.79 }, { units: 6, unitPrice: 1.68 }, { units: 12, unitPrice: 1.65 }, { units: 24, unitPrice: 1.61 }], kit: false }
+];
+
 async function handleReponer(request, env, url) {
   if (request.method !== 'GET') return json({ ok: false, error: 'Method not allowed' }, 405);
   try {
@@ -609,6 +615,12 @@ async function handleReponer(request, env, url) {
   } catch (err) { /* sin limitador: sigue */ }
   const t = url.searchParams.get('t') || '';
   if (!/^[0-9a-f]{32}$/.test(t)) return json({ ok: false, error: 'Enlace no válido' }, 400);
+  // Enlace del correo de PRUEBA cuando todavía no hay pedidos reales con carrito guardado: arma un carrito de ejemplo (no es de ningún cliente) para ver el recorrido completo.
+  if (t === REPOSICION_ENLACE_EJEMPLO) {
+    const res0 = json({ ok: true, ejemplo: true, carrito: REPOSICION_CARRITO_EJEMPLO, cliente: { nombre: 'Cliente de prueba', telefono: '+58 414 0000000', estado: 'Distrito Capital', zona: 'Chacao', ci: '', agencia: '' } }, 200);
+    res0.headers.set('Cache-Control', 'no-store'); res0.headers.set('X-Robots-Tag', 'noindex');
+    return res0;
+  }
   if (!usaSupabase(env)) return json({ ok: false, error: 'No disponible' }, 500);
   let r;
   try { r = await supabaseRpc(env, 'reposicion_leer', { p_enlace: t }); }
@@ -619,22 +631,22 @@ async function handleReponer(request, env, url) {
   return res;
 }
 
-// Correo "Ya tenemos tu reposición hecha": lista el pedido anterior y el botón abre el carrito armado.
+// Correo "¡Tenemos tu reposición lista!": lista el pedido anterior y el botón abre el carrito armado.
 function correoReposicion(nombre, token, items, clave, prueba) {
   const primero = String(nombre || '').trim().split(/\s+/)[0] || '';
   const enlace = SITIO + '/carrito.html?rep=' + token + '&utm_source=newsletter&utm_medium=email&utm_campaign=reposicion';
   const baja = SITIO + '/api/suscripcion/baja?c=' + clave;
   const lista = (items || []).slice(0, 12).map(function (i) { return { name: String(i.name || '').slice(0, 120), q: Number(i.quantity) || 1 }; });
   const fil = lista.map(function (i) { return '<tr><td style="padding:9px 0;border-top:1px solid #DDDDDD;font-family:' + FUENTE_CORREO + ';font-size:15px;color:#14120F">' + htmlEscapar(i.name) + '</td><td style="padding:9px 0 9px 12px;border-top:1px solid #DDDDDD;font-family:' + FUENTE_CORREO + ';font-size:15px;font-weight:700;color:#14120F;white-space:nowrap" align="right">× ' + i.q + '</td></tr>'; }).join('');
-  const filas = filaLogo() + filaBandaTitulo('Tu reposición', 'Ya tenemos tu reposición hecha') +
+  const filas = filaLogo() + filaBandaTitulo('Tu reposición', '¡Tenemos tu reposición lista!') +
     '<tr><td class="rp" style="padding:24px 36px 6px;font-family:' + FUENTE_CORREO + '"><p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#222222">Hola' + (primero ? ' ' + htmlEscapar(primero) : '') + ', entra con el botón: tu carrito ya está armado con tu pedido anterior y tus datos puestos, listo para enviar.</p>' +
     (fil ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 6px">' + fil + '<tr><td colspan="2" style="border-top:1px solid #DDDDDD;font-size:0;line-height:0">&nbsp;</td></tr></table>' : '') + '</td></tr>' +
     '<tr><td class="rp" align="center" style="padding:18px 36px 10px">' + botonCorreo(enlace, 'Ver mi carrito') + '</td></tr>' +
     '<tr><td class="rp" align="center" style="padding:6px 36px 32px;font-family:' + FUENTE_CORREO + ';font-size:13px;line-height:1.5;color:#666666">Puedes cambiar cantidades, corregir tus datos o agregar productos antes de enviar el pedido.</td></tr>' + filaMarcas();
   const html = correoMarco('Tu carrito ya está armado con tu pedido anterior, listo para enviar.', filas, baja);
-  const texto = 'Ya tenemos tu reposición hecha\n\nHola' + (primero ? ' ' + primero : '') + ', entra y encontrarás tu carrito armado con tu pedido anterior y tus datos puestos, listo para enviar:\n' + enlace + '\n\n' +
+  const texto = '¡Tenemos tu reposición lista!\n\nHola' + (primero ? ' ' + primero : '') + ', entra y encontrarás tu carrito armado con tu pedido anterior y tus datos puestos, listo para enviar:\n' + enlace + '\n\n' +
     lista.map(function (i) { return '- ' + i.name + ' x' + i.q; }).join('\n') + '\n\nPuedes cambiar cantidades, corregir tus datos o agregar productos antes de enviar el pedido.\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
-  return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Ya tenemos tu reposición hecha', html: html, texto: texto, baja: baja };
+  return { asunto: (prueba ? '[PRUEBA] ' : '') + '¡Tenemos tu reposición lista!', html: html, texto: texto, baja: baja };
 }
 
 /* ---------- /api/get-reviews ----------
@@ -1860,7 +1872,7 @@ async function handleMarketing(request, env, url) {
         if (e && e.ok === true) { correo = correoReposicion(c.nombre, e.enlace, c.items, '0'.repeat(32), true); real = true; }
       }
     } catch (err) { /* cae al ejemplo */ }
-    if (!correo) correo = correoReposicion('Cliente', '0'.repeat(32), [{ name: 'Hidratante Uva Going', quantity: 24 }, { name: 'Gel Energético Fresa Banano Going', quantity: 6 }], '0'.repeat(32), true);
+    if (!correo) correo = correoReposicion('Cliente', REPOSICION_ENLACE_EJEMPLO, [{ name: 'Hidratante Uva Going', quantity: 12 }, { name: 'Hidratante Coco Going', quantity: 12 }], '0'.repeat(32), true);
     try { await enviarCorreoNewsletter(env, para, correo); }
     catch (err) { console.error('[marketing] prueba reposición: ' + String(err)); return panelJson({ ok: false, error: 'No se pudo enviar el correo de prueba.' }, 502); }
     return panelJson({ ok: true, real: real });
