@@ -415,35 +415,44 @@ async function handleSuscripcionBaja(request, env, url) {
 
 function htmlEscapar(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-// Estilos compartidos de los correos del newsletter (HTML sencillo, a prueba de lectores de correo).
-const CORREO_ABRE = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px 16px;color:#14120F"><p style="margin:0 0 6px;font:700 11px monospace;letter-spacing:.2em;text-transform:uppercase;color:#726E67">Apex Nutrición</p>';
-function correoPie(baja) {
-  return '<hr style="border:0;border-top:1px solid #E4DFD5;margin:24px 0 12px"><p style="margin:0;font-size:12px;line-height:1.5;color:#726E67">Recibes este correo porque te suscribiste al newsletter de Apex en apexnutricionve.com. <a href="' + baja + '" style="color:#726E67">Darme de baja</a>.</p></div>';
-}
 function enlaceSitio(ruta, campana) {
   const sep = String(ruta).indexOf('?') === -1 ? '?' : '&';
   return SITIO + ruta + sep + 'utm_source=newsletter&utm_medium=email&utm_campaign=' + campana;
 }
 
 // Correo de la semana: hasta 4 productos (los que más interesaron a ese suscriptor), presentados como "los productos estrella de la semana".
-// No dice que los haya mirado.
+// No dice que los haya mirado. Imagen principal en verde Apex liso, tarjetas de producto grandes en cuadrícula de 2 (borde de tinta y sombra dura), un botón y la franja de las 5 marcas.
+function tarjetaProductoCorreo(it) {
+  const titulo = String(it.titulo || '').trim() || 'Ver en la tienda';
+  const enlace = enlaceSitio(it.ruta, 'productos_semana');
+  const imagen = it.imagen && /^https:\/\/apexnutricionve\.com\//.test(it.imagen) ? it.imagen : null;
+  const esLista = /^\/(categoria|marca)/.test(String(it.ruta));
+  const arriba = imagen
+    ? '<a href="' + enlace + '"><img src="' + htmlEscapar(imagen) + '" alt="' + htmlEscapar(titulo) + '" width="230" style="display:block;width:100%;max-width:230px;height:auto;border:0;margin:0 auto"></a>'
+    : '<a href="' + enlace + '" style="text-decoration:none"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" height="150" style="background:#D8F24C;height:150px;font-family:' + FUENTE_TITULO + ';font-size:26px;line-height:1.1;letter-spacing:.04em;text-transform:uppercase;color:#14120F;padding:10px">' + htmlEscapar(titulo) + '</td></tr></table></a>';
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border:2px solid #14120F;border-right-width:6px;border-bottom-width:6px">' +
+    '<tr><td align="center" style="padding:14px 14px 8px">' + arriba + '</td></tr>' +
+    (imagen ? '<tr><td align="center" style="padding:4px 12px 10px;font-family:' + FUENTE_CORREO + ';font-size:15px;line-height:1.3;font-weight:800;color:#14120F">' + htmlEscapar(titulo) + '</td></tr>' : '') +
+    '<tr><td align="center" style="padding:0 12px 16px">' + botonCorreo(enlace, esLista ? 'Ver todos' : 'Ver producto', 'tinta') + '</td></tr></table>';
+}
 function correoProductosSemana(items, clave, prueba) {
   const lista = items.slice(0, 4);
   const baja = SITIO + '/api/suscripcion/baja?c=' + clave;
-  const tarjetas = lista.map(function (it) {
-    const titulo = String(it.titulo || '').trim() || 'Ver en la tienda';
-    const enlace = enlaceSitio(it.ruta, 'productos_semana');
-    const imagen = it.imagen && /^https:\/\/apexnutricionve\.com\//.test(it.imagen) ? it.imagen : null;
-    return '<tr><td style="padding:14px 0;border-top:1px solid #E4DFD5"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      (imagen ? '<td width="116" valign="middle" style="padding-right:14px"><a href="' + enlace + '"><img src="' + htmlEscapar(imagen) + '" alt="' + htmlEscapar(titulo) + '" width="104" style="display:block;width:104px;height:auto;border:1px solid #E4DFD5;background:#fff"></a></td>' : '') +
-      '<td valign="middle"><p style="margin:0 0 10px;font-size:16px;line-height:1.3;font-weight:700">' + htmlEscapar(titulo) + '</p>' +
-      '<a href="' + enlace + '" style="display:inline-block;background:#14120F;color:#fff;padding:10px 16px;text-decoration:none;font-weight:700;font-size:14px">' + (/^\/(categoria|marca)/.test(String(it.ruta)) ? 'Ver todos' : 'Ver producto') + '</a></td></tr></table></td></tr>';
-  }).join('');
-  const html = CORREO_ABRE + '<h1 style="margin:0 0 10px;font-size:26px;line-height:1.15">Los productos estrella de la semana</h1>' +
-    '<p style="margin:0 0 18px;font-size:16px;line-height:1.5">Aquí te enviamos una selección de productos de Apex Nutrición para esta semana. Despacho al instante en Caracas y por MRW o Zoom al resto del país.</p>' +
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + tarjetas + '<tr><td style="border-top:1px solid #E4DFD5;font-size:0;line-height:0">&nbsp;</td></tr></table>' +
-    '<p style="margin:18px 0 0"><a href="' + enlaceSitio('/', 'productos_semana') + '" style="color:#14120F;font-weight:700">Ver toda la tienda</a></p>' + correoPie(baja);
-  const texto = 'Los productos estrella de la semana\n\nAquí te enviamos una selección de productos de Apex Nutrición para esta semana.\n\n' +
+  let cuadricula = '';
+  for (let n = 0; n < lista.length; n += 2) {
+    const a = lista[n], b = lista[n + 1];
+    cuadricula += b
+      ? '<tr><td width="50%" valign="top" style="padding:0 7px 16px 0">' + tarjetaProductoCorreo(a) + '</td><td width="50%" valign="top" style="padding:0 0 16px 7px">' + tarjetaProductoCorreo(b) + '</td></tr>'
+      : '<tr><td colspan="2" align="center" style="padding:0 0 16px"><table role="presentation" width="50%" cellpadding="0" cellspacing="0" style="width:50%"><tr><td>' + tarjetaProductoCorreo(a) + '</td></tr></table></td></tr>';   // si queda uno solo, va centrado
+  }
+  const enlaceTienda = enlaceSitio('/', 'productos_semana');
+  const filas = filaLogo() +
+    '<tr><td style="padding:0;background:#D8F24C;font-size:0;line-height:0"><a href="' + enlaceTienda + '"><img src="' + SITIO + '/assets/email/semana-hero.jpg" alt="Los productos estrella de la semana" width="600" style="display:block;width:100%;height:auto;border:0"></a></td></tr>' +
+    '<tr><td class="rp" align="center" style="padding:26px 36px 14px;font-family:' + FUENTE_CORREO + ';font-size:16px;line-height:1.5;color:#222222">Una selección para esta semana. Despacho al instante en Caracas y por MRW o Zoom al resto del país.</td></tr>' +
+    '<tr><td class="rp" style="padding:8px 30px 8px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + cuadricula + '</table></td></tr>' +
+    '<tr><td class="rp" align="center" style="padding:10px 36px 34px">' + botonCorreo(enlaceTienda, 'Ver toda la tienda') + '</td></tr>' + filaMarcas();
+  const html = correoMarco('Los productos estrella de la semana en Apex Nutrición.', filas, baja);
+  const texto = 'Los productos estrella de la semana\n\nUna selección para esta semana.\n\n' +
     lista.map(function (it) { return (String(it.titulo || '').trim() || 'Ver en la tienda') + ': ' + enlaceSitio(it.ruta, 'productos_semana'); }).join('\n') +
     '\n\nToda la tienda: ' + SITIO + '\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
   return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Los productos estrella de la semana en Apex', html: html, texto: texto, baja: baja };
@@ -475,6 +484,20 @@ function filaLogo() {
   return '<tr><td align="center" style="padding:22px 20px 18px;background:#FFFFFF"><a href="' + SITIO + '"><img src="' + SITIO + '/assets/logo-apex.png" alt="Apex Nutrición" width="150" style="display:block;width:150px;max-width:60%;height:auto;border:0"></a></td></tr>';
 }
 
+// Banda de título en verde Apex sólido (texto real, sin imagen) y franja negra con los logos de las 5 marcas: piezas comunes de los correos.
+function filaBandaTitulo(eyebrow, titulo) {
+  return '<tr><td class="rp" style="background:#D8F24C;padding:30px 36px 26px"><p style="margin:0 0 8px;font-family:' + FUENTE_CORREO + ';font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#14120F">' + htmlEscapar(eyebrow) + '</p>' +
+    '<h1 class="h1" style="margin:0;font-family:' + FUENTE_TITULO + ';font-weight:400;font-size:34px;line-height:1.1;letter-spacing:.04em;text-transform:uppercase;color:#14120F">' + titulo + '</h1></td></tr>' +
+    '<tr><td style="background:#14120F;font-size:0;line-height:0;height:6px">&nbsp;</td></tr>';
+}
+function filaMarcas() {
+  return '<tr><td style="background:#14120F;padding:22px 20px"><img src="' + SITIO + '/assets/email/marcas-tinta.png" alt="Going, Probar, Skratch Labs, SaltStick y Honey Stinger" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;margin:0 auto"></td></tr>';
+}
+function botonCorreo(href, texto, fondo) {
+  const lima = fondo !== 'tinta';
+  return '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:' + (lima ? '#D8F24C' : '#14120F') + ';border:2px solid #14120F"><a href="' + href + '" style="display:inline-block;padding:14px 30px;font-family:' + FUENTE_CORREO + ';font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:' + (lima ? '#14120F' : '#FFFFFF') + ';text-decoration:none">' + texto + '</a></td></tr></table>';
+}
+
 // Correo de bienvenida: imagen principal en verde Apex sólido con el 10%, UNA frase corta, un botón y la franja de las 5 marcas. Sin código.
 // Asunto sin lenguaje de promoción (nada de "oferta" ni signos de %) para que Gmail lo trate como mensaje personal y no como Promociones.
 function correoBienvenida(clave, email, prueba) {
@@ -484,8 +507,8 @@ function correoBienvenida(clave, email, prueba) {
   const filas = filaLogo() +
     '<tr><td style="padding:0;background:#D8F24C;font-size:0;line-height:0"><a href="' + enlace + '"><img src="' + SITIO + '/assets/email/bienvenida-hero.jpg" alt="Bienvenido a Apex: 10% de descuento" width="600" style="display:block;width:100%;height:auto;border:0"></a></td></tr>' +
     '<tr><td class="rp" align="center" style="padding:34px 36px 8px"><h1 class="h1" style="margin:0;font-family:' + FUENTE_TITULO + ';font-weight:400;font-size:32px;line-height:1.15;letter-spacing:.04em;text-transform:uppercase;color:#14120F">' + frase + '</h1></td></tr>' +
-    '<tr><td class="rp" align="center" style="padding:20px 36px 34px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:#D8F24C;border:2px solid #14120F"><a href="' + enlace + '" style="display:inline-block;padding:15px 36px;font-family:' + FUENTE_CORREO + ';font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#14120F;text-decoration:none">Ir a la tienda</a></td></tr></table></td></tr>' +
-    '<tr><td style="background:#14120F;padding:22px 20px"><img src="' + SITIO + '/assets/email/marcas-tinta.png" alt="Going, Probar, Skratch Labs, SaltStick y Honey Stinger" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;margin:0 auto"></td></tr>';
+    '<tr><td class="rp" align="center" style="padding:20px 36px 34px">' + botonCorreo(enlace, 'Ir a la tienda') + '</td></tr>' +
+    filaMarcas();
   const html = correoMarco('Coloca tu correo en el carrito y obtienes el 10% de descuento en tu compra.', filas, baja);
   const texto = 'Bienvenido a Apex Nutrición\n\n' + frase + '\n\nIr a la tienda: ' + enlace + '\n\nEquipo Apex Nutrición\nWhatsApp: https://wa.me/' + WHATSAPP_APEX + '\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
   return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Bienvenido a Apex Nutrición', html: html, texto: texto, baja: baja };
@@ -602,14 +625,15 @@ function correoReposicion(nombre, token, items, clave, prueba) {
   const enlace = SITIO + '/carrito.html?rep=' + token + '&utm_source=newsletter&utm_medium=email&utm_campaign=reposicion';
   const baja = SITIO + '/api/suscripcion/baja?c=' + clave;
   const lista = (items || []).slice(0, 12).map(function (i) { return { name: String(i.name || '').slice(0, 120), q: Number(i.quantity) || 1 }; });
-  const filas = lista.map(function (i) { return '<tr><td style="padding:6px 0;border-top:1px solid #E4DFD5;font-size:15px">' + htmlEscapar(i.name) + '</td><td style="padding:6px 0 6px 12px;border-top:1px solid #E4DFD5;font-size:15px;white-space:nowrap" align="right">× ' + i.q + '</td></tr>'; }).join('');
-  const html = CORREO_ABRE + '<h1 style="margin:0 0 12px;font-size:26px;line-height:1.2">Ya tenemos tu reposición hecha</h1>' +
-    '<p style="margin:0 0 14px;font-size:16px;line-height:1.55">Hola' + (primero ? ' ' + htmlEscapar(primero) : '') + ', ya tenemos lista tu reposición. Entra con el botón y encontrarás tu carrito armado con tu pedido anterior y tus datos de entrega puestos, listo para enviar.</p>' +
-    (filas ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px">' + filas + '<tr><td colspan="2" style="border-top:1px solid #E4DFD5;font-size:0;line-height:0">&nbsp;</td></tr></table>' : '') +
-    '<p style="margin:0 0 16px"><a href="' + enlace + '" style="display:inline-block;background:#14120F;color:#fff;padding:14px 22px;text-decoration:none;font-weight:700">Ver mi carrito</a></p>' +
-    '<p style="margin:0;font-size:14px;line-height:1.5;color:#514D48">Puedes cambiar las cantidades, corregir tus datos o agregar más productos antes de enviar el pedido.</p>' + correoPie(baja);
-  const texto = 'Ya tenemos tu reposición hecha\n\nHola' + (primero ? ' ' + primero : '') + ', ya tenemos lista tu reposición. Entra y encontrarás tu carrito armado con tu pedido anterior y tus datos de entrega puestos, listo para enviar:\n' + enlace + '\n\n' +
-    lista.map(function (i) { return '- ' + i.name + ' x' + i.q; }).join('\n') + '\n\nPuedes cambiar las cantidades, corregir tus datos o agregar más productos antes de enviar el pedido.\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
+  const fil = lista.map(function (i) { return '<tr><td style="padding:9px 0;border-top:1px solid #DDDDDD;font-family:' + FUENTE_CORREO + ';font-size:15px;color:#14120F">' + htmlEscapar(i.name) + '</td><td style="padding:9px 0 9px 12px;border-top:1px solid #DDDDDD;font-family:' + FUENTE_CORREO + ';font-size:15px;font-weight:700;color:#14120F;white-space:nowrap" align="right">× ' + i.q + '</td></tr>'; }).join('');
+  const filas = filaLogo() + filaBandaTitulo('Tu reposición', 'Ya tenemos tu reposición hecha') +
+    '<tr><td class="rp" style="padding:24px 36px 6px;font-family:' + FUENTE_CORREO + '"><p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#222222">Hola' + (primero ? ' ' + htmlEscapar(primero) : '') + ', entra con el botón: tu carrito ya está armado con tu pedido anterior y tus datos puestos, listo para enviar.</p>' +
+    (fil ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 6px">' + fil + '<tr><td colspan="2" style="border-top:1px solid #DDDDDD;font-size:0;line-height:0">&nbsp;</td></tr></table>' : '') + '</td></tr>' +
+    '<tr><td class="rp" align="center" style="padding:18px 36px 10px">' + botonCorreo(enlace, 'Ver mi carrito') + '</td></tr>' +
+    '<tr><td class="rp" align="center" style="padding:6px 36px 32px;font-family:' + FUENTE_CORREO + ';font-size:13px;line-height:1.5;color:#666666">Puedes cambiar cantidades, corregir tus datos o agregar productos antes de enviar el pedido.</td></tr>' + filaMarcas();
+  const html = correoMarco('Tu carrito ya está armado con tu pedido anterior, listo para enviar.', filas, baja);
+  const texto = 'Ya tenemos tu reposición hecha\n\nHola' + (primero ? ' ' + primero : '') + ', entra y encontrarás tu carrito armado con tu pedido anterior y tus datos puestos, listo para enviar:\n' + enlace + '\n\n' +
+    lista.map(function (i) { return '- ' + i.name + ' x' + i.q; }).join('\n') + '\n\nPuedes cambiar cantidades, corregir tus datos o agregar productos antes de enviar el pedido.\n\n--\nRecibes este correo porque te suscribiste al newsletter de Apex. Darme de baja: ' + baja;
   return { asunto: (prueba ? '[PRUEBA] ' : '') + 'Ya tenemos tu reposición hecha', html: html, texto: texto, baja: baja };
 }
 
