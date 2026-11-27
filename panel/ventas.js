@@ -10,7 +10,7 @@
   const btn = $('tool-ventas'), sec = $('ventas');
   if(!btn || !sec) return;
 
-  let periodo = 'mes', grupo = 'producto', data = null, timer = null, visible = false, cargando = false;
+  let periodo = 'mes', grupo = 'producto', metrica = 'pedidos', data = null, timer = null, visible = false, cargando = false;
 
   /* ---------- Fechas (siempre en hora de Caracas) ---------- */
   function hoyCaracas(){ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' }); }
@@ -118,23 +118,100 @@
     pintarDistribucion();
   }
 
+  /* Métricas de la gráfica mensual del Histórico (una sola gráfica; el filtro cambia lo que se ve) */
+  const METRICAS = {
+    pedidos:  { titulo: 'Pedidos por mes',          unidad: 'pedidos',  valor: function(m){ return m.pedidos; },  fmt: function(v){ return entero(v); },                     eje: function(v){ return String(Math.round(v)); }, delta: function(d){ return entero(Math.abs(d)) + (Math.abs(Math.round(d)) === 1 ? ' pedido' : ' pedidos'); } },
+    ventas:   { titulo: 'Vendido por mes ($)',      unidad: 'ventas',   valor: function(m){ return m.ventas; },   fmt: function(v){ return '$' + Math.round(v).toLocaleString('es-VE'); }, eje: function(v){ return '$' + (v >= 1000 ? Math.round(v / 100) / 10 + 'k' : Math.round(v)); }, delta: function(d){ return '$' + Math.round(Math.abs(d)).toLocaleString('es-VE'); } },
+    ticket:   { titulo: 'Ticket promedio por mes',  unidad: 'ticket',   valor: function(m){ return m.pedidos ? m.ventas / m.pedidos : 0; }, fmt: function(v){ return '$' + (Math.round(v * 10) / 10).toString().replace('.', ','); }, eje: function(v){ return '$' + Math.round(v); }, delta: function(d){ return '$' + (Math.round(Math.abs(d) * 10) / 10).toString().replace('.', ','); } },
+    unidades: { titulo: 'Unidades vendidas por mes', unidad: 'unidades', valor: function(m){ return m.unidades; }, fmt: function(v){ return entero(v); },                     eje: function(v){ return String(Math.round(v)); }, delta: function(d){ return entero(Math.abs(d)) + (Math.abs(Math.round(d)) === 1 ? ' unidad' : ' unidades'); } }
+  };
+
+  // Recta de tendencia (mínimos cuadrados) sobre los puntos { x, y }. Devuelve { a, b } con y = a + b·x, o null si hay menos de 2 puntos.
+  function tendencia(pts){
+    const n = pts.length; if(n < 2) return null;
+    let sx = 0, sy = 0, sxy = 0, sxx = 0;
+    pts.forEach(function(p){ sx += p.x; sy += p.y; sxy += p.x * p.y; sxx += p.x * p.x; });
+    const den = n * sxx - sx * sx; if(!den) return null;
+    const b = (n * sxy - sx * sy) / den;
+    return { a: (sy - b * sx) / n, b: b };
+  }
+
   function pintarGrafica(){
     const box = $('v-chart'); box.textContent = '';
-    let pts = (data.dias || []).map(function(d){ return { clave: d.dia, ventas: Number(d.ventas) || 0, pedidos: d.pedidos }; });
-    const porMes = pts.length > 62;
-    $('v-unidad').textContent = porMes ? 'mes' : 'día';
-    if(porMes){
-      const m = {};
-      pts.forEach(function(p){ const k = p.clave.slice(0, 7); m[k] = m[k] || { clave: k, ventas: 0, pedidos: 0 }; m[k].ventas += p.ventas; m[k].pedidos += p.pedidos; });
-      pts = Object.keys(m).sort().map(function(k){ return m[k]; });
+    const dias = (data.dias || []).map(function(d){ return { clave: d.dia, ventas: Number(d.ventas) || 0, pedidos: Number(d.pedidos) || 0, unidades: Number(d.unidades) || 0 }; });
+    const porMes = dias.length > 62;
+    $('v-metricas').hidden = !porMes;
+    const ley = $('v-leyenda'); ley.hidden = true; ley.textContent = '';
+    if(!porMes) return pintarGraficaDiaria(dias, box);
+
+    /* ----- Histórico: una barra por mes ----- */
+    const meses = {};
+    dias.forEach(function(p){ const k = p.clave.slice(0, 7); const m = meses[k] = meses[k] || { clave: k, ventas: 0, pedidos: 0, unidades: 0 }; m.ventas += p.ventas; m.pedidos += p.pedidos; m.unidades += p.unidades; });
+    let pts = Object.keys(meses).sort().map(function(k){ return meses[k]; });
+    // El primer y el último mes pueden estar a medias; los meses sin ningún pedido al inicio no se dibujan
+    while(pts.length && !pts[0].pedidos) pts.shift();
+    const M = METRICAS[metrica];
+    $('v-titulo').textContent = M.titulo;
+    if(metrica === 'unidades' && !(data.dias || []).some(function(d){ return d.unidades !== undefined; })){
+      box.appendChild(el('p', 'v-vacio', 'Las unidades por mes se activan cuando se actualice la base de datos (pendiente).')); return;
     }
+    const mesActual = hoyCaracas().slice(0, 7);
+    const vals = pts.map(function(p){ return M.valor(p); });
+    if(!pts.length || !vals.some(function(v){ return v > 0; })){ box.appendChild(el('p', 'v-vacio', 'Todavía no hay ventas para graficar.')); return; }
+
+    const W = 720, H = 300, L = 62, R = 12, T = 26, B = 40;
+    const max = Math.max.apply(null, vals);
+    const paso = (function(){ const g = Math.pow(10, Math.floor(Math.log10(max))); const f = max / g; return (f <= 2 ? 0.5 : f <= 5 ? 1 : 2) * g; })();
+    const tope = Math.ceil(max / paso) * paso;
+    const yDe = function(v){ return T + (H - T - B) * (1 - v / tope); };
+    const s = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': M.titulo + ': ' + pts.map(function(p, i){ return etiquetaMes(p.clave) + ' ' + M.fmt(vals[i]); }).join(', ') });
+    for(let v = 0; v <= tope + 0.001; v += paso){
+      const y = yDe(v);
+      s.appendChild(svg('line', { x1: L, x2: W - R, y1: y, y2: y, class: 'grid' }));
+      const t = svg('text', { x: L - 8, y: y + 6, 'text-anchor': 'end' }); t.textContent = M.eje(v); s.appendChild(t);
+    }
+    const ancho = (W - L - R) / pts.length, bw = Math.max(8, Math.min(70, ancho * 0.62));
+    const centro = function(i){ return L + ancho * i + ancho / 2; };
+    pts.forEach(function(p, i){
+      const enCurso = p.clave === mesActual;
+      const h = (H - T - B) * (vals[i] / tope);
+      const r = svg('rect', { x: centro(i) - bw / 2, y: H - B - h, width: bw, height: Math.max(vals[i] > 0 ? 2 : 0, h), class: 'bar' + (enCurso ? ' bar--curso' : '') });
+      const t = svg('title'); t.textContent = etiquetaMes(p.clave) + (enCurso ? ' (mes en curso)' : '') + ': ' + M.fmt(vals[i]) + ' · ' + entero(p.pedidos) + (p.pedidos === 1 ? ' pedido' : ' pedidos') + ' · ' + usd(p.ventas) + ' · ' + entero(p.unidades) + ' unidades'; r.appendChild(t);
+      s.appendChild(r);
+      if(pts.length <= 14){ const v = svg('text', { x: centro(i), y: H - B - h - 7, 'text-anchor': 'middle', class: 'valor' }); v.textContent = M.fmt(vals[i]); s.appendChild(v); }
+      const tx = svg('text', { x: centro(i), y: H - 14, 'text-anchor': 'middle' }); tx.textContent = etiquetaMes(p.clave) + (enCurso ? '*' : ''); s.appendChild(tx);
+    });
+
+    /* ----- Línea de tendencia: solo con meses completos (el mes en curso está a medias y la bajaría) ----- */
+    const completos = pts.map(function(p, i){ return { x: i, y: vals[i], curso: p.clave === mesActual }; }).filter(function(p){ return !p.curso; });
+    const tr = tendencia(completos);
+    if(tr){
+      const x0 = centro(0), x1 = centro(pts.length - 1);
+      const y0 = yDe(Math.max(0, tr.a)), y1 = yDe(Math.max(0, tr.a + tr.b * (pts.length - 1)));
+      s.appendChild(svg('line', { x1: x0, y1: y0, x2: x1, y2: y1, class: 'tendencia' }));
+      const sube = tr.b > 0, plano = Math.abs(tr.b) < (Math.max.apply(null, completos.map(function(p){ return p.y; })) || 1) * 0.02;
+      ley.hidden = false;
+      const nota = pts.some(function(p){ return p.clave === mesActual; }) ? ' El mes en curso (*) va a medias y no cuenta para la tendencia.' : '';
+      ley.appendChild(document.createTextNode('Línea punteada: tendencia. '));
+      if(plano) ley.appendChild(el('b', null, 'Se mantiene estable'));
+      else { const f = el('span', sube ? 'sube' : 'baja', (sube ? '▲ Sube ' : '▼ Baja ') + M.delta(tr.b) + ' por mes'); ley.appendChild(f); }
+      ley.appendChild(document.createTextNode('.' + nota));
+    } else {
+      ley.hidden = false; ley.textContent = 'La línea de tendencia aparece cuando hay al menos 2 meses completos.';
+    }
+    box.appendChild(s);
+  }
+
+  function pintarGraficaDiaria(dias, box){
+    $('v-titulo').textContent = 'Ventas por día';
+    const pts = dias.map(function(d){ return { clave: d.clave, ventas: d.ventas, pedidos: d.pedidos }; });
     const total = pts.reduce(function(s, p){ return s + p.ventas; }, 0);
     if(!pts.length || total <= 0){ box.appendChild(el('p', 'v-vacio', 'Todavía no hay ventas en este periodo.')); return; }
     const W = 720, H = 280, L = 62, R = 8, T = 14, B = 38;
     const max = Math.max.apply(null, pts.map(function(p){ return p.ventas; }));
     const paso = (function(){ const g = Math.pow(10, Math.floor(Math.log10(max))); const f = max / g; return (f <= 2 ? 0.5 : f <= 5 ? 1 : 2) * g; })();
     const tope = Math.ceil(max / paso) * paso;
-    const s = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Gráfica de ventas por ' + (porMes ? 'mes' : 'día') + ': total ' + usd(total) });
+    const s = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Gráfica de ventas por día: total ' + usd(total) });
     for(let v = 0; v <= tope + 0.001; v += paso){
       const y = T + (H - T - B) * (1 - v / tope);
       s.appendChild(svg('line', { x1: L, x2: W - R, y1: y, y2: y, class: 'grid' }));
@@ -146,12 +223,12 @@
     pts.forEach(function(p, i){
       const x = L + ancho * i + (ancho - bw) / 2;
       const h = (H - T - B) * (p.ventas / tope);
-      const r = svg('rect', { x: x, y: H - B - h, width: bw, height: Math.max(p.ventas > 0 ? 2 : 0, h), class: 'bar' + (!porMes && p.clave === hoy ? ' bar--hoy' : '') });
-      const t = svg('title'); t.textContent = (porMes ? etiquetaMes(p.clave) : etiquetaDia(p.clave)) + ': ' + usd(p.ventas) + ' · ' + p.pedidos + (p.pedidos === 1 ? ' pedido' : ' pedidos'); r.appendChild(t);
+      const r = svg('rect', { x: x, y: H - B - h, width: bw, height: Math.max(p.ventas > 0 ? 2 : 0, h), class: 'bar' + (p.clave === hoy ? ' bar--hoy' : '') });
+      const t = svg('title'); t.textContent = etiquetaDia(p.clave) + ': ' + usd(p.ventas) + ' · ' + p.pedidos + (p.pedidos === 1 ? ' pedido' : ' pedidos'); r.appendChild(t);
       s.appendChild(r);
       if(i % cada === 0){
         const tx = svg('text', { x: x + bw / 2, y: H - 12, 'text-anchor': 'middle' });
-        tx.textContent = porMes ? etiquetaMes(p.clave) : etiquetaDia(p.clave); s.appendChild(tx);
+        tx.textContent = etiquetaDia(p.clave); s.appendChild(tx);
       }
     });
     box.appendChild(s);
@@ -208,6 +285,13 @@
     });
   });
   $('ventas-fechas').addEventListener('submit', function(e){ e.preventDefault(); cargar(); });
+  sec.querySelectorAll('[data-metrica]').forEach(function(b){
+    b.addEventListener('click', function(){
+      metrica = b.dataset.metrica;
+      sec.querySelectorAll('[data-metrica]').forEach(function(x){ const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
+      if(data) pintarGrafica();
+    });
+  });
   sec.querySelectorAll('[data-grupo]').forEach(function(b){
     b.addEventListener('click', function(){
       grupo = b.dataset.grupo;
@@ -223,8 +307,8 @@
         const desde = r.desde || '2026-06-01';
         const dias = []; let ventas = 0, pedidos = 0;
         for(let d = desde, i = 0; d <= r.hasta && i < 400; d = sumarDias(d, 1), i++){
-          const n = (i * 7 + d.charCodeAt(9)) % 5; const v = n === 0 ? 0 : n * 14.5 + (i % 3) * 6;
-          dias.push({ dia: d, ventas: v, pedidos: n === 0 ? 0 : Math.ceil(n / 2) }); ventas += v; pedidos += n === 0 ? 0 : Math.ceil(n / 2);
+          const n = (i * 7 + d.charCodeAt(9)) % 5; const crecimiento = 1 + (partes(d).m - 6) * 0.16; const v = n === 0 ? 0 : (n * 14.5 + (i % 3) * 6) * crecimiento;
+          dias.push({ dia: d, ventas: v, pedidos: n === 0 ? 0 : Math.ceil(n / 2), unidades: n === 0 ? 0 : Math.ceil(n / 2) * 3 + (i % 2) }); ventas += v; pedidos += n === 0 ? 0 : Math.ceil(n / 2);
         }
         const prods = [['Hidratante Uva Going', 'Going Nutrición', 0.22], ['Gel Energético Café Going', 'Going Nutrición', 0.14], ['Proteína en Polvo Chocolate — 600 g Going', 'Going Nutrición', 0.18], ['Sport Hydration Drink Mix Fresa Limonada — Bolsa 440 g Skratch Labs', 'Skratch Labs', 0.16], ['FastChews Naranja SaltStick', 'SaltStick', 0.1], ['Barra de Proteína Cookie Dough Probar', 'Probar', 0.12], ['Gel Orgánico Gold Honey Stinger', 'Honey Stinger', 0.08]];
         const productos = prods.map(function(p){ return { producto: p[0], marca: p[1], unidades: Math.round(ventas * p[2] / 4), ventas: Math.round(ventas * p[2] * 100) / 100 }; });

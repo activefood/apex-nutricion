@@ -21,6 +21,10 @@ export default {
       const blocked = await guardPublicApi(request, env.API_LIMITER, 'check-welcome-coupon');
       return blocked || handleCheckWelcomeCoupon(request, env);
     }
+    if (url.pathname === '/api/newsletter') {
+      const blocked = await guardPublicApi(request, env.API_LIMITER, 'newsletter');
+      return blocked || handleNewsletter(request, env);
+    }
     if (url.pathname === '/api/promos') {
       return handlePromos(request, env);
     }
@@ -77,6 +81,7 @@ export default {
       ctx.waitUntil(vigilarBlackFriday(env));
       ctx.waitUntil(sincronizarMarketing(env, false));
       ctx.waitUntil(sincronizarInstagram(env, false));
+      ctx.waitUntil(relacionarPedidos(env));
     }
   }
 };
@@ -313,6 +318,31 @@ async function handleSubmitReview(request, env) {
   }
 
   return resenaSupabase(env, payload);
+}
+
+/* ---------- /api/newsletter ----------
+   Suscripción al newsletter de Apex (formulario del inicio). Guarda solo el correo en Supabase (marketing.newsletter).
+   Al cliente siempre se le responde igual (haya o no estado suscrito antes) y el campo oculto "website" atrapa robots. */
+async function handleNewsletter(request, env) {
+  if (request.method !== 'POST') return json({ ok: false, error: 'Method not allowed' }, 405);
+  if (!usaSupabase(env)) {
+    console.error('[newsletter] Supabase no está configurado');
+    return json({ ok: false, error: 'No se pudo guardar. Intenta otra vez.' }, 500);
+  }
+  let body;
+  try { body = (await readJsonBody(request)).payload; } catch (err) { return json({ ok: false, error: 'Datos inválidos' }, 400); }
+  if (!body || typeof body !== 'object') return json({ ok: false, error: 'Datos inválidos' }, 400);
+  if (typeof body.website === 'string' && body.website.trim() !== '') return json({ ok: true });   // robot: se hace como si hubiera salido bien
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  if (!email || email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) return json({ ok: false, error: 'Escribe un correo válido.' }, 400);
+  try {
+    const r = await supabaseRpc(env, 'newsletter_suscribir', { p_email: email, p_origen: 'inicio' });
+    if (!r || r.ok !== true) return json({ ok: false, error: (r && r.error === 'Correo inválido') ? 'Escribe un correo válido.' : 'No se pudo guardar. Intenta otra vez.' }, 400);
+  } catch (err) {
+    console.error('[newsletter] Supabase: ' + String(err));
+    return json({ ok: false, error: 'No se pudo guardar. Intenta otra vez.' }, 502);
+  }
+  return json({ ok: true });
 }
 
 /* ---------- /api/get-reviews ----------
@@ -731,6 +761,20 @@ async function vigilarBlackFriday(env) {
   }
 }
 
+/* ---------- Pedidos relacionados ----------
+   Un cliente cancela (o repite) un pedido y hace otro enseguida: la base enlaza cada pedido cancelado con el pedido del mismo cliente
+   (mismo teléfono, o nombre y productos parecidos, en un rango de 72 horas) y lo guarda en tienda.pedido_relacion. Corre cada hora
+   y al cancelar; es idempotente. Nunca lanza error. */
+async function relacionarPedidos(env) {
+  try {
+    if (!usaSupabase(env)) return;
+    const r = await supabaseRpc(env, 'tienda_relacionar_pedidos', {});
+    if (!r || r.ok !== true) console.error('[pedidos] No se pudieron relacionar: ' + JSON.stringify(r).slice(0, 160));
+  } catch (err) {
+    console.error('[pedidos] Relacionar pedidos: ' + String(err));
+  }
+}
+
 /* ---------- Panel de pedidos (panel.html) ----------
    La persona que recibe los pedidos entra con un código compartido y ve los pedidos por etapa. Este Worker es el único
    que habla con Supabase (con SUPABASE_RPC_TOKEN); el navegador nunca ve esas claves.
@@ -915,6 +959,11 @@ async function handlePanel(request, env, url, ctx) {
     if (result && result.ok === true && action === 'canceled' && result.reembolso) {
       const rem = enviarReembolsoGa4(env, result.reembolso);
       if (ctx && ctx.waitUntil) ctx.waitUntil(rem); else await rem;
+    }
+    // Un pedido cancelado se enlaza enseguida con otro del mismo cliente (si lo hay), en segundo plano.
+    if (result && result.ok === true && action === 'canceled') {
+      const rel = relacionarPedidos(env);
+      if (ctx && ctx.waitUntil) ctx.waitUntil(rel);
     }
     panelListCache = null;
     if (!result || result.ok !== true) {

@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="panel/icon-180.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="panel/icon-192.png?v=2">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var.woff2" crossorigin>
-<link rel="stylesheet" href="panel/panel.css?v=1">
+<link rel="stylesheet" href="panel/panel.css?v=5">
 </head>
 <body>
 
@@ -67,7 +67,17 @@
     </form>
     <p class="ventas-error" id="ventas-error" role="alert" hidden></p>
     <div class="kpis" id="v-kpis"></div>
-    <section class="v-card"><h3>Ventas por <span id="v-unidad">día</span></h3><div id="v-chart" class="v-chart"></div></section>
+    <section class="v-card">
+      <div class="v-card-head"><h3 id="v-titulo">Ventas por día</h3>
+        <div class="ventas-filtro ventas-filtro--min" id="v-metricas" role="group" aria-label="Qué ver por mes" hidden>
+          <button type="button" class="chip is-on" data-metrica="pedidos" aria-pressed="true">Pedidos</button>
+          <button type="button" class="chip" data-metrica="ventas" aria-pressed="false">Vendido ($)</button>
+          <button type="button" class="chip" data-metrica="ticket" aria-pressed="false">Ticket promedio</button>
+          <button type="button" class="chip" data-metrica="unidades" aria-pressed="false">Unidades</button>
+        </div></div>
+      <div id="v-chart" class="v-chart"></div>
+      <p class="v-leyenda" id="v-leyenda" hidden></p>
+    </section>
     <section class="v-card">
       <div class="v-card-head"><h3>Distribución de productos</h3>
         <div class="ventas-filtro ventas-filtro--min" role="group" aria-label="Agrupar por">
@@ -82,6 +92,6 @@
 </div>
 
 <script src="panel/panel.js?v=12"></script>
-<script src="panel/ventas.js?v=4"></script>
+<script src="panel/ventas.js?v=9"></script>
 </body>
 </html>

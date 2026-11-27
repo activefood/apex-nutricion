@@ -1046,17 +1046,68 @@ function initMobileMenu(){
   }, { passive: true });
 }
 
-/* ---------- Boletín ---------- */
+/* ---------- Boletín ----------
+   Formulario del inicio: manda el correo a /api/newsletter (el Worker lo guarda en Supabase). Solo el correo; el campo oculto "website" es una trampa para robots. */
 function initNewsletterForms(){
   document.querySelectorAll('[data-newsletter-form]').forEach(function(form){
-    form.addEventListener('submit', function(e){
+    const input = form.querySelector('input[type="email"]');
+    const trap = form.querySelector('input[name="website"]');
+    const btn = form.querySelector('button[type="submit"]');
+    const box = form.closest('.newsletter') || form.parentNode;
+    const success = box.querySelector('[data-newsletter-success]');
+    const error = box.querySelector('[data-newsletter-error]');
+    function mostrarError(msg){ if(error){ error.textContent = msg; error.hidden = false; } }
+    form.addEventListener('submit', async function(e){
       e.preventDefault();
-      const success = form.querySelector('[data-newsletter-success]');
-      const input = form.querySelector('input[type="email"]');
-      if(success){ success.classList.add('visible'); }
-      if(input){ input.value = ''; }
+      if(error) error.hidden = true;
+      const email = input ? input.value.trim() : '';
+      if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)){ mostrarError('Escribe un correo válido, por ejemplo nombre@correo.com.'); if(input) input.focus(); return; }
+      if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
+      try {
+        const res = await fetch('/api/newsletter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, website: trap ? trap.value : '' }) });
+        let j = null;
+        try { j = await res.json(); } catch(err){}
+        if(!res.ok || !j || j.ok !== true) throw new Error((j && j.error) || (res.status === 429 ? 'Demasiados intentos. Espera un minuto y vuelve a probar.' : 'No se pudo guardar. Intenta otra vez.'));
+        form.hidden = true;
+        if(success) success.classList.add('visible');
+        form.dispatchEvent(new CustomEvent('newsletter:ok', { bubbles: true }));
+        if(typeof trackEvent === 'function'){ try { trackEvent('generate_lead', { method: 'newsletter' }); } catch(err){} }
+      } catch(err){
+        mostrarError(err.message || 'No se pudo guardar. Intenta otra vez.');
+        if(btn){ btn.disabled = false; btn.textContent = 'Suscribirme'; }
+      }
     });
   });
+}
+
+/* ---------- Newsletter: cartelito flotante del inicio ----------
+   Sale a los 12 s o cuando se baja el 35% de la página (lo primero que pase). Si lo cierran no vuelve por 14 días; si se suscriben, nunca más.
+   Sin animación (solo el carrusel puede animar al entrar) y sin quitarle el foco a nada: no es una ventana modal. */
+function initNewsletterFloat(){
+  const box = document.querySelector('[data-newsletter-float]');
+  if(!box) return;
+  const KEY = 'apex_newsletter';
+  const LATER = 14 * 24 * 3600 * 1000;
+  function leer(){ try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){ return null; } }
+  function guardar(estado, ms){ try { localStorage.setItem(KEY, JSON.stringify({ estado: estado, hasta: ms ? Date.now() + ms : 0 })); } catch(e){} }
+  const prev = leer();
+  if(prev && (prev.estado === 'suscrito' || (prev.hasta && prev.hasta > Date.now()))) return;
+  let visto = false, timer = null;
+  function cerrar(estado, ms){ guardar(estado, ms); box.hidden = true; }
+  function mostrar(){
+    if(visto) return; visto = true;
+    clearTimeout(timer); window.removeEventListener('scroll', alBajar);
+    box.hidden = false;
+  }
+  function alBajar(){
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    if(h > 0 && window.scrollY / h >= 0.35) mostrar();
+  }
+  timer = setTimeout(mostrar, 12000);
+  window.addEventListener('scroll', alBajar, { passive: true });
+  box.querySelector('[data-newsletter-close]').addEventListener('click', function(){ cerrar('cerrado', LATER); });
+  box.addEventListener('keydown', function(e){ if(e.key === 'Escape') cerrar('cerrado', LATER); });
+  box.addEventListener('newsletter:ok', function(){ guardar('suscrito', 0); setTimeout(function(){ box.hidden = true; }, 5000); });
 }
 
 /* ---------- Botón "Agregar al carrito" del producto destacado del home ---------- */
@@ -3031,6 +3082,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initMegaMenu();
   initMobileMenu();
   initNewsletterForms();
+  initNewsletterFloat();
   initAddToCartButtons();
   initFeatureAddToCart();
   initCardAddToCartButtons();

@@ -41,7 +41,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
-<link rel="stylesheet" href="styles.css?v=162">
+<link rel="stylesheet" href="styles.css?v=168">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -1387,6 +1387,25 @@
   </div>
 </footer>
 
-<script src="app.js?v=118"></script>
+<!-- ============ Newsletter de Apex: cartelito flotante (lo muestra app.js después de unos segundos o al bajar; se puede cerrar) ============ -->
+<aside class="newsletter-float" data-newsletter-float aria-label="Newsletter de Apex" hidden>
+  <button class="newsletter-float-close" type="button" data-newsletter-close aria-label="Cerrar el aviso del newsletter">&times;</button>
+  <div class="newsletter">
+    <p class="eyebrow">Newsletter de Apex</p>
+    <h2 class="h-28">Entérate primero</h2>
+    <p class="newsletter-copy">Ofertas y lanzamientos de Apex Nutrición, directo a tu correo. Solo cuando haya algo que valga la pena.</p>
+    <form class="newsletter-form" data-newsletter-form novalidate>
+      <label class="visually-hidden" for="newsletter-email">Tu correo</label>
+      <input id="newsletter-email" type="email" name="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com" maxlength="254" required>
+      <input class="newsletter-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="btn btn--primary" type="submit">Suscribirme</button>
+    </form>
+    <p class="newsletter-error" data-newsletter-error role="alert" hidden></p>
+    <p class="newsletter-success" data-newsletter-success role="status">¡Listo! Ya estás en la lista. Te escribiremos cuando haya novedades.</p>
+    <p class="newsletter-note">Al suscribirte aceptas recibir correos de Apex Nutrición. Puedes darte de baja cuando quieras escribiéndonos por WhatsApp.</p>
+  </div>
+</aside>
+
+<script src="app.js?v=120"></script>
 </body>
 </html>

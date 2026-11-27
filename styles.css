@@ -1600,6 +1600,52 @@ button.pill:hover{ border-color: var(--ink); }
   .newsletter-form{ flex-direction: column; }
 }
 
+/* Newsletter del inicio: cartelito flotante (solo en la página de inicio). Aparece sin animación (la única animación de entrada permitida es la del carrusel),
+   abajo a la izquierda en escritorio y sobre el botón de WhatsApp en celular. Se puede cerrar y no vuelve a salir por 14 días; si se suscribe, nunca más. */
+.newsletter-trap{ position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.newsletter-form[hidden], .newsletter-error[hidden]{ display: none; }
+.newsletter-float{
+  position: fixed;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 70;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-control);
+  box-shadow: var(--shadow-menu);
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+}
+.newsletter-float[hidden]{ display: none; }
+.newsletter-float .newsletter{ text-align: left; max-width: none; margin: 0; }
+.newsletter-float .eyebrow{ margin-bottom: var(--sp-1); }
+.newsletter-float h2{ font-size: 26px; line-height: 1.05; margin-bottom: var(--sp-2); padding-right: 36px; }
+.newsletter-float .newsletter p{ font-size: 14px; color: var(--ink-2); margin-bottom: var(--sp-3); }
+.newsletter-float .newsletter-form{ flex-direction: column; gap: var(--sp-2); }
+.newsletter-float .newsletter-form input[type="email"]{ flex: none; width: 100%; height: 48px; font-size: 16px; }
+.newsletter-float .newsletter-form .btn{ width: 100%; min-height: 48px; }
+.newsletter-float .btn[disabled]{ opacity: .6; cursor: progress; }
+.newsletter-float .newsletter .newsletter-note{ font-size: 11.5px; color: var(--ink-3); margin: var(--sp-3) 0 0; }
+.newsletter-float .newsletter .newsletter-success{ color: var(--ok); margin: var(--sp-2) 0 0; font-weight: 600; }
+.newsletter-float .newsletter .newsletter-error{ color: var(--sale); background: var(--sale-sf); border-radius: var(--r-control); padding: var(--sp-2) var(--sp-3); margin: var(--sp-2) 0 0; font-size: 13px; }
+.newsletter-float-close{
+  position: absolute; top: 6px; right: 6px;
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  background: transparent; border: 0; color: var(--ink); cursor: pointer; font-size: 26px; line-height: 1;
+}
+.newsletter-float-close:hover{ color: var(--accent-text); }
+.newsletter-float-close:focus-visible{ outline: 3px solid var(--ink); outline-offset: -3px; }
+@media (max-width: 640px){
+  .newsletter-float{ left: 12px; right: 12px; width: auto; max-width: none; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); padding: var(--sp-4); }
+  .newsletter-float .newsletter-copy{ display: none; }
+  .newsletter-float h2{ font-size: 22px; margin-bottom: var(--sp-3); }
+  .newsletter-float .newsletter-form{ flex-direction: row; gap: var(--sp-2); }
+  .newsletter-float .newsletter-form input[type="email"]{ flex: 1; width: auto; min-width: 0; }
+  .newsletter-float .newsletter-form .btn{ width: auto; padding: 0 var(--sp-4); white-space: nowrap; }
+}
+
 /* ==========================================================================
    Footer
    ========================================================================== */

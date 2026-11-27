@@ -51,6 +51,7 @@ tipografía monoespaciada — no como una tienda de lujo ni como una app de tecn
 - **Ámbar Aviso** (#8A6510) sobre (#FBF3DD) — Avisos.
 - **Rojo Oferta / Error** (#B3261E) sobre (#FDECEB) — Errores de cupón, precios de oferta. Error de checkout: (#C0392B).
 - **Verde WhatsApp** (#1D8548) — Solo el botón flotante "¿Dudas? Escríbenos".
+- **Cartelito flotante del newsletter** (`.newsletter-float`, solo en el inicio): tarjeta de papel con borde de tinta 1px y la sombra dura del menú (`--shadow-menu`), esquinas de 2px, abajo a la izquierda (en celular, de lado a lado y sobre el botón de WhatsApp, sin el párrafo largo). Sale sin animación a los 12 s o al bajar el 35% de la página; cierra con la × (44px) o Escape y no vuelve por 14 días; si se suscribe, nunca más. Campo de correo de 48px con letra de 16px (para que el iPhone no haga zoom). No es modal: no atrapa el foco.
 
 ### Colores de marcas representadas (solo como identificador de esa marca)
 Going (#3F7D5C) · Probar (#35618C) · Skratch Labs (#8C6B35) · SaltStick (#6A5B8C) · Honey Stinger (#C98A2B).
@@ -173,3 +174,5 @@ Pensado para usarlo de pie y con una mano: botones de 56 px, letras grandes, tar
 cocina. Celular = pestañas por etapa; pantalla grande (≥ 900 px) = tres columnas (Nuevos / Entrega /
 Resueltos). El tiempo de espera pasa a ámbar a los 10 min y a rojo a los 30. No se indexa
 (`noindex`, `robots.txt`) y los datos solo salen por `/api/panel/*` con código de acceso.
+
+**Dashboard de Ventas — histórico:** con "Histórico" (o cualquier rango de más de 62 días) la gráfica pasa a ser **una barra por mes** y aparece un filtro de 4 botones en la misma tarjeta: Pedidos (por defecto), Vendido ($), Ticket promedio y Unidades. Es una sola gráfica (el filtro cambia lo que muestra, no hay gráficas separadas). Lleva **línea de tendencia** roja punteada (mínimos cuadrados sobre los meses completos; el mes en curso va en gris con asterisco y no cuenta) y, debajo, una frase en lenguaje normal ("Sube $174 por mes"). En rangos cortos sigue la gráfica de ventas por día, sin filtro.
