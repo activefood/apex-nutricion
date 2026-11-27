@@ -36,6 +36,7 @@
       <span class="clock" id="clock" aria-hidden="true"></span>
     </div>
     <div class="bar-tools">
+      <button type="button" class="tool" id="tool-ventas" aria-pressed="false">Ventas</button>
       <button type="button" class="tool" id="tool-exit">Salir</button>
     </div>
   </header>
@@ -47,9 +48,39 @@
     <div class="list" data-list="all" aria-labelledby="h-list"></div>
   </main>
 
+  <section class="ventas" id="ventas" aria-labelledby="h-ventas" hidden>
+    <div class="ventas-head">
+      <h2 id="h-ventas">Ventas</h2>
+      <span class="ventas-live" id="ventas-live" role="status"></span>
+    </div>
+    <div class="ventas-filtro" role="group" aria-label="Periodo">
+      <button type="button" class="chip is-on" data-periodo="mes" aria-pressed="true">Este mes</button>
+      <button type="button" class="chip" data-periodo="anterior" aria-pressed="false">Mes anterior</button>
+      <button type="button" class="chip" data-periodo="historico" aria-pressed="false">Histórico</button>
+      <button type="button" class="chip" data-periodo="fechas" aria-pressed="false">Fechas</button>
+    </div>
+    <form class="ventas-fechas" id="ventas-fechas" hidden>
+      <label>Desde <input type="date" id="v-desde" required></label>
+      <label>Hasta <input type="date" id="v-hasta" required></label>
+      <button type="submit" class="btn btn--primary">Ver</button>
+    </form>
+    <p class="ventas-error" id="ventas-error" role="alert" hidden></p>
+    <div class="kpis" id="v-kpis"></div>
+    <section class="v-card"><h3>Ventas por <span id="v-unidad">día</span></h3><div id="v-chart" class="v-chart"></div></section>
+    <section class="v-card">
+      <div class="v-card-head"><h3>Distribución de productos</h3>
+        <div class="ventas-filtro ventas-filtro--min" role="group" aria-label="Agrupar por">
+          <button type="button" class="chip is-on" data-grupo="producto" aria-pressed="true">Por producto</button>
+          <button type="button" class="chip" data-grupo="marca" aria-pressed="false">Por marca</button>
+        </div></div>
+      <div id="v-dist" class="v-dist"></div>
+    </section>
+  </section>
+
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="panel/panel.js?v=9"></script>
+<script src="panel/panel.js?v=11"></script>
+<script src="panel/ventas.js?v=3"></script>
 </body>
 </html>

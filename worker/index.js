@@ -507,6 +507,21 @@ async function enviarCompraGa4(env, oc) {
   }
 }
 
+// Manda a GA4 el reembolso (refund) de una venta cancelada. Nunca lanza error ni toca la respuesta del panel.
+async function enviarReembolsoGa4(env, r) {
+  if (!env.GA4_API_SECRET) { console.error('[ga4] Falta GA4_API_SECRET: el reembolso de ' + (r && r.oc) + ' no se mandó'); return; }
+  try {
+    const clientId = String(r.clientId || '').trim() || await ga4ClientIdAnonimo(env, r.telefono, r.cliente);
+    if (!clientId) { console.error('[ga4] Reembolso ' + r.oc + ' sin forma de identificar al cliente'); return; }
+    const body = { client_id: clientId, events: [{ name: 'refund', params: { transaction_id: String(r.oc), value: Math.round((Number(r.total) || 0) * 100) / 100, currency: 'USD', engagement_time_msec: 1 } }] };
+    const url = 'https://www.google-analytics.com/mp/collect?measurement_id=' + encodeURIComponent(env.GA4_MEASUREMENT_ID || 'G-CKJ8VQSLLE') + '&api_secret=' + encodeURIComponent(env.GA4_API_SECRET);
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) console.error('[ga4] Reembolso ' + r.oc + ' HTTP ' + res.status);
+  } catch (err) {
+    console.error('[ga4] Reembolso ' + (r && r.oc) + ' falló: ' + String(err));
+  }
+}
+
 async function sincronizarVentasGa4(env) {
   try {
     const pendientes = await supabaseRpc(env, 'tienda_ga4_pendientes', {});
@@ -806,6 +821,24 @@ async function handlePanel(request, env, url, ctx) {
     return panelJson({ ok: true, now: Date.now(), orders: result.orders });
   }
 
+  // Tablero de ventas: totales, por día, por producto y marca, y comparación con otro periodo. Solo lectura.
+  if (route === 'ventas') {
+    if (request.method !== 'GET') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const q = url.searchParams;
+    const fecha = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null; };
+    const hasta = fecha(q.get('hasta'));
+    if (!hasta) return panelJson({ ok: false, error: 'Falta la fecha final.' }, 400);
+    let r;
+    try {
+      r = await supabaseRpc(env, 'tienda_dashboard_ventas', { p_desde: fecha(q.get('desde')), p_hasta: hasta, p_cdesde: fecha(q.get('cdesde')), p_chasta: fecha(q.get('chasta')) });
+    } catch (err) {
+      console.error('[panel] Supabase (ventas): ' + String(err));
+      return panelJson({ ok: false, error: 'No se pudieron leer las ventas. Intenta otra vez.' }, 502);
+    }
+    if (!r || r.ok !== true) return panelJson({ ok: false, error: (r && r.error) || 'No se pudieron leer las ventas.' }, 400);
+    return panelJson(r);
+  }
+
   if (route === 'recordatorio-prueba') {
     if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
     const blocked = await guardPublicApi(request, env.API_LIMITER, 'panel-recordatorio-prueba');
@@ -864,6 +897,11 @@ async function handlePanel(request, env, url, ctx) {
     if (result && result.ok === true && action === 'completed' && result.enviar_ga4) {
       const envio = enviarCompraGa4(env, orderId);
       if (ctx && ctx.waitUntil) ctx.waitUntil(envio); else await envio;
+    }
+    // Cancelar un pedido que ya era venta: GA4 recibe el reembolso para dejar de contarla.
+    if (result && result.ok === true && action === 'canceled' && result.reembolso) {
+      const rem = enviarReembolsoGa4(env, result.reembolso);
+      if (ctx && ctx.waitUntil) ctx.waitUntil(rem); else await rem;
     }
     panelListCache = null;
     if (!result || result.ok !== true) {

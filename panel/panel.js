@@ -289,6 +289,8 @@
       if(o.stage !== 'new') body.appendChild(el('p', 't-state t-state--ok', 'Confirmado. Falta registrar la entrega.'));
       if(!(ui[o.id] && ui[o.id].confirm)) ui[o.id] = { confirm: startConfirm(o) };
       body.appendChild(editor(o));
+      // Un pedido ya confirmado también se puede cancelar (deja de contar como venta).
+      if(o.stage !== 'new') body.appendChild(button('Cancelar pedido', 'btn btn--danger', function(b){ askCancel(o, b); }));
     }
     card.appendChild(body);
     return card;
@@ -361,7 +363,7 @@
     box.setAttribute('aria-labelledby', 'cancel-title'); box.setAttribute('aria-describedby', 'cancel-text');
     const title = el('h2', 'dialog-title', '¿Cancelar el pedido ' + o.id + '?'); title.id = 'cancel-title';
     const quien = o.customer ? ' de ' + o.customer : '';
-    const text = el('p', 'dialog-text', '¿Seguro que quieres cancelar el pedido ' + o.id + quien + ' (' + usd(o.total) + ')? Esta acción no se puede deshacer.'); text.id = 'cancel-text';
+    const text = el('p', 'dialog-text', '¿Seguro que quieres cancelar el pedido ' + o.id + quien + ' (' + usd(o.total) + ')?' + (o.stage !== 'new' ? ' Ya estaba confirmado: dejará de contar como venta.' : '') + ' Esta acción no se puede deshacer.'); text.id = 'cancel-text';
     const acts = el('div', 'dialog-actions');
     const keep = button('No, volver', 'btn', function(){ close(); });
     const ok = button('Sí, cancelar pedido', 'btn btn--danger-solid', function(b){ close(); act(o, 'canceled', null, trigger); });
