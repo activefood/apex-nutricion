@@ -76,6 +76,7 @@ export default {
       ctx.waitUntil(sincronizarVentasGa4(env));
       ctx.waitUntil(vigilarBlackFriday(env));
       ctx.waitUntil(sincronizarMarketing(env, false));
+      ctx.waitUntil(sincronizarInstagram(env, false));
     }
   }
 };
@@ -1169,6 +1170,100 @@ async function sincronizarMarketing(env, forzar, dias) {
   }
 }
 
+/* ---------- Instagram de Apex (panel de marketing) ----------
+   Igual que el monitor de Going: Apify (actor apify/instagram-scraper) lee las publicaciones PÚBLICAS de @apexnutricionve, sin usar
+   ninguna cuenta de Instagram. Se guarda en Supabase (marketing.ig_perfil / ig_post). Corre una vez al día (07:00 Caracas) y con el
+   botón del portal. Secretos del Worker: APIFY_TOKEN y, opcional, APIFY_TOKEN_RESPALDO (segunda cuenta, como en Going). Cuesta cupo de Apify (1 cuenta, ~12 publicaciones por corrida). */
+const IG_USUARIO = 'apexnutricionve';
+const IG_HORAS_SYNC = [11];     // hora UTC en que la revisión horaria también trae Instagram (11 UTC = 07:00 Caracas)
+const IG_LIMITE = 12;      // publicaciones recientes por corrida (cuidar el cupo de Apify; Going bajó de 12 a 6 por lo mismo)
+const APIFY_URL = 'https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?timeout=150';
+
+// Un intento contra Apify con UN token. Lanza error con el motivo (sin mostrar el token).
+async function apifyConToken(token, usuario, tipo, limite) {
+  const ctl = new AbortController();
+  const timer = setTimeout(function () { ctl.abort(); }, 170000);
+  try {
+    const res = await fetch(APIFY_URL, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + String(token).trim(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directUrls: ['https://www.instagram.com/' + usuario + '/'], resultsType: tipo, resultsLimit: limite, addParentData: true }),
+      signal: ctl.signal
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error('Apify HTTP ' + res.status + ' ' + text.replace(/\s+/g, ' ').slice(0, 140));
+    const items = text ? JSON.parse(text) : [];
+    return Array.isArray(items) ? items : [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Hay dos cuentas de Apify (igual que el monitor de Going): APIFY_TOKEN (principal) y APIFY_TOKEN_RESPALDO. Si la principal se queda sin cupo
+// del mes o falla su token, se prueba con la de respaldo.
+async function apifyInstagram(env, usuario, tipo, limite) {
+  const tokens = [env.APIFY_TOKEN, env.APIFY_TOKEN_RESPALDO].filter(Boolean);
+  let ultimo = null;
+  for (let i = 0; i < tokens.length; i++) {
+    try {
+      return await apifyConToken(tokens[i], usuario, tipo, limite);
+    } catch (err) {
+      ultimo = err;
+      const cupo = /HTTP (402|403|401)|usage|limit|quota/i.test(String(err));
+      if (i < tokens.length - 1 && cupo) { console.error('[marketing] Apify cuenta #' + (i + 1) + ' no sirvió, probando la de respaldo: ' + String(err).slice(0, 120)); continue; }
+      throw err;
+    }
+  }
+  throw ultimo || new Error('Falta el token de Apify');
+}
+
+function igSeguidores(item) {
+  const fuentes = [item.dataSource || {}, item, item.owner || {}];
+  for (let i = 0; i < fuentes.length; i++) {
+    const k = ['followersCount', 'followerCount', 'followers', 'ownerFollowersCount'];
+    for (let j = 0; j < k.length; j++) { const v = fuentes[i][k[j]]; if (typeof v === 'number' && v > 0) return v; }
+  }
+  return null;
+}
+
+function igTipo(item) {
+  const t = String(item.type || '').toLowerCase();
+  if (t === 'video' || item.productType === 'clips') return 'video';
+  if (t === 'sidecar') return 'carrusel';
+  return 'imagen';
+}
+
+// Trae seguidores y publicaciones recientes de la cuenta y los guarda. Sin `forzar`, solo corre a las IG_HORAS_SYNC. Devuelve { ok, posts, seguidores, error }.
+async function sincronizarInstagram(env, forzar) {
+  try {
+    if (!(env.APIFY_TOKEN || env.APIFY_TOKEN_RESPALDO) || !usaSupabase(env)) return { ok: false, error: 'Falta el secreto APIFY_TOKEN en Cloudflare.' };
+    const ahora = new Date();
+    if (!forzar && (IG_HORAS_SYNC.indexOf(ahora.getUTCHours()) === -1 || ahora.getUTCMinutes() > 30)) return { ok: true, omitido: true };
+    const items = (await apifyInstagram(env, IG_USUARIO, 'posts', IG_LIMITE)).filter(function (i) { return i && i.shortCode; });
+    if (!items.length) throw new Error('Apify no devolvió publicaciones de @' + IG_USUARIO);
+    let seguidores = null;
+    for (let i = 0; i < items.length && seguidores === null; i++) seguidores = igSeguidores(items[i]);
+    if (seguidores === null) {   // algunas versiones del actor no traen el perfil junto a los posts: se pide aparte
+      const det = await apifyInstagram(env, IG_USUARIO, 'details', 1);
+      for (let i = 0; i < det.length && seguidores === null; i++) seguidores = igSeguidores(det[i]);
+    }
+    const posts = items.map(function (i) {
+      return { shortcode: i.shortCode, tipo: igTipo(i), publicado: i.timestamp, me_gusta: typeof i.likesCount === 'number' ? i.likesCount : null, comentarios: num(i.commentsCount),
+        vistas: typeof i.videoViewCount === 'number' ? i.videoViewCount : (typeof i.videoPlayCount === 'number' ? i.videoPlayCount : null),
+        texto: i.caption || '', url: i.url || ('https://www.instagram.com/p/' + i.shortCode + '/') };
+    });
+    const r = await supabaseRpc(env, 'marketing_ig_guardar', { p_usuario: IG_USUARIO, p_seguidores: seguidores, p_posts: posts });
+    if (!r || r.ok !== true) throw new Error('No se guardó: ' + (r && r.error));
+    await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'ok', p_filas: posts.length, p_detalle: (seguidores === null ? 'sin dato de seguidores' : seguidores + ' seguidores') });
+    return { ok: true, posts: posts.length, seguidores: seguidores };
+  } catch (err) {
+    console.error('[marketing] Instagram: ' + String(err));
+    try { await supabaseRpc(env, 'marketing_ig_registrar', { p_estado: 'error', p_filas: 0, p_detalle: String(err).replace(/^Error: /, '').slice(0, 300) }); } catch (e2) { /* sin registro */ }
+    const m = String(err);
+    return { ok: false, error: /HTTP 40[13]/.test(m) ? 'Apify no aceptó el token (APIFY_TOKEN en Cloudflare).' : (/usage|limit|402/i.test(m) ? 'La cuenta de Apify se quedó sin cupo este mes.' : 'No se pudo traer el Instagram de Apex.') };
+  }
+}
+
 async function handleMarketing(request, env, url) {
   if (!env.MARKETING_CODE || !usaSupabase(env)) {
     console.error('[marketing] Falta MARKETING_CODE o la configuración de Supabase');
@@ -1228,6 +1323,33 @@ async function handleMarketing(request, env, url) {
     try { const b = await readJsonBody(request); if (b.payload && b.payload.dias) dias = num(b.payload.dias); } catch (err) { /* usa 3 días */ }
     const r = await sincronizarMarketing(env, true, dias);
     return panelJson({ ok: r.ok, filas: r.filas, error: r.ok ? undefined : r.error }, r.ok ? 200 : 502);
+  }
+
+  if (route === 'instagram') {
+    if (request.method !== 'GET') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const q = url.searchParams;
+    const fecha = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null; };
+    const desde = fecha(q.get('desde')), hasta = fecha(q.get('hasta'));
+    if (!desde || !hasta) return panelJson({ ok: false, error: 'Faltan las fechas.' }, 400);
+    let r, ult = null;
+    try {
+      r = await supabaseRpc(env, 'marketing_ig_leer', { p_usuario: IG_USUARIO, p_desde: desde, p_hasta: hasta, p_cdesde: fecha(q.get('cdesde')), p_chasta: fecha(q.get('chasta')) });
+      ult = await supabaseRpc(env, 'marketing_ig_ultima', {});
+    } catch (err) {
+      console.error('[marketing] Supabase (instagram): ' + String(err));
+      return panelJson({ ok: false, error: 'No se pudieron leer los datos de Instagram. Intenta otra vez.' }, 502);
+    }
+    if (!r || r.ok !== true) return panelJson({ ok: false, error: (r && r.error) || 'No se pudieron leer los datos de Instagram.' }, 400);
+    r.ultima_sync = ult;
+    return panelJson(r);
+  }
+
+  if (route === 'instagram-actualizar') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const blocked = await guardPublicApi(request, env.API_LIMITER, 'marketing-instagram');
+    if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    const r = await sincronizarInstagram(env, true);
+    return panelJson({ ok: r.ok, posts: r.posts, seguidores: r.seguidores, error: r.ok ? undefined : r.error }, r.ok ? 200 : 502);
   }
 
   return panelJson({ ok: false, error: 'Not found' }, 404);

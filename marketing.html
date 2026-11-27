@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Marketing">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var.woff2" crossorigin>
 <link rel="stylesheet" href="panel/panel.css?v=1">
-<link rel="stylesheet" href="marketing/marketing.css?v=1">
+<link rel="stylesheet" href="marketing/marketing.css?v=2">
 </head>
 <body>
 
@@ -82,11 +82,25 @@
       <section class="v-card"><h3>Páginas más vistas</h3><div id="mk-paginas" class="v-dist"></div></section>
       <section class="v-card"><h3>Ciudades</h3><div id="mk-ciudades" class="v-dist"></div></section>
     </div>
+
+    <section class="mk-ig" aria-labelledby="h-ig">
+      <div class="ventas-head">
+        <h2 id="h-ig">Instagram de Apex</h2>
+        <span class="ventas-live" id="ig-live" role="status"></span>
+      </div>
+      <p class="ventas-error" id="ig-error" role="alert" hidden></p>
+      <p class="mk-aviso" id="ig-aviso" hidden></p>
+      <div class="kpis mk-kpis" id="ig-kpis"></div>
+      <div class="mk-dos">
+        <section class="v-card"><h3>Qué formato funciona mejor</h3><div id="ig-tipos" class="v-dist"></div></section>
+        <section class="v-card"><h3>Mejores publicaciones</h3><div id="ig-top" class="v-dist"></div></section>
+      </div>
+    </section>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="marketing/marketing.js?v=2"></script>
+<script src="marketing/marketing.js?v=3"></script>
 </body>
 </html>

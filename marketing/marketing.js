@@ -129,6 +129,7 @@
       data._r = r;
       err.hidden = true;
       pintar();
+      cargarIg(r);
       setLive(true, 'Al día');
     } catch(e){
       if(e.auth){ mostrarLogin(silencioso ? 'La sesión se cerró. Entra otra vez.' : ''); }
@@ -136,6 +137,97 @@
     }
     cargando = false;
   }
+  /* ---------- Instagram (sección aparte: si falla, el resto del portal sigue igual) ---------- */
+  let dataIg = null;
+  function pedirIg(r){
+    if(DEMO) return demoIg(r);
+    return api('instagram?' + new URLSearchParams({ desde: r.desde, hasta: r.hasta, cdesde: r.cdesde, chasta: r.chasta }).toString());
+  }
+  async function cargarIg(r){
+    const err = $('ig-error');
+    try {
+      dataIg = await pedirIg(r);
+      dataIg._r = r; err.hidden = true;
+      pintarIg();
+    } catch(e){
+      if(e.auth) return;
+      err.hidden = false; err.textContent = e.message || 'No se pudieron leer los datos de Instagram.';
+    }
+  }
+  const NOMBRE_TIPO = { video: 'Videos y reels', imagen: 'Fotos', carrusel: 'Carruseles' };
+  function pintarIg(){
+    const a = dataIg.actual || {}, c = dataIg.comparacion, r = dataIg._r;
+    const hayComp = c && c.publicaciones > 0;
+    $('ig-live').textContent = '@' + dataIg.usuario + ' · actualizado ' + haceCuanto(dataIg.actualizado);
+    const aviso = $('ig-aviso'); aviso.textContent = '';
+    const ul = dataIg.ultima_sync;
+    if(!dataIg.actualizado){
+      aviso.hidden = false;
+      aviso.appendChild(document.createTextNode('Todavía no hay datos de Instagram. '));
+      const b = el('button', 'linkbtn', 'Traer Instagram ahora'); b.type = 'button'; b.addEventListener('click', actualizarIg); aviso.appendChild(b);
+      if(ul && ul.estado === 'error') aviso.appendChild(document.createTextNode(' Último intento: ' + ul.detalle));
+    } else if(ul && ul.estado === 'error'){
+      aviso.hidden = false; aviso.textContent = 'La última actualización de Instagram falló (' + ul.detalle + '). Los números pueden estar atrasados.';
+    } else {
+      aviso.hidden = false;
+      aviso.appendChild(document.createTextNode('Se actualiza solo cada día. '));
+      const b = el('button', 'linkbtn', 'Actualizar Instagram ahora'); b.type = 'button'; b.addEventListener('click', actualizarIg); aviso.appendChild(b);
+    }
+    const n = a.publicaciones || 0, conMg = a.con_me_gusta || 0;
+    const mgProm = conMg ? a.me_gusta / conMg : 0, cmProm = n ? a.comentarios / n : 0;
+    const pMg = hayComp && c.con_me_gusta ? c.me_gusta / c.con_me_gusta : (hayComp ? 0 : null), pCm = hayComp ? c.comentarios / c.publicaciones : null;
+    const inter = a.seguidores && n ? (mgProm + cmProm) / a.seguidores * 100 : 0;
+    const k = $('ig-kpis'); k.textContent = '';
+    const seg = a.seguidores != null ? entero(a.seguidores) : '—';
+    const crec = (a.seguidores != null && a.seguidores_inicio != null) ? a.seguidores - a.seguidores_inicio : null;
+    const dSeg = crec === null ? null : (function(){ const b = el('span', 'delta ' + (crec > 0 ? 'delta--up' : crec < 0 ? 'delta--down' : '')); b.textContent = (crec > 0 ? '▲ +' : crec < 0 ? '▼ ' : '= ') + entero(crec) + ' en el periodo'; return b; })();
+    k.appendChild(kpi('Seguidores', seg, dSeg, 'Cuántas personas siguen la cuenta hoy.'));
+    k.appendChild(kpi('Publicaciones', entero(n), hayComp ? delta(n, c.publicaciones, r.etiqueta) : null));
+    k.appendChild(kpi('Me gusta por publicación', decimal(mgProm), pMg === null ? null : delta(mgProm, pMg, r.etiqueta), 'Promedio. No cuenta las publicaciones que ocultan los me gusta.'));
+    k.appendChild(kpi('Comentarios por publicación', decimal(cmProm), pCm === null ? null : delta(cmProm, pCm, r.etiqueta)));
+    k.appendChild(kpi('Interacción por publicación', decimal(inter) + '%', null, 'Me gusta + comentarios de una publicación promedio, entre los seguidores.'));
+    k.appendChild(kpi('Vistas de videos', entero(a.vistas || 0), hayComp ? delta(a.vistas || 0, c.vistas || 0, r.etiqueta) : null));
+
+    const tp = $('ig-tipos'); tp.textContent = '';
+    const tipos = dataIg.tipos || [];
+    if(!tipos.length) tp.appendChild(el('p', 'v-vacio', 'Sin publicaciones en este periodo.'));
+    else {
+      const maxI = Math.max.apply(null, tipos.map(function(t){ return (Number(t.me_gusta_prom) || 0) + (Number(t.comentarios_prom) || 0); })) || 1;
+      tipos.slice().sort(function(x, y){ return ((+y.me_gusta_prom || 0) + (+y.comentarios_prom || 0)) - ((+x.me_gusta_prom || 0) + (+x.comentarios_prom || 0)); }).forEach(function(t){
+        const inter = (Number(t.me_gusta_prom) || 0) + (Number(t.comentarios_prom) || 0);
+        const row = el('div', 'v-row');
+        row.appendChild(el('b', null, NOMBRE_TIPO[t.tipo] || t.tipo));
+        row.appendChild(el('span', null, decimal(inter)));
+        row.appendChild(el('small', null, entero(t.publicaciones) + (t.publicaciones === 1 ? ' publicación' : ' publicaciones') + ' · ' + decimal(t.me_gusta_prom || 0) + ' me gusta y ' + decimal(t.comentarios_prom || 0) + ' comentarios en promedio'));
+        const m = el('div', 'v-meter'); const f = el('i'); f.style.width = Math.max(2, inter / maxI * 100) + '%'; m.appendChild(f); row.appendChild(m);
+        tp.appendChild(row);
+      });
+    }
+    const tt = $('ig-top'); tt.textContent = '';
+    const top = dataIg.top || [];
+    if(!top.length) tt.appendChild(el('p', 'v-vacio', 'Sin publicaciones en este periodo.'));
+    else top.forEach(function(p){
+      const it = el('div', 'mk-top-item');
+      it.appendChild(el('b', null, (p.texto || '(sin texto)').replace(/\s+/g, ' ')));
+      const meta = el('small', null, etiquetaDia(p.dia) + ' · ' + (NOMBRE_TIPO[p.tipo] || p.tipo) + ' · ' + (p.me_gusta == null ? 'me gusta ocultos' : entero(p.me_gusta) + ' me gusta') + ' · ' + entero(p.comentarios) + ' comentarios' + (p.vistas ? ' · ' + entero(p.vistas) + ' vistas' : ''));
+      it.appendChild(meta);
+      if(p.url && /^https:\/\/(www\.)?instagram\.com\//.test(p.url)){ const a2 = el('a', null, 'Ver en Instagram'); a2.href = p.url; a2.target = '_blank'; a2.rel = 'noopener noreferrer'; it.appendChild(a2); }
+      tt.appendChild(it);
+    });
+  }
+  async function actualizarIg(){
+    toast('Trayendo Instagram… puede tardar hasta 2 minutos.');
+    try {
+      if(DEMO) await new Promise(function(ok){ setTimeout(ok, 600); });
+      else await api('instagram-actualizar', { method: 'POST', body: '{}' });
+      toast('Listo, Instagram actualizado.');
+      if(dataIg) await cargarIg(dataIg._r);
+    } catch(e){
+      if(e.auth) mostrarLogin('La sesión se cerró. Entra otra vez.');
+      else toast(e.message || 'No se pudo actualizar Instagram.', true);
+    }
+  }
+
   function setLive(ok, txt){ $('live').className = 'live ' + (ok ? 'is-ok' : 'is-bad'); $('live-text').textContent = txt; }
 
   function haceCuanto(iso){
@@ -343,6 +435,19 @@
   })();
 
   /* ---------- Demostración (solo localhost con ?demo=1) ---------- */
+  function demoIg(r){
+    return new Promise(function(resolve){
+      setTimeout(function(){
+        const n = Math.max(1, Math.round((diasEntre(r.desde, r.hasta) + 1) / 3));
+        resolve({ ok: true, usuario: 'apexnutricionve', actualizado: new Date().toISOString(), ultima_sync: { estado: 'ok' },
+          actual: { publicaciones: n, me_gusta: n * 64, con_me_gusta: n, comentarios: n * 5, vistas: n * 420, seguidores: 1840, seguidores_inicio: 1790 },
+          comparacion: r.cdesde ? { publicaciones: Math.max(1, n - 1), me_gusta: n * 52, con_me_gusta: Math.max(1, n - 1), comentarios: n * 4, vistas: n * 300 } : null,
+          tipos: [{ tipo: 'video', publicaciones: Math.ceil(n / 2), me_gusta_prom: 91, comentarios_prom: 8, vistas_prom: 840 }, { tipo: 'carrusel', publicaciones: Math.ceil(n / 3), me_gusta_prom: 58, comentarios_prom: 5 }, { tipo: 'imagen', publicaciones: 1, me_gusta_prom: 33, comentarios_prom: 2 }],
+          top: [{ tipo: 'video', dia: r.hasta, me_gusta: 142, comentarios: 14, vistas: 2100, texto: 'Black Friday en Apex: 25% en proteína, hidratante y Skratch hasta el domingo', url: 'https://www.instagram.com/apexnutricionve/' }, { tipo: 'carrusel', dia: r.desde, me_gusta: 77, comentarios: 6, texto: 'Qué tomar en una carrera de 21K', url: 'https://www.instagram.com/apexnutricionve/' }] });
+      }, 250);
+    });
+  }
+
   function demoData(r){
     return new Promise(function(resolve){
       setTimeout(function(){
