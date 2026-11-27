@@ -69,7 +69,8 @@
     }
     btn.disabled = false;
   });
-  $('tool-exit').addEventListener('click', async function(){
+  const salir = $('tool-exit');   // el botón Salir ya no está en la pantalla; si algún día vuelve, funciona igual
+  if(salir) salir.addEventListener('click', async function(){
     try { await api('/api/panel/logout', { method: 'POST', body: '{}' }); } catch(e){}
     showLogin();
   });

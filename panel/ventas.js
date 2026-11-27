@@ -184,7 +184,7 @@
     sec.hidden = !v;
     const board = document.querySelector('.board');
     if(board) board.hidden = v;
-    btn.textContent = v ? 'Pedidos' : 'Ventas';
+    btn.textContent = v ? 'Volver a Pedidos' : 'Dashboard de Ventas';
     btn.setAttribute('aria-pressed', String(v));
     clearInterval(timer);
     if(v){
