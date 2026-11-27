@@ -117,11 +117,34 @@
         </section>
       </div>
     </section>
+
+    <section class="mk-ig" aria-labelledby="h-repo">
+      <div class="ventas-head">
+        <h2 id="h-repo">Reposición de mercancía</h2>
+        <span class="ventas-live" id="repo-live" role="status"></span>
+      </div>
+      <p class="ventas-error" id="repo-error" role="alert" hidden></p>
+      <p class="mk-aviso" id="repo-aviso" hidden></p>
+      <div class="kpis mk-kpis" id="repo-kpis"></div>
+      <div class="mk-dos">
+        <section class="v-card"><h3>Mandar "ya tenemos tu reposición"</h3>
+          <p class="mk-nota">Le llega a cada suscriptor que compró antes y tiene su carrito guardado. Su botón abre el carrito armado con ese pedido y sus datos puestos. A cada persona se le manda como máximo una vez cada 14 días.</p>
+          <button type="button" class="btn btn--primary" id="repo-enviar" disabled>Enviar reposición</button>
+        </section>
+        <section class="v-card"><h3>Probar el correo</h3>
+          <p class="mk-nota">Te mando el mismo correo (con "[PRUEBA]" en el asunto). Si hay un cliente con carrito guardado, el botón abre su carrito de verdad.</p>
+          <form class="ventas-fechas" id="repo-prueba-form" novalidate>
+            <label>Enviar a <input type="email" id="repo-prueba-email" placeholder="tu@correo.com" required maxlength="254" autocomplete="off"></label>
+            <button type="submit" class="btn btn--primary" id="repo-prueba-btn">Enviar prueba</button>
+          </form>
+        </section>
+      </div>
+    </section>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </div>
 
-<script src="marketing/marketing.js?v=7"></script>
+<script src="marketing/marketing.js?v=9"></script>
 </body>
 </html>

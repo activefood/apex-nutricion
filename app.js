@@ -32,19 +32,14 @@ if (window.visualViewport) {
   });
 }
 
-/* ---------- Cupón de bienvenida (10% en la primera compra) ----------
-   No hay cuentas de usuario, así que "primera compra" se detecta por
-   navegador: si este dispositivo/navegador nunca completó un pedido con el
-   código, se ofrece y se aplica en el carrito. Se puede evitar con
-   incógnito/otro dispositivo — es una limitación conocida y aceptada, sin
-   verificación adicional del lado del backend. */
-const WELCOME_COUPON_CODE = 'APEX2026';
-const WELCOME_COUPON_RATE = 0.10;
-const WELCOME_COUPON_STORAGE_KEY = 'apex_welcome_coupon_used';
+/* ---------- 10% por dejar el correo ----------
+   Sin código: cuando el cliente escribe su correo en el carrito y marca la casilla de recibir correos (o ya se suscribió en este navegador),
+   el carrito pregunta a /api/descuento si a ese correo todavía le toca y aplica el 10% solo. Es un solo pedido con descuento por correo: el Worker lo marca
+   como usado al registrarse el pedido. Ya no existe el descuento de primera compra (APEX2026). */
+const NEWSLETTER_COUPON_RATE = 0.10;
 let appliedCoupon = null; // { code, rate } mientras dure la sesión del carrito, o null
 
-/* Promos automáticas por producto (10%, sin código). No se combinan con el 10% de primera
-   compra / APEX2026: si el cliente tiene ese descuento, cubre todo el carrito y reemplaza a estas.
+/* Promos automáticas por producto (10%, sin código). No se combinan con el 10% del correo: en cada producto aplica solo el mayor.
    - Bolsas de hidratante (Going 300 g y Skratch Labs 440 g): hasta el día de la Carrera Nike
      (8-nov-2026, hora de Caracas, inclusive).
    - Barras de proteína Probar: hasta PROBAR_PROMO_LAST_DAY (misma fecha por defecto; cambiar aquí). */
@@ -59,9 +54,9 @@ const PROMO_BADGE_SVG = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none"
    el Worker (/api/promos) lee la hoja publicada y entrega las filas con ESTADO = LISTO. Si el Worker no responde se usa la
    última copia guardada en este navegador (hasta 3 días) y, si no hay, PROMOS_RESPALDO (fechas dentro: si ya vencieron, no aplican).
    Regla del dueño: los descuentos NO se suman. Con un producto en promo en el carrito aplica SOLO el descuento de la promo
-   (couponForCart) y un producto con precio por cantidad no recibe además el 10% de primera compra (hasVolumeDiscount).
+   (couponForCart) y un producto con precio por cantidad no recibe además el 10% del correo (hasVolumeDiscount).
    Las imágenes de los banners y las tarjetas de la página de ofertas siguen siendo manuales (index.html / ofertas.html). */
-const PROMO_COUPON_NAME = 'Primera compra (siempre)';
+const PROMO_COUPON_NAME = 'Primera compra (siempre)';   // fila vieja de la hoja: ya no se usa y se ignora
 const PROMOS_CACHE_KEY = 'apex_promos_v1';
 const PROMOS_FRESH_MS = 10 * 60 * 1000;
 const PROMOS_STALE_MAX_MS = 3 * 24 * 60 * 60 * 1000;
@@ -150,8 +145,7 @@ const PROMOS_RESPALDO = [
   respaldoFila('Cyber Monday', 'SaltStick · FastChews Limonada Rosada', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
   respaldoFila('Cyber Monday', 'SaltStick · FastChews Limón Lima', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
   respaldoFila('Cyber Monday', 'SaltStick · FastChews Naranja', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
-  respaldoFila('Cyber Monday', 'SaltStick · Cápsulas de Electrolitos', 50, '2026-11-30', '2026-11-30', 24, 'caja'),
-  respaldoFila(PROMO_COUPON_NAME, 'Todos los productos', 10, '2026-11-30', '2030-12-31', 1, 'normal')
+  respaldoFila('Cyber Monday', 'SaltStick · Cápsulas de Electrolitos', 50, '2026-11-30', '2026-11-30', 24, 'caja')
 ];
 
 function readPromosCache(maxAgeMs){
@@ -198,19 +192,6 @@ function promoNameActive(nombre){
 function bfActive(){ return promoNameActive('Black Friday'); }
 function cmActive(){ return promoNameActive('Cyber Monday'); }
 function eventActive(){ return activePromos().length > 0; }
-/* Tasa del código de primera compra: la de la hoja (fila "Primera compra (siempre)") o 10%. */
-function welcomePromo(){
-  return PROMOS.find(function(x){ return x.nombre === PROMO_COUPON_NAME; }) || null;
-}
-/* El 10% de primera compra se puede pausar desde la hoja: fila "Primera compra (siempre)" con fechas. Sin la fila, está activo. */
-function welcomeActive(){
-  const p = welcomePromo();
-  return !p || promoActive(p);
-}
-function welcomeRate(){
-  const p = welcomePromo();
-  return p && promoActive(p) ? p.rate : WELCOME_COUPON_RATE;
-}
 /* ¿Alcanza la cantidad mínima? Con precios por cantidad la mínima es la caja (appliedTierUnits); sin ellos, las unidades del carrito. */
 function promoUnitsOk(promo, item){
   const min = promo.min || 1;
@@ -484,11 +465,11 @@ function promoRateForItem(item){
   return itemPromoActive(item) ? PRODUCT_PROMO_RATE : 0;
 }
 /* Con un producto de Black Friday / Cyber Monday en el carrito aplica SOLO el descuento del evento (a los productos de la lista):
-   el 10% de primera compra no se suma ni se usa en los demás productos. Sin evento, el código vale como siempre. */
+   el 10% del correo no se suma ni se usa en los demás productos (y no se gasta). Sin evento, el código vale como siempre. */
 function couponForCart(pricedCart, coupon){
-  return coupon && welcomeActive() && !pricedCart.some(isEventItem) ? coupon : null;
+  return coupon && !pricedCart.some(isEventItem) ? coupon : null;
 }
-/* El código de primera compra y la promo del producto no se suman: gana el mayor. */
+/* El 10% del correo y la promo del producto no se suman: gana el mayor. */
 /* Producto que ya tiene un descuento por cantidad (caja x6/x12/x24 o pareja de bolsas): no recibe además el código. */
 function hasVolumeDiscount(item){
   return (item.appliedTierUnits || 0) > 1 || !!item.appliedPair;
@@ -516,14 +497,14 @@ function discountLabelFor(cart, coupon){
   const priced = applyFamilyPricing(cart);
   const ev = priced.filter(isEventItem);
   if(coupon){
-    // Los descuentos no se suman: en cada producto aplica solo el mayor (el del evento o el 10% de primera compra).
-    const base = 'primera compra ' + Math.round(coupon.rate * 100) + '%';
+    // Los descuentos no se suman: en cada producto aplica solo el mayor (el del evento o el 10% del correo).
+    const base = 'newsletter ' + Math.round(coupon.rate * 100) + '%';
     const pct = promoPctFor(ev);
     const evName = promoNamesFor(ev).join(' y ');
     let txt;
     if(!ev.length) txt = base;
-    else txt = evName + ' ' + pct + ', no se suma a la primera compra';
-    return txt + (coupon.auto ? '' : ' · código ' + coupon.code);
+    else txt = evName + ' ' + pct + ', no se suma al 10% del correo';
+    return txt;
   }
   const rates = [];
   priced.forEach(function(i){
@@ -533,22 +514,9 @@ function discountLabelFor(cart, coupon){
   return rates.sort().map(function(r){ return Math.round(r * 100) + '%'; }).join(' / ') + ' ' + promoLabelForCart(cart);
 }
 
-function hasUsedWelcomeCoupon(){
-  try { return localStorage.getItem(WELCOME_COUPON_STORAGE_KEY) === '1'; }
-  catch(e){ return false; }
-}
-function markWelcomeCouponUsed(){
-  try { localStorage.setItem(WELCOME_COUPON_STORAGE_KEY, '1'); } catch(e){}
-}
-
 
 /* Barra negra de anuncio (arriba del header, en todas las páginas): a quien
-   todavía no haya usado el código de bienvenida le suma ese mensaje al de
-   envío gratis (que queda fijo, siempre visible). */
-/* Textos fijos que hablan del 10% de primera compra ([data-welcome-only]): se ocultan mientras la hoja lo tenga pausado. */
-function initWelcomeCopy(){
-  document.querySelectorAll('[data-welcome-only]').forEach(function(el){ el.hidden = !welcomeActive(); });
-}
+   todavía no se ha suscrito al newsletter le ofrece el 10% junto al envío gratis. */
 function initAnnounceBar(){
   const el = document.querySelector('.announce p');
   if(!el) return;
@@ -571,8 +539,8 @@ function initAnnounceBar(){
     el.innerHTML = emoji + ' <strong>' + top.nombre.toUpperCase() + ': ' + pct + '% OFF</strong> ' + que + ', ' + cuando;
     return;
   }
-  if(!hasUsedWelcomeCoupon() && welcomeActive()){
-    el.innerHTML = '🎉 <strong>10% OFF</strong> automático en tu primera compra &nbsp;·&nbsp; Envío gratis desde <strong>$30</strong> en Caracas';
+  if(!avisoSuscrito()){
+    el.innerHTML = '🎉 Suscríbete al newsletter y obtén <strong>10% OFF</strong> &nbsp;·&nbsp; Envío gratis desde <strong>$30</strong> en Caracas';
   }
 }
 
@@ -763,7 +731,7 @@ function isComingSoonItem(item){
 
 /* Agotado por ahora (hay existencias en otros sabores/presentaciones): no se puede agregar. */
 function isOutOfStockItem(item){
-  return /prote[ií]na en polvo vainilla\s*—\s*600 g/i.test(item.name || '') || (item.kit === true && /prote[ií]na vainilla 600 g/i.test(item.variant || ''));
+  return /prote[ií]na en polvo vainilla\s*—\s*(600 g|sobre 30 g)/i.test(item.name || '') || (item.kit === true && /prote[ií]na vainilla 600 g/i.test(item.variant || ''));
 }
 
 function addItemToCart(item){
@@ -1071,7 +1039,11 @@ function initNewsletterForms(){
         if(!res.ok || !j || j.ok !== true) throw new Error((j && j.error) || (res.status === 429 ? 'Demasiados intentos. Espera un minuto y vuelve a probar.' : 'No se pudo guardar. Intenta otra vez.'));
         if(j.clave && /^[0-9a-f]{32}$/.test(j.clave)){ try { localStorage.setItem('apex_sub', j.clave); } catch(err){} }   // el navegador recuerda al suscriptor (no su correo)
         form.hidden = true;
-        if(success) success.classList.add('visible');
+        if(success){
+          // Solo a una suscripción nueva se le manda el código; si el correo ya estaba, se le dice dónde está.
+          if(!j.clave) success.textContent = 'Ese correo ya estaba suscrito. Para tu 10%, escribe este mismo correo en el carrito (con la casilla marcada) y se aplica solo.';
+          success.classList.add('visible');
+        }
         form.dispatchEvent(new CustomEvent('newsletter:ok', { bubbles: true }));
         if(typeof trackEvent === 'function'){ try { trackEvent('generate_lead', { method: 'newsletter' }); } catch(err){} }
       } catch(err){
@@ -1088,14 +1060,14 @@ function initNewsletterForms(){
    otro día y no se había suscrito, le sale otra vez). Sin animación (solo el carrusel puede animar al entrar) y sin quitarle el foco a nada: no es modal.
    En el carrito no sale, para no estorbar la compra. */
 const AVISO_HTML = '<button class="aviso-flotante-cerrar" type="button" data-aviso-cerrar aria-label="Cerrar el aviso del newsletter">&times;</button>' +
-  '<div class="aviso-caja"><p class="eyebrow">Newsletter de Apex</p><h2 class="h-28">Entérate primero</h2>' +
-  '<p class="aviso-texto">Ofertas y lanzamientos de Apex Nutrición, directo a tu correo. Solo cuando haya algo que valga la pena.</p>' +
+  '<div class="aviso-caja"><p class="eyebrow">Newsletter de Apex</p><h2 class="h-28">10% de descuento</h2>' +
+  '<p class="aviso-texto">Suscríbete a nuestro newsletter y obtén un <strong>10% de descuento</strong> en tu compra. Se aplica solo cuando escribes tu correo en el carrito.</p>' +
   '<form class="aviso-form" data-aviso-form novalidate><label class="visually-hidden" for="aviso-correo">Tu correo</label>' +
   '<input id="aviso-correo" type="email" name="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com" maxlength="254" required>' +
   '<input class="aviso-trampa" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">' +
   '<button class="btn btn--primary" type="submit">Suscribirme</button></form>' +
   '<p class="aviso-error" data-aviso-error role="alert" hidden></p>' +
-  '<p class="aviso-exito" data-aviso-exito role="status">¡Listo! Ya estás en la lista. Te escribimos un correo de bienvenida: si no lo ves, revisa la pestaña Promociones o Spam.</p>' +
+  '<p class="aviso-exito" data-aviso-exito role="status">¡Listo! Tu 10% de descuento ya está activo: se aplica solo en tu carrito. Te enviamos un correo de bienvenida; si no lo ves, revisa Promociones o Spam y muévelo a Principal.</p>' +
   '<p class="aviso-nota">Al suscribirte aceptas recibir correos de Apex Nutrición, incluidos avisos de los productos que veas en el sitio. Puedes darte de baja en cualquier momento desde un enlace en cada correo.</p></div>';
 
 function avisoSuscrito(){
@@ -1142,6 +1114,111 @@ function initNewsletterFloat(){
   box.querySelector('[data-aviso-cerrar]').addEventListener('click', cerrar);
   box.addEventListener('keydown', function(e){ if(e.key === 'Escape') cerrar(); });
   box.addEventListener('newsletter:ok', function(){ guardar('suscrito', 0); setTimeout(function(){ box.hidden = true; }, 6000); });
+}
+
+/* Botón "Quiero mi 10%" de la franja del inicio: abre el cartelito del newsletter (aunque se haya cerrado). A quien ya se suscribió no se le muestra la franja. */
+function initAbrirAviso(){
+  const botones = document.querySelectorAll('[data-abrir-aviso]');
+  if(!botones.length) return;
+  if(avisoSuscrito()){ botones.forEach(function(b){ const f = b.closest('.promo-strip'); if(f) f.hidden = true; }); return; }
+  botones.forEach(function(b){
+    b.addEventListener('click', function(){
+      const box = document.querySelector('[data-aviso-flotante]');
+      if(!box) return;
+      box.hidden = false;
+      const campo = box.querySelector('input[name="email"]');
+      if(campo) campo.focus();
+    });
+  });
+}
+
+/* ---------- Etiqueta "Nueva imagen" en los hidratantes de Going (empaque rediseñado) ----------
+   Se pone sola en la esquina de la foto de cada tarjeta de producto y de la foto principal de la ficha cuando la imagen es de un hidratante Going.
+   Un solo lugar para todas las páginas; también revisa tarjetas que se pinten después (búsqueda, filtros). */
+function initEtiquetaNuevaImagen(){
+  const re = /assets\/going\/hidratante-(sobre-)?(uva|coco|pitaya)\./;
+  function etiqueta(){ const t = document.createElement('span'); t.className = 'tag tag--nueva-imagen'; t.textContent = 'Nueva imagen'; return t; }
+  function marcar(){
+    document.querySelectorAll('.product-media').forEach(function(m){
+      const img = m.querySelector('img.product-photo');
+      if(img && re.test(img.getAttribute('src') || '') && !m.querySelector('.tag--nueva-imagen')) m.appendChild(etiqueta());
+    });
+    const main = document.getElementById('pdp-main-photo');
+    if(main && re.test(main.getAttribute('src') || '')){
+      const g = main.closest('.pdp-gallery') || main.parentNode;
+      if(g && !g.querySelector('.tag--nueva-imagen')){
+        if(getComputedStyle(g).position === 'static') g.style.position = 'relative';
+        g.appendChild(etiqueta());
+      }
+    }
+  }
+  marcar();
+  if('MutationObserver' in window){
+    let espera = null;
+    new MutationObserver(function(){ clearTimeout(espera); espera = setTimeout(marcar, 150); }).observe(document.body, { childList: true, subtree: true });
+  }
+}
+
+/* ---------- Reposición: el enlace del correo (carrito.html?rep=...) ----------
+   1) Con ?rep=<enlace> se pide a /api/reponer el carrito guardado de ese pedido y sus datos de entrega; el carrito se arma (reemplaza el de este
+      navegador), los datos quedan en sessionStorage y la página se recarga limpia.
+   2) Al cargar el carrito se llenan los datos (nombre, teléfono, entrega, estado, zona, C.I. y agencia) y se avisa; todo se puede editar y se pueden agregar más productos. */
+function mostrarAvisoReposicion(texto, malo){
+  const b = document.getElementById('rep-banner');
+  if(!b) return;
+  b.textContent = texto; b.hidden = false; b.classList.toggle('rep-banner--error', !!malo);
+}
+function initReposicion(){
+  if(!/carrito\.html$/.test(location.pathname)) return;
+  const token = new URLSearchParams(location.search).get('rep');
+  if(!token) return;
+  if(!/^[0-9a-f]{32}$/.test(token)){ history.replaceState(null, '', location.pathname); mostrarAvisoReposicion('Este enlace de tu carrito no es válido. Puedes armar tu pedido aquí normalmente.', true); return; }
+  document.documentElement.classList.add('rep-cargando');
+  fetch('/api/reponer?t=' + token, { credentials: 'omit' })
+    .then(function(res){ return res.json().catch(function(){ return null; }).then(function(j){ return { ok: res.ok, j: j }; }); })
+    .then(function(r){
+      if(!r.ok || !r.j || r.j.ok !== true || !Array.isArray(r.j.carrito) || !r.j.carrito.length) throw new Error((r.j && r.j.error) || 'No se pudo abrir tu carrito.');
+      const items = r.j.carrito.map(function(i){
+        let photo = i.photo || '';
+        try { if(photo) photo = new URL(photo, location.origin + '/').href; } catch(e){}
+        return { name: i.name, brand: i.brand || '', photo: photo, variant: i.variant || '', unitPrice: Number(i.unitPrice), quantity: Math.min(CART_LINE_QTY_MAX, Number(i.quantity) || 1), family: i.family || null, tiers: i.tiers || null, kit: !!i.kit };
+      }).filter(function(i){ return i.name && i.unitPrice > 0 && !isComingSoonItem(i) && !isOutOfStockItem(i); });
+      if(!items.length) throw new Error('Los productos de tu pedido anterior no están disponibles por ahora.');
+      saveCart(items);
+      try { sessionStorage.setItem('apex_rep_datos', JSON.stringify(r.j.cliente || {})); sessionStorage.setItem('apex_rep_total', String(r.j.carrito.length)); } catch(e){}
+      location.replace(location.pathname);
+    })
+    .catch(function(err){
+      document.documentElement.classList.remove('rep-cargando');
+      history.replaceState(null, '', location.pathname);
+      mostrarAvisoReposicion((err && err.message ? err.message : 'No se pudo abrir tu carrito.') + ' Puedes armar tu pedido aquí normalmente.', true);
+    });
+}
+function rellenarDesdeReposicion(){
+  let datos = null, total = 0;
+  try { datos = JSON.parse(sessionStorage.getItem('apex_rep_datos') || 'null'); total = Number(sessionStorage.getItem('apex_rep_total')) || 0; sessionStorage.removeItem('apex_rep_datos'); sessionStorage.removeItem('apex_rep_total'); } catch(e){}
+  if(!datos) return;
+  const $ = function(id){ return document.getElementById(id); };
+  const poner = function(id, v){ const el = $(id); if(el && v){ el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } };
+  poner('checkout-name', datos.nombre);
+  poner('checkout-phone', datos.telefono);
+  const pickup = String(datos.zona || '').toLowerCase() === 'pickup';
+  const btn = document.querySelector('.delivery-toggle-btn[data-delivery-type="' + (pickup ? 'pickup' : 'delivery') + '"]');
+  if(btn) btn.click();
+  if(!pickup){
+    const sel = $('checkout-state');
+    if(sel && datos.estado && Array.from(sel.options).some(function(o){ return o.value === datos.estado; })){ sel.value = datos.estado; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+    poner('checkout-zone', datos.zona);
+    if(datos.ci || datos.agencia){
+      const m = /^\[(MRW|Zoom)\]\s*(.*)$/.exec(String(datos.agencia || ''));
+      const carrier = m ? m[1] : 'MRW';
+      const cb = document.querySelector('.carrier-btn[data-carrier="' + carrier + '"]');
+      if(cb) cb.click();
+      poner('checkout-ci', datos.ci);
+      poner('checkout-mrw-address', m ? m[2] : datos.agencia);
+    }
+  }
+  mostrarAvisoReposicion('Tu reposición está lista: armamos tu carrito con tu pedido anterior' + (total ? ' (' + total + (total === 1 ? ' producto' : ' productos') + ')' : '') + ' y llenamos tus datos. Revisa todo, cámbialo si quieres o agrega más productos, y toca Comprar para enviarlo.');
 }
 
 /* ---------- Newsletter: lo que mira un suscriptor ----------
@@ -2149,7 +2226,6 @@ function initCartPage(){
   const discountLabelEl = document.getElementById('cart-discount-label');
   const discountEl = document.getElementById('cart-discount');
   const discountBsEl = document.getElementById('cart-discount-bs');
-  const welcomeBannerEl = document.getElementById('welcome-coupon-banner');
 
   // Quita del carrito guardado lo que todavía no tiene inventario (clientes con un carrito viejo).
   const savedCart = getCart();
@@ -2184,8 +2260,15 @@ function initCartPage(){
     // de esa "family" (sumando todos los sabores) — así se aplica el
     // descuento por caja aunque el cliente haya mezclado sabores.
     const pricedCart = applyFamilyPricing(cart);
+    // Descuento de cada línea (10% del correo o promoción del producto): precio normal tachado con raya roja y el nuevo en rojo.
+    const lineCoupon = couponForCart(pricedCart, appliedCoupon);
 
     list.innerHTML = pricedCart.map(function(item, index){
+      const lineRate = discountRateForItem(lineCoupon, item);
+      const lineOriginal = item.unitPrice * item.quantity;
+      const priceHtml = lineRate > 0
+        ? '<p class="cart-line-price cart-line-price--sale"><span class="visually-hidden">Precio normal </span><s class="cart-line-was">' + formatPrice(lineOriginal) + '</s> <span class="visually-hidden">Con descuento </span><span class="cart-line-now">' + formatPrice(lineOriginal * (1 - lineRate)) + '</span></p>'
+        : '<p class="cart-line-price">' + formatPrice(lineOriginal) + '</p>';
       const tierNote = item.family && item.appliedTierUnits > 1
         ? '<p class="cart-line-tier-note">✓ Precio por volumen aplicado (caja x' + item.appliedTierUnits + ', combinando sabores)</p>'
         : '';
@@ -2214,7 +2297,7 @@ function initCartPage(){
               '<button type="button" data-qty-increase aria-label="Aumentar cantidad">+</button>' +
             '</div>' +
           '</div>' +
-          '<p class="cart-line-price">' + formatPrice(item.unitPrice * item.quantity) + '</p>' +
+          priceHtml +
           '<button type="button" class="cart-line-remove" data-cart-remove aria-label="Eliminar ' + escapeHtml(item.name) + ' del carrito">' +
             '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
           '</button>' +
@@ -2259,13 +2342,6 @@ function initCartPage(){
     const effCoupon = couponForCart(pricedCart, appliedCoupon);
     const discount = cartDiscount(pricedCart, effCoupon);
     if(discountLabelEl) discountLabelEl.textContent = 'Descuento (' + discountLabelFor(getCart(), effCoupon) + ')';
-    if(welcomeBannerEl){
-      welcomeBannerEl.hidden = !(appliedCoupon && appliedCoupon.auto && welcomeActive());
-      // Con productos de Black Friday / Cyber Monday el banner aclara que los descuentos no se suman.
-      welcomeBannerEl.innerHTML = pricedCart.some(isEventItem)
-        ? '🎉 Tu carrito tiene productos de <strong>' + promoNamesFor(pricedCart).join(' y ') + '</strong>: aplica solo el <strong>' + promoPctFor(pricedCart) + '</strong> en esos productos. Los descuentos no se suman, así que el 10% de primera compra no se usa en este pedido.'
-        : '🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código.' + (pricedCart.some(hasVolumeDiscount) ? ' Los productos con precio por cantidad no llevan además el 10%: los descuentos no se suman.' : '');
-    }
     const deliveryCtx = getDeliveryContext();
     // shipping: número = monto fijo | null = pago a destino (MRW o Zoom, no se suma al total) | undefined = todavía no elige estado/zona
     let shipping;
@@ -2368,142 +2444,85 @@ function initCartPage(){
     focusLineControl(index, '[data-cart-remove]');
   });
 
-  const couponForm = document.getElementById('coupon-form');
-  const couponInput = document.getElementById('coupon');
-  const couponNote = document.getElementById('coupon-note');
-  const couponSubmitBtn = couponForm ? couponForm.querySelector('button[type="submit"]') : null;
-
+  /* 10% por dejar el correo (ver arriba). Se revisa al escribir el correo, al marcar la casilla y al abrir el carrito si el navegador ya es de un suscriptor. */
+  const descNote = document.getElementById('descuento-note');
+  const emailEl = document.getElementById('checkout-email');
+  const aceptaEl = document.getElementById('checkout-acepta');
   function showCouponNote(text, kind){
-    if(!couponNote) return;
-    couponNote.textContent = text;
-    couponNote.className = 'coupon-note' + (kind ? ' ' + kind : '');
-    couponNote.hidden = false;
+    if(!descNote) return;
+    if(!text){ descNote.hidden = true; return; }
+    descNote.textContent = text;
+    descNote.className = 'coupon-note' + (kind ? ' ' + kind : '');
+    descNote.hidden = false;
   }
-
-  if(couponForm){
-    couponForm.addEventListener('submit', function(e){
-      e.preventDefault();
-      const code = couponInput ? couponInput.value.trim() : '';
-      if(!code) return;
-
-      if(code.toUpperCase() !== WELCOME_COUPON_CODE){
-        showCouponNote('Código no válido.', 'error');
-        return;
-      }
-      if(hasUsedWelcomeCoupon()){
-        showCouponNote('Código no válido.', 'error');
-        return;
-      }
-      if(!welcomeActive()){
-        showCouponNote('El descuento de primera compra no está activo por ahora.', 'error');
-        return;
-      }
-
-      // El código es de "primera compra" de verdad: se cruza nombre +
-      // teléfono contra pedidos anteriores en el backend, no solo si este
-      // navegador ya lo usó (eso se evita fácil con incógnito/otro
-      // dispositivo).
-      const nameEl = document.getElementById('checkout-name');
-      const phoneEl = document.getElementById('checkout-phone');
-      const name = nameEl ? nameEl.value.trim() : '';
-      const phone = phoneEl ? phoneEl.value.trim() : '';
-      if(!name){
-        showCouponNote('Completa tu nombre arriba antes de aplicar el código.', 'error');
-        if(nameEl) nameEl.focus();
-        return;
-      }
-      if(!phone){
-        showCouponNote('Completa tu teléfono arriba antes de aplicar el código.', 'error');
-        if(phoneEl) phoneEl.focus();
-        return;
-      }
-
-      if(couponSubmitBtn) couponSubmitBtn.disabled = true;
-      showCouponNote('Verificando código…', '');
-
-      fetch('/api/check-welcome-coupon', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name, phone: phone })
-      })
-        .then(function(res){ return res.json(); })
-        .then(function(data){
-          if(data && data.ok && data.eligible){
-            appliedCoupon = { code: WELCOME_COUPON_CODE, rate: welcomeRate() };
-            if(welcomeBannerEl) welcomeBannerEl.hidden = true;
-            const pricedNow = applyFamilyPricing(getCart());
-            showCouponNote(pricedNow.some(isEventItem) ? 'Código válido. Tu carrito tiene productos de ' + promoNamesFor(pricedNow).join(' y ') + ': aplica solo el ' + promoPctFor(pricedNow) + ' en esos productos, los descuentos no se suman.' : '¡Código aplicado! 10% de descuento en tu compra.' + ((pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : '')), 'ok');
-          } else {
-            appliedCoupon = null;
-            showCouponNote('Código no válido.', 'error');
-          }
-          render();
-        })
-        .catch(function(){
-          appliedCoupon = null;
-          showCouponNote('No se pudo verificar el código. Intenta de nuevo.', 'error');
-          render();
-        })
-        .finally(function(){
-          if(couponSubmitBtn) couponSubmitBtn.disabled = false;
-        });
-    });
+  function claveSuscriptor(){
+    try { const c = localStorage.getItem('apex_sub'); return c && /^[0-9a-f]{32}$/.test(c) ? c : null; } catch(e){ return null; }
   }
-
-  /* Primera compra: el 10% se aplica solo, sin código, mientras este navegador
-     no haya completado un pedido. Se confirma contra los pedidos anteriores
-     (nombre + teléfono) en cuanto el cliente los escribe, o al pulsar Comprar.
-     Si el servicio no responde se deja el descuento: no castigamos a un cliente
-     nuevo por una falla nuestra. */
-  if(welcomeActive() && !hasUsedWelcomeCoupon() && !appliedCoupon){
-    appliedCoupon = { code: WELCOME_COUPON_CODE, rate: welcomeRate(), auto: true, verified: false };
+  function identidadDescuento(){
+    const clave = claveSuscriptor();
+    const correo = emailEl ? emailEl.value.trim().toLowerCase() : '';
+    const valido = correo.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(correo);
+    if(valido && aceptaEl && aceptaEl.checked) return { email: correo, clave: clave };
+    if(clave) return { email: null, clave: clave };
+    return null;
   }
-
-  let welcomeCheck = null; // { key, promise }
-  function verifyAutoWelcome(name, phone){
-    const key = name + '|' + phone;
-    if(welcomeCheck && welcomeCheck.key === key) return welcomeCheck.promise;
-    const promise = fetch('/api/check-welcome-coupon', {
+  let chequeoDescuento = null; // { key, promesa }
+  function revisarDescuento(){
+    const id = identidadDescuento();
+    if(!id){
+      chequeoDescuento = null;
+      if(appliedCoupon){ appliedCoupon = null; render(); }
+      const correo = emailEl ? emailEl.value.trim() : '';
+      showCouponNote(correo && aceptaEl && !aceptaEl.checked ? 'Marca la casilla para recibir tu 10% de descuento.' : '', '');
+      return Promise.resolve();
+    }
+    const key = (id.email || '') + '|' + (id.clave || '');
+    if(chequeoDescuento && chequeoDescuento.key === key) return chequeoDescuento.promesa;
+    showCouponNote('Revisando tu descuento…', '');
+    const mio = { key: key, promesa: null };
+    mio.promesa = fetch('/api/descuento', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, phone: phone })
+      body: JSON.stringify({ email: id.email, clave: id.clave })
     })
       .then(function(res){ return res.json(); })
       .then(function(data){
-        if(!appliedCoupon || !appliedCoupon.auto) return;
-        if(data && data.ok && data.eligible === false){
+        if(chequeoDescuento !== mio) return;   // el cliente cambió el correo mientras tanto
+        if(data && data.ok && data.disponible){
+          const tasa = Number(data.tasa);
+          appliedCoupon = { code: 'newsletter', rate: tasa > 0 && tasa <= 0.5 ? tasa : NEWSLETTER_COUPON_RATE };
+          const pricedNow = applyFamilyPricing(getCart());
+          showCouponNote(pricedNow.some(isEventItem)
+            ? 'Tu carrito tiene productos de ' + promoNamesFor(pricedNow).join(' y ') + ': aplica solo el ' + promoPctFor(pricedNow) + ' en esos productos. Los descuentos no se suman.'
+            : '¡Listo! 10% de descuento aplicado a tu pedido.' + (pricedNow.some(itemPromoActive) ? ' Reemplaza el 10% de ' + promoLabelForCart(getCart()) + ': no se combinan.' : ''), 'ok');
+        } else if(data && data.ok){
           appliedCoupon = null;
-          showCouponNote('Ya registramos un pedido con estos datos: el 10% de primera compra no aplica.', 'error');
+          showCouponNote('Este correo ya usó su descuento de 10%.', 'error');
         } else {
-          appliedCoupon.verified = true;
+          appliedCoupon = null; chequeoDescuento = null;
+          showCouponNote('No pudimos revisar tu descuento ahora. Intenta de nuevo.', 'error');
         }
         render();
       })
       .catch(function(){
-        if(appliedCoupon && appliedCoupon.auto) appliedCoupon.verified = true;
+        if(chequeoDescuento !== mio) return;
+        appliedCoupon = null; chequeoDescuento = null;
+        showCouponNote('No pudimos revisar tu descuento ahora. Intenta de nuevo.', 'error');
+        render();
       });
-    welcomeCheck = { key: key, promise: promise };
-    return promise;
+    chequeoDescuento = mio;
+    return mio.promesa;
   }
-  window.__apexVerifyWelcome = verifyAutoWelcome;
-
-  function maybeVerifyWelcome(){
-    if(!(appliedCoupon && appliedCoupon.auto && !appliedCoupon.verified)) return;
-    const nameEl = document.getElementById('checkout-name');
-    const phoneEl = document.getElementById('checkout-phone');
-    const name = nameEl ? nameEl.value.trim() : '';
-    const phone = phoneEl ? phoneEl.value.trim() : '';
-    if(name && phone) verifyAutoWelcome(name, phone);
-  }
-  ['checkout-name', 'checkout-phone'].forEach(function(id){
-    const el = document.getElementById(id);
-    if(el) el.addEventListener('change', maybeVerifyWelcome);
-  });
+  window.__apexRevisarDescuento = revisarDescuento;
+  if(emailEl) emailEl.addEventListener('change', revisarDescuento);
+  if(aceptaEl) aceptaEl.addEventListener('change', revisarDescuento);
 
   initDeliveryType();
   initPhoneMask();
   initCheckoutButton();
   render();
+  rellenarDesdeReposicion();
+  if(claveSuscriptor()) revisarDescuento();   // suscriptor en este navegador: el 10% se aplica solo
 }
 
 /* ---------- Teléfono con formato +58 414 1234567 ----------
@@ -2687,12 +2706,10 @@ function initCheckoutButton(){
     }
     if(errorEl) errorEl.hidden = true;
 
-    if(appliedCoupon && appliedCoupon.auto && !appliedCoupon.verified && window.__apexVerifyWelcome){
+    // Si el correo se acaba de escribir, se espera a que termine de revisarse el 10% (la misma consulta, sin repetirla).
+    if(window.__apexRevisarDescuento){
       btn.disabled = true;
-      window.__apexVerifyWelcome(customerName, phone).then(function(){
-        btn.disabled = false;
-        placeOrder();
-      });
+      Promise.resolve(window.__apexRevisarDescuento()).then(function(){ btn.disabled = false; placeOrder(); }, function(){ btn.disabled = false; placeOrder(); });
       return;
     }
     placeOrder();
@@ -2705,7 +2722,7 @@ function initCheckoutButton(){
 
     const subtotal = cartSubtotal(pricedCart);
     // El envío gratis se decide sobre el subtotal real (sin descuento), para
-    // que el 10% de bienvenida no le haga perder a nadie el envío gratis.
+    // que el 10% del correo no le haga perder a nadie el envío gratis.
     let shipping = 0;
     if(deliveryCtx.type === 'pickup') shipping = 0;
     else if(deliveryCtx.isCaracas) shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_COST;
@@ -2735,6 +2752,21 @@ function initCheckoutButton(){
       orderPayload.ci = ci;
       orderPayload.mrwAddress = '[' + deliveryCtx.carrier + '] ' + mrwAddress;   // el panel lee la empresa de este prefijo
     }
+    // Para la reposición: el carrito base, la clave del suscriptor (si este navegador se suscribió) y el correo (solo si marcó la casilla de aceptar correos).
+    try {
+      const extra = {};
+      const emailEl = document.getElementById('checkout-email'), aceptaEl = document.getElementById('checkout-acepta');
+      const correo = emailEl ? emailEl.value.trim() : '';
+      if(correo && aceptaEl && aceptaEl.checked){ extra.correo = correo; extra.acepta = true; }
+      let clave = null;
+      try { clave = localStorage.getItem('apex_sub'); } catch(e){}
+      if(clave && /^[0-9a-f]{32}$/.test(clave)) extra.clave = clave;
+      extra.carrito = getCart().map(function(i){ return { name: i.name, brand: i.brand, variant: i.variant || '', photo: i.photo || '', unitPrice: i.unitPrice, quantity: i.quantity, family: i.family || null, tiers: i.tiers || null, kit: !!i.kit }; });
+      if(effCoupon) extra.descuento = true;   // el pedido lleva el 10% por dejar el correo: el Worker lo marca como usado
+      orderPayload.extra = extra;
+      // El pedido manda: si con el carrito guardado el envío fuera demasiado grande, se manda sin él.
+      if(JSON.stringify(orderPayload).length > 26000) delete orderPayload.extra.carrito;
+    } catch(e){ delete orderPayload.extra; }
     const gaIds = getGaIds();
     if(gaIds.gaClientId) orderPayload.gaClientId = gaIds.gaClientId;
     if(gaIds.gaSessionId) orderPayload.gaSessionId = gaIds.gaSessionId;
@@ -2786,13 +2818,12 @@ function initCheckoutButton(){
       paymentLine;
 
     // transport_type:'beacon' porque la página se va a WhatsApp en la línea siguiente; sin esto GA4 perdía el evento.
-    trackEvent('begin_checkout', { currency: 'USD', value: total, coupon: appliedCoupon ? appliedCoupon.code : undefined, transport_type: 'beacon' });
+    trackEvent('begin_checkout', { currency: 'USD', value: total, coupon: effCoupon ? 'NEWSLETTER10' : undefined, transport_type: 'beacon' });
 
     const waUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message);
     window.location.href = waUrl;
 
-    // El código de bienvenida ya se usó en este navegador — no se vuelve a ofrecer.
-    if(appliedCoupon) markWelcomeCouponUsed();
+    appliedCoupon = null;
 
     // Vaciar el carrito ya que el pedido quedó "enviado" hacia WhatsApp.
     saveCart([]);
@@ -3135,14 +3166,16 @@ function initProductReviews(){
 document.addEventListener('DOMContentLoaded', function(){
   initLiveRegion();
   initAnnounceBar();
-  initWelcomeCopy();
   initCartCount();
   initMegaMenu();
   initMobileMenu();
+  initReposicion();
   crearAvisoFlotante();
   initNewsletterForms();
   initNewsletterFloat();
+  initAbrirAviso();
   initSeguimientoSuscriptor();
+  initEtiquetaNuevaImagen();
   initAddToCartButtons();
   initFeatureAddToCart();
   initCardAddToCartButtons();

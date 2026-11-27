@@ -38,7 +38,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png?v=3">
-<link rel="stylesheet" href="styles.css?v=169">
+<link rel="stylesheet" href="styles.css?v=173">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -173,6 +173,7 @@
     <div class="cat-header">
       <h1 class="h-36">Tu carrito</h1>
     </div>
+    <div class="rep-banner" id="rep-banner" role="status" hidden></div>
 
     <!-- ============ Carrito con artículos ============ -->
     <div class="cart-undo" id="cart-undo" hidden>
@@ -189,7 +190,6 @@
 
       <aside class="cart-summary" aria-label="Resumen del pedido">
         <h2>Resumen del pedido</h2>
-        <p class="welcome-coupon-banner" id="welcome-coupon-banner" hidden>🎉 <strong>10% de descuento en tu primera compra</strong> — ya está aplicado, sin código.</p>
         <p class="bcv-rate-note" id="bcv-rate-note">Cargando tasa BCV…</p>
         <div class="summary-row">
           <span>Subtotal</span>
@@ -230,6 +230,13 @@
           <div class="checkout-field">
             <label for="checkout-phone">Teléfono</label>
             <input id="checkout-phone" name="tel" type="tel" placeholder="+58 414 1234567" maxlength="22" autocomplete="tel" inputmode="tel">
+          </div>
+
+          <div class="checkout-field">
+            <label for="checkout-email">Correo <span class="checkout-opcional">(opcional) · 10% de descuento</span></label>
+            <input id="checkout-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="tu@correo.com" maxlength="254">
+            <label class="checkout-acepta" for="checkout-acepta"><input type="checkbox" id="checkout-acepta"> Quiero recibir por correo novedades, ofertas y avisos de reposición de Apex (puedes darte de baja cuando quieras). Con tu correo y esta casilla, tu pedido lleva 10% de descuento.</label>
+            <p class="coupon-note" id="descuento-note" role="status" aria-live="polite" hidden></p>
           </div>
 
           <div class="checkout-field">
@@ -315,12 +322,6 @@
           </dl>
         </div>
 
-        <form class="coupon-row" id="coupon-form">
-          <label for="coupon" class="visually-hidden">Código de cupón</label>
-          <input id="coupon" name="coupon" type="text" placeholder="Código de cupón" autocomplete="off" autocapitalize="characters" spellcheck="false">
-          <button type="submit" class="btn btn--ghost btn--sm">Aplicar</button>
-        </form>
-        <p class="coupon-note" id="coupon-note" role="status" aria-live="polite" hidden></p>
       </aside>
     </div>
 
@@ -381,6 +382,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=128"></script>
+<script src="app.js?v=133"></script>
 </body>
 </html>

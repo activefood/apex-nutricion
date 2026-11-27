@@ -311,7 +311,7 @@
         return '<tr><td><span class="calc-prod">' + mini(k, 32) + p.name + '</span>' + soonTag(k) + flavorPicker(k, pk.units[k]) + '</td><td class="n calc-col-porc">' + NUM(kit.serv[k]) + '</td><td>' + NUM(pk.units[k]) + ' × ' + p.sell + '</td><td class="n">' + usd(pk.lineas[k]) + '</td></tr>';
       }).join('') +
       '</tbody><tfoot><tr><td>Total</td><td class="calc-col-porc"></td><td></td><td class="n">' + usd(pk.total) + '</td></tr>' + hoyRow(aCarrito(pk.units, pk.lineas, pk.total, pk.fijadoPorApex)) + '</tfoot></table></div>';
-    html += '<p class="calc-help">' + (pk.fijadoPorApex ? 'Precio del kit fijado por APEX.' : 'Precio con el descuento por caja del sitio.') + ' El 10% de primera compra y las promociones se aplican en el carrito.</p>';
+    html += '<p class="calc-help">' + (pk.fijadoPorApex ? 'Precio del kit fijado por APEX.' : 'Precio con el descuento por caja del sitio.') + ' El código de 10% del newsletter y las promociones se aplican en el carrito.</p>';
     if(kit.caf > 0) html += '<p class="calc-help">' + kit.porque + ' La cafeína va en la segunda mitad del evento. Si terminas de noche, puede afectar tu sueño.</p>';
     if(kit.cafNote) html += '<p class="calc-help">' + kit.cafNote + '</p>';
     return html + soonNote(keys) + '</section>';

@@ -131,6 +131,7 @@
       pintar();
       cargarIg(r);
       cargarNews(r);
+      cargarRepo();
       setLive(true, 'Al día');
     } catch(e){
       if(e.auth){ mostrarLogin(silencioso ? 'La sesión se cerró. Entra otra vez.' : ''); }
@@ -259,6 +260,7 @@
     k.appendChild(kpi('Se dieron de baja', entero(d.bajas), null, 'Total, de siempre.'));
     k.appendChild(kpi('Suscriptores que miraron productos', entero(d.con_vistas), null, 'En el periodo elegido.'));
     k.appendChild(kpi('Páginas miradas por suscriptores', entero(d.vistas), null));
+    k.appendChild(kpi('Descuentos de 10% usados', entero(d.descuentos_usados), null, 'Clientes que ya compraron con su 10%, en el periodo.'));
     k.appendChild(kpi('Avisos enviados', entero(d.avisos), null, 'Correos de "el producto que viste" en el periodo.'));
     const box = $('news-top'); box.textContent = '';
     const top = d.top || [];
@@ -285,6 +287,59 @@
     } catch(err){
       if(err.auth) mostrarLogin('La sesión se cerró. Entra otra vez.');
       else toast(err.message || 'No se pudo enviar la prueba.', true);
+    }
+    b.disabled = false;
+  });
+
+  /* ---------- Reposición: cuántos clientes están ligados a un pedido, a cuántos se les puede escribir y el envío ---------- */
+  let dataRepo = null;
+  async function cargarRepo(){
+    const err = $('repo-error');
+    try {
+      dataRepo = DEMO ? { ok: true, ligados: 12, con_carrito: 9, listos: 7, enviados_30d: 0, abiertos_30d: 0 } : await api('reposicion');
+      err.hidden = true; pintarRepo();
+    } catch(e){
+      if(e.auth) return;
+      err.hidden = false; err.textContent = e.message || 'No se pudieron leer los datos de reposición.';
+    }
+  }
+  function pintarRepo(){
+    const d = dataRepo;
+    $('repo-live').textContent = d.enviados_30d ? 'Enviados en 30 días: ' + entero(d.enviados_30d) + ' · abiertos: ' + entero(d.abiertos_30d) : 'Todavía no se ha enviado ninguna reposición';
+    const av = $('repo-aviso'); av.hidden = false;
+    av.textContent = d.ligados ? 'Los clientes se ligan solos: cuando un suscriptor compra, o cuando alguien escribe su correo y marca la casilla en el carrito, queda ligado a ese pedido.' : 'Todavía no hay clientes ligados a un pedido. Se irán ligando solos: cuando un suscriptor compra, o cuando alguien escribe su correo y marca la casilla en el carrito.';
+    const k = $('repo-kpis'); k.textContent = '';
+    k.appendChild(kpi('Clientes ligados a un pedido', entero(d.ligados), null, 'Suscriptores activos de los que sabemos cuál fue su compra.'));
+    k.appendChild(kpi('Con su carrito guardado', entero(d.con_carrito), null, 'Solo se puede rearmar el carrito de pedidos hechos desde que existe esta función.'));
+    k.appendChild(kpi('Listos para recibir el correo', entero(d.listos), null, 'Con pedido confirmado y sin reposición en los últimos 14 días.'));
+    k.appendChild(kpi('Correos enviados (30 días)', entero(d.enviados_30d), null));
+    k.appendChild(kpi('Abrieron su carrito', entero(d.abiertos_30d), null, 'Entraron con el botón del correo.'));
+    const b = $('repo-enviar'); b.disabled = !d.listos; b.textContent = d.listos ? 'Enviar reposición a ' + entero(d.listos) + (d.listos === 1 ? ' persona' : ' personas') : 'No hay a quién enviar todavía';
+  }
+  $('repo-enviar').addEventListener('click', async function(){
+    const n = dataRepo ? dataRepo.listos : 0; if(!n) return;
+    if(!window.confirm('Se le mandará el correo "Ya tenemos tu reposición hecha" a ' + n + (n === 1 ? ' persona' : ' personas') + '. ¿Enviar ahora?')) return;
+    const b = this; b.disabled = true; toast('Enviando…');
+    try {
+      const r = DEMO ? { enviados: n, fallos: 0 } : await api('reposicion-enviar', { method: 'POST', body: JSON.stringify({ confirmar: true }) });
+      toast('Listo: ' + r.enviados + ' enviados' + (r.fallos ? ' y ' + r.fallos + ' con error' : '') + '.', !!r.fallos);
+      await cargarRepo();
+    } catch(e){
+      if(e.auth) mostrarLogin('La sesión se cerró. Entra otra vez.'); else toast(e.message || 'No se pudo enviar.', true);
+      b.disabled = false;
+    }
+  });
+  $('repo-prueba-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const em = $('repo-prueba-email').value.trim(), b = $('repo-prueba-btn');
+    if(!em || !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(em)){ toast('Escribe un correo válido.', true); return; }
+    b.disabled = true;
+    try {
+      if(DEMO) await new Promise(function(ok){ setTimeout(ok, 500); });
+      else await api('reposicion-prueba', { method: 'POST', body: JSON.stringify({ email: em }) });
+      toast('Listo, revisa tu correo (y la carpeta de spam).');
+    } catch(err){
+      if(err.auth) mostrarLogin('La sesión se cerró. Entra otra vez.'); else toast(err.message || 'No se pudo enviar la prueba.', true);
     }
     b.disabled = false;
   });
@@ -497,7 +552,7 @@
 
   /* ---------- Demostración (solo localhost con ?demo=1) ---------- */
   function demoNews(){
-    return { ok: true, activos: 42, bajas: 1, nuevos: 17, con_vistas: 11, vistas: 36, avisos: 6, avisos_activos: false, ultimo_aviso: null,
+    return { ok: true, activos: 42, bajas: 1, nuevos: 17, con_vistas: 11, vistas: 36, descuentos_usados: 5, avisos: 6, avisos_activos: false, ultimo_aviso: null,
       top: [{ ruta: '/producto-going-hidratante.html', titulo: 'Hidratante Uva Going', vistas: 12, suscriptores: 7 }, { ruta: '/categoria.html?cat=hidratacion', titulo: 'Hidratación', vistas: 9, suscriptores: 5 }, { ruta: '/producto-saltstick-capsulas.html', titulo: 'Cápsulas de Electrolitos SaltStick', vistas: 4, suscriptores: 3 }] };
   }
 
