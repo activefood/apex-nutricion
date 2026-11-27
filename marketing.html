@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es-VE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#14120F">
+<title>Marketing · Apex</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="panel/icon-180.png">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-var.woff2" crossorigin>
+<link rel="stylesheet" href="panel/panel.css?v=1">
+<link rel="stylesheet" href="marketing/marketing.css?v=1">
+</head>
+<body>
+
+<!-- Entrada con código (distinto al del panel de pedidos) -->
+<main class="login" id="login" hidden>
+  <form class="login-box" id="login-form" autocomplete="off">
+    <p class="eyebrow">Apex Nutrición</p>
+    <h1>Marketing</h1>
+    <label for="login-code">Código de acceso</label>
+    <input id="login-code" name="code" type="password" inputmode="text" autocomplete="current-password" autocapitalize="off" spellcheck="false" required>
+    <p class="login-error" id="login-error" role="alert" hidden></p>
+    <button class="btn btn--primary" type="submit" id="login-btn">Entrar</button>
+  </form>
+</main>
+
+<div class="app" id="app" hidden>
+  <header class="bar">
+    <div class="bar-title">
+      <h1>Marketing</h1>
+      <span class="live" id="live" role="status"><span class="live-dot" aria-hidden="true"></span><span id="live-text">Conectando…</span></span>
+    </div>
+    <div class="bar-tools">
+      <button type="button" class="tool" id="btn-actualizar">Actualizar ahora</button>
+    </div>
+  </header>
+
+  <main class="ventas mk">
+    <div class="ventas-head">
+      <h2>Visitas al sitio</h2>
+      <span class="ventas-live" id="mk-live" role="status"></span>
+    </div>
+    <div class="ventas-filtro" role="group" aria-label="Periodo">
+      <button type="button" class="chip is-on" data-periodo="7" aria-pressed="true">Últimos 7 días</button>
+      <button type="button" class="chip" data-periodo="30" aria-pressed="false">Últimos 30 días</button>
+      <button type="button" class="chip" data-periodo="mes" aria-pressed="false">Este mes</button>
+      <button type="button" class="chip" data-periodo="anterior" aria-pressed="false">Mes anterior</button>
+      <button type="button" class="chip" data-periodo="fechas" aria-pressed="false">Fechas</button>
+    </div>
+    <form class="ventas-fechas" id="mk-fechas" hidden>
+      <label>Desde <input type="date" id="mk-desde" required></label>
+      <label>Hasta <input type="date" id="mk-hasta" required></label>
+      <button type="submit" class="btn btn--primary">Ver</button>
+    </form>
+    <p class="ventas-error" id="mk-error" role="alert" hidden></p>
+    <p class="mk-aviso" id="mk-aviso" hidden></p>
+
+    <section class="v-card mk-resumen" aria-labelledby="h-resumen">
+      <h3 id="h-resumen">Resumen ejecutivo</h3>
+      <ul id="mk-resumen" class="mk-lista"></ul>
+    </section>
+
+    <div class="kpis mk-kpis" id="mk-kpis"></div>
+
+    <section class="v-card"><h3>Visitas por día</h3><div id="mk-chart" class="v-chart"></div></section>
+
+    <section class="v-card">
+      <h3>Recorrido hacia la compra</h3>
+      <p class="mk-nota">Cuántas visitas llegan a cada paso. Aquí solo se mide el comportamiento en el sitio.</p>
+      <div id="mk-embudo" class="v-dist"></div>
+    </section>
+
+    <div class="mk-dos">
+      <section class="v-card"><h3>De dónde llegan</h3><div id="mk-fuentes" class="v-dist"></div></section>
+      <section class="v-card"><h3>Con qué dispositivo</h3><div id="mk-disp" class="v-dist"></div></section>
+      <section class="v-card"><h3>Páginas más vistas</h3><div id="mk-paginas" class="v-dist"></div></section>
+      <section class="v-card"><h3>Ciudades</h3><div id="mk-ciudades" class="v-dist"></div></section>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
+
+<script src="marketing/marketing.js?v=1"></script>
+</body>
+</html>

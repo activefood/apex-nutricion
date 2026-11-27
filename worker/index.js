@@ -27,6 +27,18 @@ export default {
     if (url.pathname.indexOf('/api/panel/') === 0) {
       return handlePanel(request, env, url, ctx);
     }
+    if (url.pathname.indexOf('/api/marketing/') === 0) {
+      return handleMarketing(request, env, url);
+    }
+    if (url.pathname === '/marketing' || url.pathname === '/marketing/') {
+      return Response.redirect(new URL('/marketing.html', url).toString(), 302);
+    }
+    if (url.pathname === '/marketing.html' || url.pathname.indexOf('/marketing/') === 0) {
+      const asset = await env.ASSETS.fetch(request);
+      const headers = new Headers(asset.headers);
+      headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      return new Response(asset.body, { status: asset.status, headers: headers });
+    }
     if (url.pathname === '/panel' || url.pathname === '/panel/') {
       return Response.redirect(new URL('/panel.html', url).toString(), 302);
     }
@@ -63,6 +75,7 @@ export default {
     else {
       ctx.waitUntil(sincronizarVentasGa4(env));
       ctx.waitUntil(vigilarBlackFriday(env));
+      ctx.waitUntil(sincronizarMarketing(env, false));
     }
   }
 };
@@ -1009,4 +1022,160 @@ async function handlePromos(request, env) {
     headers['Cache-Control'] = 'no-store';
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo leer la hoja de descuentos' }), { status: 502, headers: headers });
   }
+}
+
+
+/* ---------- Panel de marketing (marketing.html) ----------
+   Portal para el equipo de marketing: solo tráfico del sitio (Google Analytics vía Windsor). NO muestra ni guarda ventas,
+   ingresos ni datos de dinero de la empresa, y su código (MARKETING_CODE) es distinto al del panel de pedidos: con él no se
+   puede abrir /api/panel/*. Variables del Worker (secretas): MARKETING_CODE (código de entrada) y WINDSOR_API_KEY (lectura de GA4).
+   Los datos se copian a Supabase (esquema `marketing`) cada 6 horas y con el botón "Actualizar ahora". */
+const MKT_COOKIE = 'apex_marketing';
+const MKT_SESSION_SECONDS = 14 * 24 * 3600;
+const MKT_HORAS_SYNC = [0, 6, 12, 18];   // hora UTC en que la revisión horaria también copia los datos de Windsor
+const MKT_GA4_BASE = 'https://connectors.windsor.ai/googleanalytics4';
+
+async function mktMakeToken(env) {
+  const exp = Math.floor(Date.now() / 1000) + MKT_SESSION_SECONDS;
+  return exp + '.' + await hmacBase64Url(env.MARKETING_CODE + '|apex-marketing-session', String(exp));
+}
+
+async function mktIsAuthed(request, env) {
+  const match = (request.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + MKT_COOKIE + '=([^;]+)'));
+  if (!match) return false;
+  const parts = match[1].split('.');
+  if (parts.length !== 2 || !/^\d+$/.test(parts[0]) || !parts[1]) return false;
+  if (Number(parts[0]) < Date.now() / 1000) return false;
+  return safeEqual(parts[1], await hmacBase64Url(env.MARKETING_CODE + '|apex-marketing-session', parts[0]));
+}
+
+function mktCookie(value, maxAge) {
+  return MKT_COOKIE + '=' + value + '; Path=/api/marketing; Max-Age=' + maxAge + '; HttpOnly; Secure; SameSite=Strict';
+}
+
+function ymd(d) { return d.toISOString().slice(0, 10); }
+
+// Pide una tabla a Windsor (GA4). Devuelve la lista de filas o lanza error.
+async function windsorGa4(env, campos, desde, hasta) {
+  const ctl = new AbortController();
+  const timer = setTimeout(function () { ctl.abort(); }, 25000);
+  try {
+    const u = MKT_GA4_BASE + '?api_key=' + encodeURIComponent(env.WINDSOR_API_KEY) + '&fields=' + campos.join(',') + '&date_from=' + desde + '&date_to=' + hasta;
+    const res = await fetch(u, { signal: ctl.signal });
+    const text = await res.text();
+    if (!res.ok) throw new Error('Windsor HTTP ' + res.status);
+    const body = text ? JSON.parse(text) : {};
+    const rows = Array.isArray(body) ? body : (body && Array.isArray(body.data) ? body.data : []);
+    return rows;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const num = function (v) { const n = Number(v); return isFinite(n) ? n : 0; };
+
+// Copia a Supabase los últimos `dias` días de Google Analytics. Nunca pide compras ni ingresos (no se guardan aquí).
+// Sin `forzar`, solo corre en las horas de MKT_HORAS_SYNC. Devuelve { ok, filas, error }.
+async function sincronizarMarketing(env, forzar, dias) {
+  try {
+    if (!env.WINDSOR_API_KEY || !usaSupabase(env)) return { ok: false, error: 'Falta WINDSOR_API_KEY o Supabase' };
+    const ahora = new Date();
+    if (!forzar && (MKT_HORAS_SYNC.indexOf(ahora.getUTCHours()) === -1 || ahora.getUTCMinutes() > 30)) return { ok: true, omitido: true };
+    const n = Math.max(1, Math.min(90, Math.floor(num(dias)) || 3));
+    const hasta = ymd(ahora);
+    const desde = ymd(new Date(ahora.getTime() - (n - 1) * 86400000));
+    const pedidos = await Promise.all([
+      windsorGa4(env, ['date', 'sessions', 'totalusers', 'newusers', 'screen_page_views', 'engaged_sessions', 'average_session_duration', 'add_to_carts', 'checkouts'], desde, hasta),
+      windsorGa4(env, ['date', 'source', 'medium', 'sessions', 'totalusers'], desde, hasta),
+      windsorGa4(env, ['date', 'devicecategory', 'sessions', 'totalusers'], desde, hasta),
+      windsorGa4(env, ['date', 'page_path', 'screen_page_views', 'totalusers'], desde, hasta),
+      windsorGa4(env, ['date', 'country', 'city', 'sessions'], desde, hasta)
+    ]);
+    const tablas = {
+      dia: pedidos[0].map(function (r) { return { dia: r.date, sesiones: num(r.sessions), usuarios: num(r.totalusers), nuevos: num(r.newusers), paginas_vistas: num(r.screen_page_views), sesiones_activas: num(r.engaged_sessions), duracion_prom: Math.round(num(r.average_session_duration) * 100) / 100, add_carrito: num(r.add_to_carts), inicia_compra: num(r.checkouts) }; }),
+      fuente: pedidos[1].map(function (r) { return { dia: r.date, fuente: r.source, medio: r.medium, sesiones: num(r.sessions), usuarios: num(r.totalusers) }; }),
+      dispositivo: pedidos[2].map(function (r) { return { dia: r.date, dispositivo: r.devicecategory, sesiones: num(r.sessions), usuarios: num(r.totalusers) }; }),
+      pagina: pedidos[3].filter(function (r) { return r.page_path; }).map(function (r) { return { dia: r.date, ruta: r.page_path, vistas: num(r.screen_page_views), usuarios: num(r.totalusers) }; }),
+      ciudad: pedidos[4].map(function (r) { return { dia: r.date, pais: r.country, ciudad: r.city, sesiones: num(r.sessions) }; })
+    };
+    let total = 0;
+    for (const nombre of Object.keys(tablas)) {
+      const filas = tablas[nombre];
+      for (let i = 0; i < filas.length; i += 500) {
+        const r = await supabaseRpc(env, 'marketing_guardar', { p_tabla: nombre, p_filas: filas.slice(i, i + 500) });
+        if (!r || r.ok !== true) throw new Error('No se guardó ' + nombre + ': ' + (r && r.error));
+        total += filas.slice(i, i + 500).length;
+      }
+    }
+    await supabaseRpc(env, 'marketing_registrar_sync', { p_estado: 'ok', p_filas: total, p_detalle: desde + ' a ' + hasta });
+    return { ok: true, filas: total };
+  } catch (err) {
+    console.error('[marketing] Sincronización: ' + String(err));
+    try { await supabaseRpc(env, 'marketing_registrar_sync', { p_estado: 'error', p_filas: 0, p_detalle: String(err).slice(0, 300) }); } catch (e2) { /* sin registro */ }
+    return { ok: false, error: 'No se pudo traer los datos de Google Analytics.' };
+  }
+}
+
+async function handleMarketing(request, env, url) {
+  if (!env.MARKETING_CODE || !usaSupabase(env)) {
+    console.error('[marketing] Falta MARKETING_CODE o la configuración de Supabase');
+    return panelJson({ ok: false, error: 'Marketing not configured' }, 503);
+  }
+  const route = url.pathname.slice('/api/marketing/'.length);
+
+  if (route === 'login') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const blocked = await guardPublicApi(request, env.ORDER_LIMITER, 'marketing-login');
+    if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    let code = '';
+    try {
+      const body = await readJsonBody(request);
+      code = body.payload && typeof body.payload.code === 'string' ? body.payload.code : '';
+    } catch (err) { /* código vacío: falla abajo */ }
+    if (!code || code.length > 200 || !(await safeEqual(code, env.MARKETING_CODE))) {
+      console.error('[marketing] Código incorrecto desde ' + clientIp(request));
+      return panelJson({ ok: false, error: 'Unauthorized' }, 401);
+    }
+    const res = panelJson({ ok: true });
+    res.headers.append('Set-Cookie', mktCookie(await mktMakeToken(env), MKT_SESSION_SECONDS));
+    return res;
+  }
+
+  if (route === 'logout') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const res = panelJson({ ok: true });
+    res.headers.append('Set-Cookie', mktCookie('', 0));
+    return res;
+  }
+
+  if (!(await mktIsAuthed(request, env))) return panelJson({ ok: false, error: 'Unauthorized' }, 401);
+
+  if (route === 'datos') {
+    if (request.method !== 'GET') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const q = url.searchParams;
+    const fecha = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null; };
+    const desde = fecha(q.get('desde')), hasta = fecha(q.get('hasta'));
+    if (!desde || !hasta) return panelJson({ ok: false, error: 'Faltan las fechas.' }, 400);
+    let r;
+    try {
+      r = await supabaseRpc(env, 'marketing_leer', { p_desde: desde, p_hasta: hasta, p_cdesde: fecha(q.get('cdesde')), p_chasta: fecha(q.get('chasta')) });
+    } catch (err) {
+      console.error('[marketing] Supabase (leer): ' + String(err));
+      return panelJson({ ok: false, error: 'No se pudieron leer los datos. Intenta otra vez.' }, 502);
+    }
+    if (!r || r.ok !== true) return panelJson({ ok: false, error: (r && r.error) || 'No se pudieron leer los datos.' }, 400);
+    return panelJson(r);
+  }
+
+  if (route === 'actualizar') {
+    if (request.method !== 'POST') return panelJson({ ok: false, error: 'Method not allowed' }, 405);
+    const blocked = await guardPublicApi(request, env.API_LIMITER, 'marketing-actualizar');
+    if (blocked) { blocked.headers.set('Cache-Control', 'no-store'); return blocked; }
+    let dias = 3;
+    try { const b = await readJsonBody(request); if (b.payload && b.payload.dias) dias = num(b.payload.dias); } catch (err) { /* usa 3 días */ }
+    const r = await sincronizarMarketing(env, true, dias);
+    return panelJson({ ok: r.ok, filas: r.filas, error: r.ok ? undefined : r.error }, r.ok ? 200 : 502);
+  }
+
+  return panelJson({ ok: false, error: 'Not found' }, 404);
 }

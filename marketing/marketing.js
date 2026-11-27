@@ -1,0 +1,361 @@
+/* Panel de marketing (marketing.html): visitas, orígenes, dispositivos, páginas y recorrido hacia la compra (Google Analytics vía Windsor,
+   guardado en Supabase por el Worker). Habla solo con /api/marketing/*, que exige su propio código. No hay ventas ni dinero aquí.
+   Sin librerías: las gráficas son SVG dibujado en esta página. Modo demostración (?demo=1, solo en localhost): datos de mentira. */
+(function(){
+  'use strict';
+  const $ = function(id){ return document.getElementById(id); };
+  const DEMO = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') && new URLSearchParams(location.search).has('demo');
+  const REFRESH_MS = 5 * 60 * 1000;
+  let periodo = '7', data = null, timer = null, cargando = false;
+
+  /* ---------- Fechas (hora de Caracas) ---------- */
+  function hoyCaracas(){ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' }); }
+  function partes(s){ const p = s.split('-'); return { y: +p[0], m: +p[1], d: +p[2] }; }
+  function iso(y, m, d){ return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
+  function ultimoDia(y, m){ return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  function sumarDias(s, n){ const p = partes(s); const dt = new Date(Date.UTC(p.y, p.m - 1, p.d + n)); return iso(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate()); }
+  function diasEntre(a, b){ const pa = partes(a), pb = partes(b); return Math.round((Date.UTC(pb.y, pb.m - 1, pb.d) - Date.UTC(pa.y, pa.m - 1, pa.d)) / 86400000); }
+  function mesAnterior(y, m){ return m === 1 ? { y: y - 1, m: 12 } : { y: y, m: m - 1 }; }
+
+  function rangos(){
+    const hoy = hoyCaracas(), t = partes(hoy);
+    if(periodo === '7') return { desde: sumarDias(hoy, -6), hasta: hoy, cdesde: sumarDias(hoy, -13), chasta: sumarDias(hoy, -7), etiqueta: 'vs 7 días antes', nombre: 'los últimos 7 días' };
+    if(periodo === '30') return { desde: sumarDias(hoy, -29), hasta: hoy, cdesde: sumarDias(hoy, -59), chasta: sumarDias(hoy, -30), etiqueta: 'vs 30 días antes', nombre: 'los últimos 30 días' };
+    if(periodo === 'mes'){
+      const a = mesAnterior(t.y, t.m);
+      return { desde: iso(t.y, t.m, 1), hasta: hoy, cdesde: iso(a.y, a.m, 1), chasta: iso(a.y, a.m, Math.min(t.d, ultimoDia(a.y, a.m))), etiqueta: 'vs mes anterior', nombre: 'este mes' };
+    }
+    if(periodo === 'anterior'){
+      const a = mesAnterior(t.y, t.m), b = mesAnterior(a.y, a.m);
+      return { desde: iso(a.y, a.m, 1), hasta: iso(a.y, a.m, ultimoDia(a.y, a.m)), cdesde: iso(b.y, b.m, 1), chasta: iso(b.y, b.m, ultimoDia(b.y, b.m)), etiqueta: 'vs mes previo', nombre: 'el mes anterior' };
+    }
+    const d = $('mk-desde').value, h = $('mk-hasta').value;
+    if(!d || !h || h < d) return null;
+    const largo = diasEntre(d, h) + 1;
+    return { desde: d, hasta: h, cdesde: sumarDias(d, -largo), chasta: sumarDias(d, -1), etiqueta: 'vs periodo anterior', nombre: 'el periodo elegido' };
+  }
+
+  /* ---------- Formato ---------- */
+  const entero = function(n){ return Math.round(Number(n) || 0).toLocaleString('es-VE'); };
+  const decimal = function(n){ return (Math.round(Number(n) * 10) / 10).toString().replace('.', ','); };
+  const pct = function(a, b){ return b > 0 ? Math.round(a / b * 1000) / 10 : 0; };
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const etiquetaDia = function(s){ const p = partes(s); return p.d + ' ' + MESES[p.m - 1]; };
+  function duracion(seg){
+    seg = Math.round(Number(seg) || 0);
+    if(seg < 60) return seg + ' s';
+    return Math.floor(seg / 60) + ' min ' + String(seg % 60).padStart(2, '0') + ' s';
+  }
+  function el(tag, cls, text){ const n = document.createElement(tag); if(cls) n.className = cls; if(text != null) n.textContent = text; return n; }
+  const svgNs = 'http://www.w3.org/2000/svg';
+  function svg(tag, attrs){ const n = document.createElementNS(svgNs, tag); Object.keys(attrs || {}).forEach(function(k){ n.setAttribute(k, attrs[k]); }); return n; }
+
+  /* Nombres entendibles */
+  function nombreFuente(f, m){
+    const s = String(f || '').toLowerCase(), med = String(m || '').toLowerCase();
+    if(s === '(direct)' || (s === '(not set)' && med === '(none)')) return 'Directo (sin referencia)';
+    if(/instagram|^ig$|l\.instagram/.test(s)) return 'Instagram';
+    if(/facebook|^fb$|l\.facebook|m\.facebook/.test(s)) return 'Facebook';
+    if(s === 'google' && med === 'organic') return 'Google (búsqueda normal)';
+    if(s === 'google' && /cpc|paid/.test(med)) return 'Google (anuncios)';
+    if(/whatsapp/.test(s)) return 'WhatsApp';
+    if(/t\.co|twitter|^x$/.test(s)) return 'X (Twitter)';
+    if(/tiktok/.test(s)) return 'TikTok';
+    return f + (med && med !== '(none)' ? ' / ' + m : '');
+  }
+  const NOMBRE_DISP = { mobile: 'Celular', desktop: 'Computadora', tablet: 'Tablet', 'smart tv': 'Televisor' };
+  function nombrePagina(ruta){
+    const fijas = { '/': 'Inicio', '/index.html': 'Inicio', '/carrito.html': 'Carrito', '/ofertas.html': 'Ofertas', '/categoria.html': 'Categorías', '/marcas.html': 'Todas las marcas', '/marca.html': 'Marca', '/producto.html': 'Producto', '/calculadora.html': 'Calculadora', '/busqueda.html': 'Búsqueda', '/guias.html': 'Guías', '/articulo.html': 'Artículo' };
+    if(fijas[ruta]) return fijas[ruta];
+    let r = String(ruta || '').replace(/^\//, '').replace(/\.html$/, '');
+    let pre = '';
+    if(r.indexOf('producto-') === 0){ pre = 'Producto: '; r = r.slice(9); }
+    else if(r.indexOf('marca-') === 0){ pre = 'Marca: '; r = r.slice(6); }
+    else if(r.indexOf('articulo-') === 0){ pre = 'Artículo: '; r = r.slice(9); }
+    r = r.replace(/-/g, ' ');
+    return pre + r.charAt(0).toUpperCase() + r.slice(1);
+  }
+
+  /* ---------- Red ---------- */
+  async function api(ruta, opciones){
+    const res = await fetch('/api/marketing/' + ruta, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, opciones || {}));
+    let j = null;
+    try { j = await res.json(); } catch(e){}
+    if(res.status === 401){ throw { auth: true }; }
+    if(res.status === 429) throw { message: 'Demasiados intentos. Espera un minuto y vuelve a probar.' };
+    if(res.status === 503) throw { message: 'El panel todavía no está configurado.' };
+    if(!res.ok || !j || j.ok === false) throw { message: (j && j.error) || 'Algo salió mal. Intenta otra vez.' };
+    return j;
+  }
+  function pedir(r){
+    if(DEMO) return demoData(r);
+    const q = new URLSearchParams({ desde: r.desde, hasta: r.hasta, cdesde: r.cdesde, chasta: r.chasta });
+    return api('datos?' + q.toString());
+  }
+
+  /* ---------- Entrada ---------- */
+  function mostrarLogin(msg){
+    $('app').hidden = true; $('login').hidden = false;
+    clearInterval(timer);
+    const e = $('login-error'); e.hidden = !msg; e.textContent = msg || '';
+    $('login-code').focus();
+  }
+  function mostrarApp(){ $('login').hidden = true; $('app').hidden = false; cargar(); clearInterval(timer); timer = setInterval(function(){ if(!document.hidden) cargar(true); }, REFRESH_MS); }
+  $('login-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const b = $('login-btn'); b.disabled = true;
+    try {
+      if(!DEMO) await api('login', { method: 'POST', body: JSON.stringify({ code: $('login-code').value }) });
+      $('login-code').value = '';
+      mostrarApp();
+    } catch(err){
+      mostrarLogin(err.auth ? 'Código incorrecto.' : (err.message || 'No se pudo entrar. Intenta otra vez.'));
+    }
+    b.disabled = false;
+  });
+
+  /* ---------- Cargar ---------- */
+  function toast(msg, malo){
+    const t = $('toast'); t.textContent = msg; t.className = 'toast' + (malo ? ' is-error' : ''); t.hidden = false;
+    clearTimeout(toast.t); toast.t = setTimeout(function(){ t.hidden = true; }, 6000);
+  }
+  async function cargar(silencioso){
+    if(cargando) return;
+    const r = rangos(), err = $('mk-error');
+    if(!r){ err.hidden = false; err.textContent = 'Elige las dos fechas (la final no puede ser antes de la inicial).'; return; }
+    cargando = true;
+    try {
+      data = await pedir(r);
+      data._r = r;
+      err.hidden = true;
+      pintar();
+      setLive(true, 'Al día');
+    } catch(e){
+      if(e.auth){ mostrarLogin(silencioso ? 'La sesión se cerró. Entra otra vez.' : ''); }
+      else { err.hidden = false; err.textContent = e.message || 'No se pudieron leer los datos.'; setLive(false, 'Sin conexión'); }
+    }
+    cargando = false;
+  }
+  function setLive(ok, txt){ $('live').className = 'live ' + (ok ? 'is-ok' : 'is-bad'); $('live-text').textContent = txt; }
+
+  function haceCuanto(iso){
+    if(!iso) return 'nunca';
+    const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if(min < 2) return 'hace un momento';
+    if(min < 60) return 'hace ' + min + ' min';
+    const h = Math.round(min / 60);
+    if(h < 24) return 'hace ' + h + (h === 1 ? ' hora' : ' horas');
+    const d = Math.round(h / 24);
+    return 'hace ' + d + (d === 1 ? ' día' : ' días');
+  }
+
+  /* ---------- Pintar ---------- */
+  function delta(actual, previo, etiqueta){
+    if(previo == null) return null;
+    const box = el('span', 'delta');
+    if(!previo){ box.textContent = actual > 0 ? 'Sin datos antes' : 'Sin cambio'; return box; }
+    const r = Math.round((actual - previo) / previo * 1000) / 10;
+    box.className = 'delta ' + (r > 0 ? 'delta--up' : r < 0 ? 'delta--down' : '');
+    box.textContent = (r > 0 ? '▲ +' : r < 0 ? '▼ ' : '= ') + String(r).replace('.', ',') + '% ' + etiqueta;
+    return box;
+  }
+  function kpi(titulo, valor, d, ayuda){
+    const k = el('div', 'kpi');
+    k.appendChild(el('small', null, titulo));
+    k.appendChild(el('strong', null, valor));
+    if(d) k.appendChild(d);
+    if(ayuda) k.title = ayuda;
+    return k;
+  }
+
+  function pintar(){
+    const a = data.actual, c = data.comparacion, r = data._r;
+    const hayComp = c && c.dias_con_datos > 0;
+    const interA = pct(a.sesiones_activas, a.sesiones), interC = c ? pct(c.sesiones_activas, c.sesiones) : 0;
+    $('mk-live').textContent = 'Datos de Google Analytics · actualizado ' + haceCuanto(data.actualizado);
+
+    const aviso = $('mk-aviso');
+    const esperados = diasEntre(r.desde, r.hasta) + 1;
+    aviso.textContent = '';
+    if(!a.dias_con_datos){
+      aviso.hidden = false;
+      aviso.appendChild(document.createTextNode('Todavía no hay datos guardados para este periodo. '));
+      const b = el('button', 'linkbtn', 'Traer los últimos 90 días'); b.type = 'button'; b.addEventListener('click', function(){ actualizar(90); });
+      aviso.appendChild(b);
+    } else if(a.dias_con_datos < esperados - 1){
+      aviso.hidden = false;
+      aviso.appendChild(document.createTextNode('Faltan datos de ' + (esperados - a.dias_con_datos) + ' días de este periodo. '));
+      const b = el('button', 'linkbtn', 'Traer los últimos 90 días'); b.type = 'button'; b.addEventListener('click', function(){ actualizar(90); });
+      aviso.appendChild(b);
+    } else if(data.ultima_sync && data.ultima_sync.estado === 'error'){
+      aviso.hidden = false; aviso.textContent = 'La última actualización automática falló. Los números pueden estar atrasados; prueba "Actualizar ahora".';
+    } else aviso.hidden = true;
+
+    const k = $('mk-kpis'); k.textContent = '';
+    const dp = function(x, y){ return hayComp ? delta(x, y, r.etiqueta) : null; };
+    k.appendChild(kpi('Visitas', entero(a.sesiones), dp(a.sesiones, c && c.sesiones), 'Cada vez que alguien entra al sitio cuenta como una visita.'));
+    k.appendChild(kpi('Personas por día', entero(a.usuarios_dia), dp(a.usuarios_dia, c && c.usuarios_dia), 'Promedio de personas distintas que entran cada día.'));
+    k.appendChild(kpi('Personas nuevas', entero(a.nuevos), dp(a.nuevos, c && c.nuevos), 'Entraron por primera vez al sitio.'));
+    k.appendChild(kpi('Páginas vistas', entero(a.paginas_vistas), dp(a.paginas_vistas, c && c.paginas_vistas)));
+    k.appendChild(kpi('Tiempo por visita', duracion(a.duracion_prom), dp(a.duracion_prom, c && c.duracion_prom)));
+    k.appendChild(kpi('Visitas con interacción', decimal(interA) + '%', dp(interA, interC), 'Visitas en las que la persona se quedó o hizo algo más que entrar y salir.'));
+
+    pintarResumen(a, hayComp ? c : null, r);
+    pintarGrafica();
+    pintarEmbudo(a, hayComp ? c : null);
+    pintarLista('mk-fuentes', agrupar(data.fuentes, function(x){ return nombreFuente(x.fuente, x.medio); }, 'sesiones'), 'sesiones', 'visitas', 8);
+    pintarLista('mk-disp', agrupar(data.dispositivos, function(x){ return NOMBRE_DISP[String(x.dispositivo).toLowerCase()] || x.dispositivo; }, 'sesiones'), 'sesiones', 'visitas', 6);
+    pintarLista('mk-paginas', agrupar(data.paginas, function(x){ return nombrePagina(x.ruta); }, 'vistas'), 'vistas', 'vistas', 10);
+    pintarLista('mk-ciudades', agrupar(data.ciudades, function(x){ return x.ciudad === '(not set)' || x.ciudad === '(desconocida)' ? 'Sin identificar' : x.ciudad + (x.pais && x.pais !== 'Venezuela' ? ' (' + x.pais + ')' : ''); }, 'sesiones'), 'sesiones', 'visitas', 8);
+  }
+
+  function agrupar(filas, nombre, campo){
+    const m = {};
+    (filas || []).forEach(function(x){ const n = nombre(x); m[n] = (m[n] || 0) + (Number(x[campo]) || 0); });
+    return Object.keys(m).map(function(n){ return { nombre: n, valor: m[n] }; }).sort(function(a, b){ return b.valor - a.valor; });
+  }
+
+  function pintarLista(id, lista, _campo, unidad, max){
+    const box = $(id); box.textContent = '';
+    const total = lista.reduce(function(s, x){ return s + x.valor; }, 0);
+    if(!lista.length || total <= 0){ box.appendChild(el('p', 'v-vacio', 'Sin datos en este periodo.')); return; }
+    lista.slice(0, max).forEach(function(x){
+      const p = x.valor / total * 100;
+      const row = el('div', 'v-row');
+      row.appendChild(el('b', null, x.nombre));
+      row.appendChild(el('span', null, entero(x.valor)));
+      row.appendChild(el('small', null, decimal(p) + '% de las ' + unidad));
+      const m = el('div', 'v-meter'); const i = el('i'); i.style.width = Math.max(1, p) + '%'; m.appendChild(i); row.appendChild(m);
+      box.appendChild(row);
+    });
+  }
+
+  function pintarEmbudo(a, c){
+    const box = $('mk-embudo'); box.textContent = '';
+    if(!a.sesiones){ box.appendChild(el('p', 'v-vacio', 'Sin datos en este periodo.')); return; }
+    const pasos = [
+      { t: 'Entraron al sitio', v: a.sesiones, pv: c && c.sesiones, base: a.sesiones },
+      { t: 'Agregaron un producto al carrito', v: a.add_carrito, pv: c && c.add_carrito, base: a.sesiones },
+      { t: 'Empezaron a pagar', v: a.inicia_compra, pv: c && c.inicia_compra, base: a.sesiones }
+    ];
+    pasos.forEach(function(p, i){
+      const por100 = Math.round(p.v / p.base * 1000) / 10;
+      const row = el('div', 'v-row');
+      row.appendChild(el('b', null, p.t));
+      row.appendChild(el('span', null, entero(p.v)));
+      row.appendChild(el('small', null, i === 0 ? 'Punto de partida: 100 por cada 100 visitas' : decimal(por100) + ' por cada 100 visitas'));
+      const m = el('div', 'v-meter'); const f = el('i'); f.style.width = Math.max(1, Math.min(100, por100)) + '%'; m.appendChild(f); row.appendChild(m);
+      box.appendChild(row);
+    });
+  }
+
+  function pintarGrafica(){
+    const box = $('mk-chart'); box.textContent = '';
+    const pts = (data.dias || []).map(function(d){ return { clave: d.dia, v: Number(d.sesiones) || 0, vistas: Number(d.paginas_vistas) || 0 }; });
+    const total = pts.reduce(function(s, p){ return s + p.v; }, 0);
+    if(!pts.length || total <= 0){ box.appendChild(el('p', 'v-vacio', 'Todavía no hay visitas guardadas en este periodo.')); return; }
+    const W = 720, H = 260, L = 46, R = 8, T = 14, B = 38;
+    const max = Math.max.apply(null, pts.map(function(p){ return p.v; }));
+    const paso = (function(){ const g = Math.pow(10, Math.floor(Math.log10(max))); const f = max / g; return (f <= 2 ? 0.5 : f <= 5 ? 1 : 2) * g; })();
+    const tope = Math.ceil(max / paso) * paso;
+    const s = svg('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Gráfica de visitas por día: total ' + entero(total) });
+    for(let v = 0; v <= tope + 0.001; v += paso){
+      const y = T + (H - T - B) * (1 - v / tope);
+      s.appendChild(svg('line', { x1: L, x2: W - R, y1: y, y2: y, class: 'grid' }));
+      const t = svg('text', { x: L - 8, y: y + 6, 'text-anchor': 'end' }); t.textContent = String(Math.round(v)); s.appendChild(t);
+    }
+    const ancho = (W - L - R) / pts.length, bw = Math.max(2, Math.min(40, ancho * 0.7));
+    const hoy = hoyCaracas(), cada = Math.max(1, Math.ceil(pts.length / 7));
+    pts.forEach(function(p, i){
+      const x = L + ancho * i + (ancho - bw) / 2, h = (H - T - B) * (p.v / tope);
+      const r = svg('rect', { x: x, y: H - B - h, width: bw, height: Math.max(p.v > 0 ? 2 : 0, h), class: 'bar' + (p.clave === hoy ? ' bar--hoy' : '') });
+      const t = svg('title'); t.textContent = etiquetaDia(p.clave) + ': ' + entero(p.v) + ' visitas · ' + entero(p.vistas) + ' páginas vistas'; r.appendChild(t);
+      s.appendChild(r);
+      if(i % cada === 0){ const tx = svg('text', { x: x + bw / 2, y: H - 12, 'text-anchor': 'middle' }); tx.textContent = etiquetaDia(p.clave); s.appendChild(tx); }
+    });
+    box.appendChild(s);
+  }
+
+  /* Resumen en lenguaje normal, armado con los mismos números de abajo */
+  function pintarResumen(a, c, r){
+    const ul = $('mk-resumen'); ul.textContent = '';
+    function linea(partesTxt){
+      const li = el('li');
+      partesTxt.forEach(function(p){ if(typeof p === 'string') li.appendChild(document.createTextNode(p)); else li.appendChild(el('b', null, p.b)); });
+      ul.appendChild(li);
+    }
+    if(!a.sesiones){ linea(['Todavía no hay visitas guardadas para ', r.nombre, '.']); return; }
+    const cambio = function(x, y){ if(!y) return ''; const q = Math.round((x - y) / y * 100); return q === 0 ? ' (igual que ' + r.etiqueta.replace('vs ', '') + ')' : ' (' + (q > 0 ? 'subió ' : 'bajó ') + Math.abs(q) + '% ' + r.etiqueta + ')'; };
+    linea(['En ', r.nombre, ' el sitio tuvo ', { b: entero(a.sesiones) + ' visitas' }, ' de ', { b: entero(a.nuevos) + ' personas nuevas' }, cambio(a.sesiones, c && c.sesiones), '.']);
+    const fuentes = agrupar(data.fuentes, function(x){ return nombreFuente(x.fuente, x.medio); }, 'sesiones');
+    const totF = fuentes.reduce(function(s, x){ return s + x.valor; }, 0);
+    if(fuentes.length && totF > 0) linea(['La principal puerta de entrada es ', { b: fuentes[0].nombre.split(' (')[0] }, ', con el ', { b: decimal(fuentes[0].valor / totF * 100) + '%' }, ' de las visitas.']);
+    const pags = agrupar(data.paginas, function(x){ return nombrePagina(x.ruta); }, 'vistas').filter(function(x){ return x.nombre !== 'Inicio'; });
+    if(pags.length) linea(['Fuera del inicio, lo más visto es ', { b: pags[0].nombre }, ' (', entero(pags[0].valor), ' vistas).']);
+    const disp = agrupar(data.dispositivos, function(x){ return NOMBRE_DISP[String(x.dispositivo).toLowerCase()] || x.dispositivo; }, 'sesiones');
+    const totD = disp.reduce(function(s, x){ return s + x.valor; }, 0);
+    if(disp.length && totD > 0) linea([{ b: decimal(disp[0].valor / totD * 100) + '%' }, ' de las visitas vienen de ', { b: disp[0].nombre.toLowerCase() }, '.']);
+    linea(['Por cada 100 visitas, ', { b: decimal(pct(a.add_carrito, a.sesiones)) }, ' agregan algo al carrito y ', { b: decimal(pct(a.inicia_compra, a.sesiones)) }, ' empiezan a pagar.']);
+    linea(['Cada visita dura en promedio ', { b: duracion(a.duracion_prom) }, ' y el ', { b: decimal(pct(a.sesiones_activas, a.sesiones)) + '%' }, ' de las visitas interactúa con el sitio.']);
+  }
+
+  /* ---------- Acciones ---------- */
+  async function actualizar(dias){
+    const b = $('btn-actualizar'); b.disabled = true;
+    toast(dias > 7 ? 'Trayendo el historial… puede tardar un poco.' : 'Actualizando…');
+    try {
+      if(DEMO) await new Promise(function(ok){ setTimeout(ok, 600); });
+      else await api('actualizar', { method: 'POST', body: JSON.stringify({ dias: dias || 3 }) });
+      toast('Listo, datos actualizados.');
+      await cargar();
+    } catch(e){
+      if(e.auth) mostrarLogin('La sesión se cerró. Entra otra vez.');
+      else toast(e.message || 'No se pudo actualizar. Intenta otra vez.', true);
+    }
+    b.disabled = false;
+  }
+  $('btn-actualizar').addEventListener('click', function(){ actualizar(3); });
+
+  document.querySelectorAll('[data-periodo]').forEach(function(b){
+    b.addEventListener('click', function(){
+      periodo = b.dataset.periodo;
+      document.querySelectorAll('[data-periodo]').forEach(function(x){ const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
+      $('mk-fechas').hidden = periodo !== 'fechas';
+      if(periodo === 'fechas'){
+        if(!$('mk-hasta').value) $('mk-hasta').value = hoyCaracas();
+        if(!$('mk-desde').value) $('mk-desde').value = sumarDias(hoyCaracas(), -13);
+      }
+      cargar();
+    });
+  });
+  $('mk-fechas').addEventListener('submit', function(e){ e.preventDefault(); cargar(); });
+
+  /* ---------- Inicio: si ya hay sesión, entra directo ---------- */
+  (async function(){
+    if(DEMO){ mostrarApp(); return; }
+    try { await api('datos?' + new URLSearchParams({ desde: hoyCaracas(), hasta: hoyCaracas() }).toString()); mostrarApp(); }
+    catch(e){ mostrarLogin(e.auth ? '' : (e.message || 'No se pudo conectar.')); }
+  })();
+
+  /* ---------- Demostración (solo localhost con ?demo=1) ---------- */
+  function demoData(r){
+    return new Promise(function(resolve){
+      setTimeout(function(){
+        const dias = []; let ses = 0, pv = 0, nue = 0, act = 0, car = 0, chk = 0, dur = 0;
+        for(let d = r.desde, i = 0; d <= r.hasta && i < 400; d = sumarDias(d, 1), i++){
+          const s = 24 + ((i * 11 + d.charCodeAt(9)) % 30), v = Math.round(s * 3.2), a = Math.round(s * 0.36), cc = Math.round(s * 0.26);
+          dias.push({ dia: d, sesiones: s, paginas_vistas: v, add_carrito: a }); ses += s; pv += v; nue += Math.round(s * 0.7); act += Math.round(s * 0.85); car += a; chk += cc; dur += s * 240;
+        }
+        const n = dias.length;
+        const base = { sesiones: ses, nuevos: nue, paginas_vistas: pv, sesiones_activas: act, usuarios_dia: Math.round(ses / n * 0.8), duracion_prom: Math.round(dur / ses), add_carrito: car, inicia_compra: chk, dias_con_datos: n };
+        const comp = r.cdesde ? Object.assign({}, base, { desde: r.cdesde, hasta: r.chasta, sesiones: Math.round(ses * 0.82), nuevos: Math.round(nue * 0.9), paginas_vistas: Math.round(pv * 0.7), add_carrito: Math.round(car * 0.8), inicia_compra: Math.round(chk * 1.1), usuarios_dia: Math.round(base.usuarios_dia * 0.85), duracion_prom: Math.round(base.duracion_prom * 1.2) }) : null;
+        resolve({ ok: true, actual: Object.assign({ desde: r.desde, hasta: r.hasta }, base), comparacion: comp, dias: dias,
+          fuentes: [{ fuente: 'ig', medio: 'paid', sesiones: Math.round(ses * 0.34) }, { fuente: '(direct)', medio: '(none)', sesiones: Math.round(ses * 0.3) }, { fuente: 'google', medio: 'organic', sesiones: Math.round(ses * 0.2) }, { fuente: 'l.instagram.com', medio: 'referral', sesiones: Math.round(ses * 0.12) }, { fuente: 'wa.me', medio: 'referral', sesiones: Math.round(ses * 0.04) }],
+          dispositivos: [{ dispositivo: 'mobile', sesiones: Math.round(ses * 0.82) }, { dispositivo: 'desktop', sesiones: Math.round(ses * 0.16) }, { dispositivo: 'tablet', sesiones: Math.round(ses * 0.02) }],
+          paginas: [{ ruta: '/', vistas: Math.round(pv * 0.3) }, { ruta: '/index.html', vistas: Math.round(pv * 0.05) }, { ruta: '/categoria.html', vistas: Math.round(pv * 0.14) }, { ruta: '/ofertas.html', vistas: Math.round(pv * 0.1) }, { ruta: '/carrito.html', vistas: Math.round(pv * 0.1) }, { ruta: '/producto-going-hidratante.html', vistas: Math.round(pv * 0.06) }, { ruta: '/marca-honey.html', vistas: Math.round(pv * 0.04) }],
+          ciudades: [{ pais: 'Venezuela', ciudad: 'Caracas', sesiones: Math.round(ses * 0.5) }, { pais: 'Venezuela', ciudad: 'Valencia', sesiones: Math.round(ses * 0.14) }, { pais: 'Venezuela', ciudad: 'Maracaibo', sesiones: Math.round(ses * 0.1) }, { pais: 'Venezuela', ciudad: '(not set)', sesiones: Math.round(ses * 0.08) }, { pais: 'Colombia', ciudad: 'Bogotá', sesiones: Math.round(ses * 0.03) }],
+          actualizado: new Date().toISOString(), ultima_sync: { estado: 'ok' } });
+      }, 250);
+    });
+  }
+})();

@@ -1,0 +1,17 @@
+/* Panel de marketing (marketing.html): reutiliza panel/panel.css (barra, chips, tarjetas, gráficas); aquí solo lo propio. */
+.mk .ventas-head h2{ font-size:30px; }
+.mk-aviso{ padding:10px 12px; background:var(--warn-sf); color:var(--warn); font-weight:600; font-size:14px; }
+.mk-aviso button{ margin-left:6px; }
+.mk-nota{ font-size:13px; color:var(--ink-3); }
+.mk-lista{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.mk-lista li{ position:relative; padding-left:18px; font-size:16px; line-height:1.4; }
+.mk-lista li::before{ content:''; position:absolute; left:0; top:.55em; width:8px; height:8px; background:var(--accent); border:1.5px solid var(--ink); }
+.mk-lista b{ font-weight:800; }
+.mk-resumen{ background:var(--paper); }
+.mk-kpis{ grid-template-columns:repeat(3,1fr); }
+.mk-kpis .kpi strong{ font-size:32px; }
+@media (max-width:620px){ .mk-kpis{ grid-template-columns:1fr 1fr; } .mk-kpis .kpi:first-child{ grid-column:1 / -1; } }
+.mk-dos{ display:grid; gap:12px; }
+@media (min-width:900px){ .mk-dos{ grid-template-columns:1fr 1fr; align-items:start; } }
+.mk-paso{ display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:baseline; }
+.v-row small a{ color:inherit; }

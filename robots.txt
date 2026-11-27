@@ -4,5 +4,7 @@ Disallow: /carrito.html
 Disallow: /busqueda.html
 Disallow: /panel.html
 Disallow: /panel/
+Disallow: /marketing.html
+Disallow: /marketing/
 
 Sitemap: https://harmonious-biscotti-0af22d.netlify.app/sitemap.xml
