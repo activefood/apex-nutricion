@@ -1055,7 +1055,7 @@ function mktCookie(value, maxAge) {
 
 function ymd(d) { return d.toISOString().slice(0, 10); }
 
-// Pide una tabla a Windsor (GA4). Devuelve la lista de filas o lanza error.
+// Pide una tabla a Windsor (GA4). Devuelve la lista de filas o lanza error (con el motivo que dé Windsor).
 async function windsorGa4(env, campos, desde, hasta) {
   const ctl = new AbortController();
   const timer = setTimeout(function () { ctl.abort(); }, 25000);
@@ -1063,19 +1063,46 @@ async function windsorGa4(env, campos, desde, hasta) {
     const u = MKT_GA4_BASE + '?api_key=' + encodeURIComponent(env.WINDSOR_API_KEY) + '&fields=' + campos.join(',') + '&date_from=' + desde + '&date_to=' + hasta;
     const res = await fetch(u, { signal: ctl.signal });
     const text = await res.text();
-    if (!res.ok) throw new Error('Windsor HTTP ' + res.status);
+    if (!res.ok) throw new Error('Windsor HTTP ' + res.status + ' ' + text.replace(/api_key=[^&"\s]+/g, 'api_key=***').slice(0, 160));
     const body = text ? JSON.parse(text) : {};
-    const rows = Array.isArray(body) ? body : (body && Array.isArray(body.data) ? body.data : []);
-    return rows;
+    return Array.isArray(body) ? body : (body && Array.isArray(body.data) ? body.data : []);
   } finally {
     clearTimeout(timer);
   }
 }
 
+// Pide un rango largo en tramos de 30 días (Windsor responde más rápido y sin topes de filas).
+async function windsorGa4Tramos(env, campos, desde, hasta) {
+  const filas = [];
+  let ini = new Date(desde + 'T00:00:00Z');
+  const fin = new Date(hasta + 'T00:00:00Z');
+  while (ini <= fin) {
+    const fTramo = new Date(Math.min(ini.getTime() + 29 * 86400000, fin.getTime()));
+    const rows = await windsorGa4(env, campos, ymd(ini), ymd(fTramo));
+    for (let i = 0; i < rows.length; i++) filas.push(rows[i]);
+    ini = new Date(fTramo.getTime() + 86400000);
+  }
+  return filas;
+}
+
 const num = function (v) { const n = Number(v); return isFinite(n) ? n : 0; };
 
-// Copia a Supabase los últimos `dias` días de Google Analytics. Nunca pide compras ni ingresos (no se guardan aquí).
-// Sin `forzar`, solo corre en las horas de MKT_HORAS_SYNC. Devuelve { ok, filas, error }.
+// Cada tabla: campos que se piden a Windsor y cómo se pasan a las columnas de Supabase. Nunca se piden compras ni ingresos.
+const MKT_TABLAS = {
+  dia: { campos: ['date', 'sessions', 'totalusers', 'newusers', 'screen_page_views', 'engaged_sessions', 'average_session_duration', 'add_to_carts', 'checkouts'],
+    fila: function (r) { return { dia: r.date, sesiones: num(r.sessions), usuarios: num(r.totalusers), nuevos: num(r.newusers), paginas_vistas: num(r.screen_page_views), sesiones_activas: num(r.engaged_sessions), duracion_prom: Math.round(num(r.average_session_duration) * 100) / 100, add_carrito: num(r.add_to_carts), inicia_compra: num(r.checkouts) }; } },
+  fuente: { campos: ['date', 'source', 'medium', 'sessions', 'totalusers'],
+    fila: function (r) { return { dia: r.date, fuente: r.source, medio: r.medium, sesiones: num(r.sessions), usuarios: num(r.totalusers) }; } },
+  dispositivo: { campos: ['date', 'devicecategory', 'sessions', 'totalusers'],
+    fila: function (r) { return { dia: r.date, dispositivo: r.devicecategory, sesiones: num(r.sessions), usuarios: num(r.totalusers) }; } },
+  pagina: { campos: ['date', 'page_path', 'screen_page_views', 'totalusers'], filtro: function (r) { return !!r.page_path; },
+    fila: function (r) { return { dia: r.date, ruta: r.page_path, vistas: num(r.screen_page_views), usuarios: num(r.totalusers) }; } },
+  ciudad: { campos: ['date', 'country', 'city', 'sessions'],
+    fila: function (r) { return { dia: r.date, pais: r.country, ciudad: r.city, sesiones: num(r.sessions) }; } }
+};
+
+// Copia a Supabase los últimos `dias` días de Google Analytics. Sin `forzar`, solo corre en las horas de MKT_HORAS_SYNC.
+// Cada tabla va por separado: si una falla, las demás se guardan igual y el motivo queda en el registro. Devuelve { ok, filas, error }.
 async function sincronizarMarketing(env, forzar, dias) {
   try {
     if (!env.WINDSOR_API_KEY || !usaSupabase(env)) return { ok: false, error: 'Falta WINDSOR_API_KEY o Supabase' };
@@ -1084,31 +1111,27 @@ async function sincronizarMarketing(env, forzar, dias) {
     const n = Math.max(1, Math.min(90, Math.floor(num(dias)) || 3));
     const hasta = ymd(ahora);
     const desde = ymd(new Date(ahora.getTime() - (n - 1) * 86400000));
-    const pedidos = await Promise.all([
-      windsorGa4(env, ['date', 'sessions', 'totalusers', 'newusers', 'screen_page_views', 'engaged_sessions', 'average_session_duration', 'add_to_carts', 'checkouts'], desde, hasta),
-      windsorGa4(env, ['date', 'source', 'medium', 'sessions', 'totalusers'], desde, hasta),
-      windsorGa4(env, ['date', 'devicecategory', 'sessions', 'totalusers'], desde, hasta),
-      windsorGa4(env, ['date', 'page_path', 'screen_page_views', 'totalusers'], desde, hasta),
-      windsorGa4(env, ['date', 'country', 'city', 'sessions'], desde, hasta)
-    ]);
-    const tablas = {
-      dia: pedidos[0].map(function (r) { return { dia: r.date, sesiones: num(r.sessions), usuarios: num(r.totalusers), nuevos: num(r.newusers), paginas_vistas: num(r.screen_page_views), sesiones_activas: num(r.engaged_sessions), duracion_prom: Math.round(num(r.average_session_duration) * 100) / 100, add_carrito: num(r.add_to_carts), inicia_compra: num(r.checkouts) }; }),
-      fuente: pedidos[1].map(function (r) { return { dia: r.date, fuente: r.source, medio: r.medium, sesiones: num(r.sessions), usuarios: num(r.totalusers) }; }),
-      dispositivo: pedidos[2].map(function (r) { return { dia: r.date, dispositivo: r.devicecategory, sesiones: num(r.sessions), usuarios: num(r.totalusers) }; }),
-      pagina: pedidos[3].filter(function (r) { return r.page_path; }).map(function (r) { return { dia: r.date, ruta: r.page_path, vistas: num(r.screen_page_views), usuarios: num(r.totalusers) }; }),
-      ciudad: pedidos[4].map(function (r) { return { dia: r.date, pais: r.country, ciudad: r.city, sesiones: num(r.sessions) }; })
-    };
     let total = 0;
-    for (const nombre of Object.keys(tablas)) {
-      const filas = tablas[nombre];
-      for (let i = 0; i < filas.length; i += 500) {
-        const r = await supabaseRpc(env, 'marketing_guardar', { p_tabla: nombre, p_filas: filas.slice(i, i + 500) });
-        if (!r || r.ok !== true) throw new Error('No se guardó ' + nombre + ': ' + (r && r.error));
-        total += filas.slice(i, i + 500).length;
+    const fallos = [];
+    for (const nombre of Object.keys(MKT_TABLAS)) {
+      const t = MKT_TABLAS[nombre];
+      try {
+        let rows = await windsorGa4Tramos(env, t.campos, desde, hasta);
+        if (t.filtro) rows = rows.filter(t.filtro);
+        const filas = rows.map(t.fila);
+        for (let i = 0; i < filas.length; i += 500) {
+          const r = await supabaseRpc(env, 'marketing_guardar', { p_tabla: nombre, p_filas: filas.slice(i, i + 500) });
+          if (!r || r.ok !== true) throw new Error('No se guardó: ' + (r && r.error));
+          total += filas.slice(i, i + 500).length;
+        }
+      } catch (err) {
+        console.error('[marketing] ' + nombre + ': ' + String(err));
+        fallos.push(nombre + ' (' + String(err).replace(/^Error: /, '').slice(0, 140) + ')');
       }
     }
-    await supabaseRpc(env, 'marketing_registrar_sync', { p_estado: 'ok', p_filas: total, p_detalle: desde + ' a ' + hasta });
-    return { ok: true, filas: total };
+    await supabaseRpc(env, 'marketing_registrar_sync', { p_estado: fallos.length ? (total ? 'parcial' : 'error') : 'ok', p_filas: total, p_detalle: fallos.length ? 'Fallaron: ' + fallos.join('; ') : desde + ' a ' + hasta });
+    if (!total) return { ok: false, error: 'No se pudo traer los datos de Google Analytics.' };
+    return { ok: true, filas: total, fallos: fallos.length };
   } catch (err) {
     console.error('[marketing] Sincronización: ' + String(err));
     try { await supabaseRpc(env, 'marketing_registrar_sync', { p_estado: 'error', p_filas: 0, p_detalle: String(err).slice(0, 300) }); } catch (e2) { /* sin registro */ }
