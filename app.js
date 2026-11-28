@@ -1075,6 +1075,8 @@ function avisoSuscrito(){
   catch(e){ return false; }
 }
 function crearAvisoFlotante(){
+  // Para probar: abrir cualquier página con ?aviso=1 borra las marcas de este navegador (suscrito, cerrado) y el cartelito vuelve a salir.
+  try { if(new URLSearchParams(location.search).has('aviso')){ ['apex_sub', 'apex_newsletter'].forEach(function(k){ localStorage.removeItem(k); }); ['apex_aviso_cerrado', 'apex_aviso_visto'].forEach(function(k){ sessionStorage.removeItem(k); }); } } catch(e){}
   if(document.querySelector('[data-aviso-flotante]')) return;
   if(/carrito\.html$/.test(location.pathname)) return;      // en el carrito no estorba la compra
   if(avisoSuscrito()) return;                                 // ya está suscrito: ni se arma
@@ -1090,13 +1092,13 @@ function initNewsletterFloat(){
   const box = document.querySelector('[data-aviso-flotante]');
   if(!box) return;
   const KEY = 'apex_newsletter';
-  const ESCONDER_MS = 6 * 3600 * 1000;   // tras la ×: 6 horas (la visita de hoy); si vuelve otro día, sale otra vez
   function leer(){ try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){ return null; } }
   function guardar(estado, ms){ try { localStorage.setItem(KEY, JSON.stringify({ estado: estado, hasta: ms ? Date.now() + ms : 0 })); } catch(e){} }
   const prev = leer();
-  if(prev && (prev.estado === 'suscrito' || (prev.hasta && prev.hasta > Date.now()))) return;
+  if(prev && prev.estado === 'suscrito') return;   // solo suscribirse lo apaga para siempre
+  try { if(sessionStorage.getItem('apex_aviso_cerrado') === '1') return; } catch(e){}   // la × lo esconde solo durante esta visita: al volver, sale otra vez
   let visto = false, timer = null;
-  function cerrar(){ guardar('cerrado', ESCONDER_MS); box.hidden = true; }
+  function cerrar(){ try { sessionStorage.setItem('apex_aviso_cerrado', '1'); } catch(e){} box.hidden = true; }
   function mostrar(){
     if(visto) return; visto = true;
     clearTimeout(timer); window.removeEventListener('scroll', alBajar);
@@ -1105,11 +1107,11 @@ function initNewsletterFloat(){
   }
   function alBajar(){
     const h = document.documentElement.scrollHeight - window.innerHeight;
-    if(h > 0 && window.scrollY / h >= 0.25) mostrar();
+    if(h > 0 && window.scrollY / h >= 0.15) mostrar();
   }
   let yaVisto = false;
   try { yaVisto = sessionStorage.getItem('apex_aviso_visto') === '1'; } catch(e){}
-  timer = setTimeout(mostrar, yaVisto ? 2500 : 8000);
+  timer = setTimeout(mostrar, yaVisto ? 2000 : 5000);
   if(!yaVisto) window.addEventListener('scroll', alBajar, { passive: true });
   box.querySelector('[data-aviso-cerrar]').addEventListener('click', cerrar);
   box.addEventListener('keydown', function(e){ if(e.key === 'Escape') cerrar(); });
